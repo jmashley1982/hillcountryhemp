@@ -8,11 +8,12 @@ import { BusinessMap } from "@/components/map";
 
 const ALL_CATEGORIES = [
   "Hemp Flower",
+  "Hemp Pre-Rolls",
   "Edibles",
   "Topicals",
   "CBD Products",
-  "Smoke Shop",
-  "Vape Shop",
+  "Smoking Accessories",
+  "Dab Equipment",
 ];
 
 export default function Home() {
@@ -52,9 +53,12 @@ export default function Home() {
           className={`w-full md:w-96 bg-card border-r border-border flex flex-col z-10 ${viewMode === "map" ? "hidden md:flex" : "flex"}`}
         >
           <div className="p-4 border-b border-border bg-card shadow-sm">
-            <h1 className="font-display text-xl text-primary mb-4">
+            <h1 className="text-xl text-[#D4AF37] mb-1 tracking-wide">
               Find Hill Country Hemp
             </h1>
+            <p className="text-xs text-muted-foreground font-medium mb-4 leading-relaxed">
+              Your guide to hemp dispensaries &amp; smoking accessories in Comal County and beyond.
+            </p>
 
             <div className="relative mb-4">
               <Search className="absolute left-3 top-3 h-4 w-4 text-muted-foreground" />
@@ -67,15 +71,15 @@ export default function Home() {
               />
             </div>
 
-            <div className="flex flex-wrap gap-2">
+            <div className="flex flex-wrap gap-1.5">
               {ALL_CATEGORIES.map((cat) => (
                 <Badge
                   key={cat}
                   variant={selectedCat === cat ? "default" : "outline"}
-                  className={`cursor-pointer font-bold border-2 transition-colors ${
+                  className={`cursor-pointer font-bold border-2 rounded-full px-3 py-1 text-[11px] shadow-sm transition-all ${
                     selectedCat === cat
-                      ? "bg-primary text-primary-foreground"
-                      : "hover:bg-muted"
+                      ? "bg-[#00C853] text-black border-[#00C853] shadow-[#00C853]/30"
+                      : "hover:bg-muted border-border text-muted-foreground hover:text-foreground"
                   }`}
                   onClick={() =>
                     setSelectedCat(selectedCat === cat ? null : cat)
@@ -88,11 +92,11 @@ export default function Home() {
             </div>
           </div>
 
-          <div className="flex-1 overflow-y-auto p-4 space-y-3 bg-muted/30">
+          <div className="flex-1 overflow-y-auto p-4 space-y-3 bg-muted/10">
             {isLoading ? (
               <div className="animate-pulse space-y-4">
                 {[1, 2, 3].map((i) => (
-                  <div key={i} className="h-32 bg-border rounded-lg" />
+                  <div key={i} className="h-32 bg-border rounded-xl" />
                 ))}
               </div>
             ) : businesses.length === 0 ? (
@@ -108,22 +112,22 @@ export default function Home() {
                   data-testid={`card-business-${biz.id}`}
                 >
                   <div
-                    className={`bg-card rounded-xl border-2 p-4 cursor-pointer hover:border-primary transition-all hover:shadow-md hover:-translate-y-0.5 ${
+                    className={`bg-card rounded-2xl border-2 p-4 cursor-pointer transition-all hover:-translate-y-0.5 ${
                       biz.is_featured
-                        ? "border-secondary shadow-sm"
+                        ? "border-[#D4AF37]/60 shadow-[0_4px_20px_rgba(212,175,55,0.15)]"
                         : highlightedId === biz.id
-                          ? "border-primary shadow-md"
-                          : "border-border"
+                          ? "border-[#00C853] shadow-[0_4px_20px_rgba(0,200,83,0.15)]"
+                          : "border-border hover:border-[#00C853]/50 hover:shadow-[0_4px_20px_rgba(0,0,0,0.25)]"
                     }`}
                     onMouseEnter={() => setHighlightedId(biz.id)}
                     onMouseLeave={() => setHighlightedId(null)}
                   >
                     <div className="flex justify-between items-start mb-2">
-                      <h3 className="font-display text-lg text-foreground leading-tight">
+                      <h3 className="font-heading text-lg text-foreground leading-tight">
                         {biz.name}
                       </h3>
                       {biz.is_featured === 1 && (
-                        <Star className="h-5 w-5 fill-secondary text-secondary shrink-0 ml-2" />
+                        <Star className="h-5 w-5 fill-[#D4AF37] text-[#D4AF37] shrink-0 ml-2" />
                       )}
                     </div>
                     <p className="text-xs text-muted-foreground mb-2 font-medium flex items-center gap-1">
@@ -139,7 +143,7 @@ export default function Home() {
                       {biz.categories?.slice(0, 3).map((c) => (
                         <span
                           key={c}
-                          className="text-[10px] uppercase font-bold bg-muted px-1.5 py-0.5 rounded border"
+                          className="text-[10px] uppercase font-bold bg-muted/60 px-2 py-0.5 rounded-full border border-border/60 text-muted-foreground"
                         >
                           {c}
                         </span>

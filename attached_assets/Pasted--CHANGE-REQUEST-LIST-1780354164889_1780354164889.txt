@@ -1,0 +1,126 @@
+================================================================================
+CHANGE REQUEST LIST – THC Hemp Finder (Update Existing App)
+================================================================================
+
+Please implement the following changes and improvements to the current app.
+
+================================================================================
+1. USER‑FACING CHANGES
+================================================================================
+
+1.1 MAP MARKERS ALWAYS VISIBLE
+  - Ensure that all approved business markers are shown on the map at every zoom level.
+  - Do NOT use marker clustering. All markers must remain individually visible regardless of how far out the user zooms.
+  - If clustering was accidentally added, remove it; the Leaflet MapView component should simply render a <Marker> for every business without any cluster plugin.
+
+================================================================================
+2. ADMIN‑FACING CHANGES
+================================================================================
+
+2.1 FULL DETAILS BEFORE APPROVAL
+  - In the Admin pending approvals list, add a "View Full Details" link/button for each pending business.
+  - Clicking it should open a modal or expand a section showing all submitted information: business name, address, phone, website, hours, description, categories, brands, logo (if uploaded), and photos.
+  - This allows the admin to fully review the listing before approving or rejecting.
+
+2.2 AD DIMENSIONS GUIDELINES
+  - When uploading a banner ad, add a text note below the file input:
+      "Recommended size: 728x90 pixels (horizontal banner). Max file size: 5 MB."
+  - When uploading a pop‑up ad, add a note:
+      "Recommended size: 600x800 pixels (portrait) or 800x600 (landscape). Max file size: 5 MB."
+  - When uploading a brand logo (see section 4.2), add a note:
+      "Square image recommended (e.g., 200x200 pixels). Max file size: 2 MB."
+  - Do not enforce dimensions programmatically; just display the guidance.
+
+================================================================================
+3. BUSINESS‑FACING CHANGES
+================================================================================
+
+3.1 B2B ADVERTISING SPACE
+  - Add a new banner ad slot that is only visible on business dashboard pages (Dashboard, Add/Edit Business). This is a separate ad from the main site‑wide banner.
+  - The admin should be able to upload and manage this B2B banner ad. It must be stored separately (e.g., in a new table `b2b_banner_ad` with columns id, image_path, link_url).
+  - Create admin API endpoints: GET /api/admin/b2b‑banner, PUT /api/admin/b2b‑banner (with file upload, similar to existing banner).
+  - Update the DashboardPage and AddEditBusinessPage to include a <B2BBannerAd /> component that fetches and displays this ad.
+
+3.2 BUSINESS LOGO & STORE PHOTOS
+  - Reduce the maximum number of store photos from 6 to 3.
+  - Update the backend validation in routes/businesses.js (photos upload) to enforce a max of 3 photos instead of 6.
+  - Update the frontend AddEditBusinessPage to reflect that limit (show "up to 3 photos" label).
+  - Keep logo upload unchanged (still 1 logo).
+
+3.3 ENCOURAGE REGULAR UPDATES
+  - In the business DashboardPage, add a call‑to‑action card at the top:
+      "Keep your page fresh! Add a new coupon or update your photos to attract more customers."
+  - Add a "last_updated" timestamp column to the businesses table (default CURRENT_TIMESTAMP, automatically updated on any edit). Update the PUT /api/businesses/:id route to set last_updated = CURRENT_TIMESTAMP.
+  - Optionally display the last updated date on the business detail page.
+
+================================================================================
+4. OVERALL CHANGES (Content & Design)
+================================================================================
+
+4.1 CATEGORY OVERHAUL
+  - Remove the categories: "Smoke Shop" and "Vape Shop". They no longer exist.
+  - The new category list is (exactly these, case‑sensitive):
+      Hemp Flower
+      Hemp Pre‑Rolls
+      Edibles
+      Topicals
+      CBD Products
+      Smoking Accessories
+      Dab Equipment
+  - Update everywhere:
+      * ALL_CATEGORIES constant in FilterPanel.jsx and AddEditBusinessPage.jsx.
+      * Backend check (though no backend validation on category names, but ensure the new categories are accepted).
+      * The mock business data (if any) in any initial seed or test.
+
+4.2 BRAND LOGOS
+  - Add a logo_path column to the `brands` table (SQLite). Update database.js accordingly:
+      ALTER TABLE brands ADD COLUMN logo_path TEXT;
+  - Admin: add ability to upload a brand logo when creating or editing a brand.
+  - Routes:
+      * POST /api/brands (add brand) now accepts 'logo' file upload (multipart).
+      * PUT /api/brands/:id/logo (new endpoint) to update logo.
+      * GET /api/brands returns brand info including logo_path.
+  - Store uploaded brand logos in `uploads/` folder, served via /uploads.
+  - Frontend:
+      * In the admin brand management section, add a file input for logo next to each brand.
+      * In the filter panel brand search, show brand logos as small icons next to brand name if available.
+      * On BusinessCard and BusinessDetailPage, show brand logos next to brand names, especially for featured brands (make them stand out).
+
+4.3 FONT & DESIGN REFRESH
+  - Font changes:
+      * Keep 'Permanent Marker' ONLY for the main brand name "THC Finder" in the Navbar (and maybe age gate).
+      * For ALL headings (h1–h4, .brand in navbar is exception), switch to a bold, modern font. Use 'Barlow Condensed' or 'Anton' from Google Fonts.
+          - Load 'Barlow Condensed:700' (or 'Anton') and apply to headings.
+      * Body text remains 'Montserrat', but clean it up – no cursive, just modern.
+  - Color & Styling:
+      * Use a more vibrant, bold color palette: keep primary green (#1A3E1E) but add a brighter accent green (#00C853 or #76FF03) for buttons and active states. Use deep black (#000000) for backgrounds, white cards, bold shadows.
+      * Cards: stronger box‑shadow (0 4px 20px rgba(0,0,0,0.25)), border‑radius increased to 16px.
+      * Add a gradient header to the Navbar (e.g., dark green to black) for a modern, edgy look.
+      * Filter chips: use pill shapes with a subtle shadow, active chip gets solid bright green background.
+      * Map container: add a thick border or shadow to make it pop.
+      * Overall feel: dark, bold, high contrast, street‑culture yet professional – think of a premium weed‑tech brand.
+  - Update index.css and all component styles to reflect the new design language. (The Replit AI should search/replace relevant styles.)
+
+4.4 TOURIST‑FOCUSED TWEAKS
+  - Add a subtle tagline under the main brand in Navbar: "Find Hemp in the Hill Country"
+  - On the HomePage, add a short intro text: "Your guide to hemp dispensaries & smoking accessories in Comal County and beyond."
+  - Ensure the map default center and zoom are appropriate for the Hill Country tourist region (New Braunfels, Canyon Lake, etc.). Already fine, but double‑check.
+
+================================================================================
+IMPLEMENTATION ORDER
+================================================================================
+1. Backend changes first: database migration (brand logo column, b2b banner table, last_updated), new routes.
+2. Update business routes for max photos = 3.
+3. Admin panel updates for detailed view, ad dimensions, brand logo management.
+4. Frontend category list replacement everywhere.
+5. Font import and global CSS overhaul, then component style updates.
+6. B2B banner component and placement.
+7. Test everything.
+
+================================================================================
+NOTES FOR THE AI
+================================================================================
+- When updating the SQLite schema, use ALTER TABLE statements safely inside database.js (check if column exists first, or just recreate? Better to use a migration snippet). Since it's in development, you can drop and recreate tables if needed, but preserve existing data. Add migration logic.
+- For the B2B banner table, create table if not exists in database.js.
+- All file upload limits remain 5 MB unless specified otherwise.
+================================================================================

@@ -9,6 +9,7 @@ import {
   usersTable,
   businessesTable,
   bannerAdTable,
+  b2bBannerAdTable,
   popupAdTable,
 } from "@workspace/db";
 import { requireLogin, requireAdmin } from "../middlewares/auth.js";
@@ -30,6 +31,19 @@ const upload = multer({ storage });
 const router = Router();
 
 // ─── Public GET endpoints ──────────────────────────────────────────────────
+
+// B2B banner (public read for business-facing pages)
+router.get("/admin/b2b-banner", async (_req, res): Promise<void> => {
+  const [b2b] = await db
+    .select()
+    .from(b2bBannerAdTable)
+    .where(eq(b2bBannerAdTable.id, 1));
+  res.json(
+    b2b
+      ? { id: b2b.id, image_path: b2b.imagePath, link_url: b2b.linkUrl }
+      : { id: 1, image_path: null, link_url: null },
+  );
+});
 
 // Banner ad (public read so it can display site-wide)
 router.get("/admin/banner", async (_req, res): Promise<void> => {
@@ -276,6 +290,36 @@ router.put(
         imagePath: req.file?.filename ?? null,
         linkUrl: link_url ?? null,
         isActive: active,
+      });
+    }
+    res.json({ success: true });
+  },
+);
+
+// Update B2B banner (admin write)
+router.put(
+  "/admin/b2b-banner",
+  requireLogin,
+  requireAdmin,
+  upload.single("banner"),
+  async (req, res): Promise<void> => {
+    const { link_url } = req.body as { link_url?: string };
+    const [existing] = await db
+      .select()
+      .from(b2bBannerAdTable)
+      .where(eq(b2bBannerAdTable.id, 1));
+
+    if (existing) {
+      const updates: Partial<typeof b2bBannerAdTable.$inferInsert> = {
+        linkUrl: link_url ?? existing.linkUrl,
+      };
+      if (req.file) updates.imagePath = req.file.filename;
+      await db.update(b2bBannerAdTable).set(updates).where(eq(b2bBannerAdTable.id, 1));
+    } else {
+      await db.insert(b2bBannerAdTable).values({
+        id: 1,
+        imagePath: req.file?.filename ?? null,
+        linkUrl: link_url ?? null,
       });
     }
     res.json({ success: true });

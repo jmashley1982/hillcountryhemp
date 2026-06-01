@@ -34,6 +34,7 @@ export const businessesTable = pgTable("businesses", {
   rejectionReason: text("rejection_reason"),
   isFeatured: integer("is_featured").notNull().default(0),
   createdAt: timestamp("created_at").defaultNow().notNull(),
+  lastUpdated: timestamp("last_updated").defaultNow().notNull(),
 });
 
 export const businessCategoriesTable = pgTable(
@@ -69,6 +70,7 @@ export const brandsTable = pgTable("brands", {
   id: serial("id").primaryKey(),
   name: text("name").unique().notNull(),
   isFeatured: integer("is_featured").notNull().default(0),
+  logoPath: text("logo_path"),
 });
 
 export const businessBrandsTable = pgTable(
@@ -85,6 +87,12 @@ export const businessBrandsTable = pgTable(
 );
 
 export const bannerAdTable = pgTable("banner_ad", {
+  id: integer("id").primaryKey().default(1),
+  imagePath: text("image_path"),
+  linkUrl: text("link_url"),
+});
+
+export const b2bBannerAdTable = pgTable("b2b_banner_ad", {
   id: integer("id").primaryKey().default(1),
   imagePath: text("image_path"),
   linkUrl: text("link_url"),
@@ -109,4 +117,5 @@ export type Brand = typeof brandsTable.$inferSelect;
 export type Photo = typeof businessPhotosTable.$inferSelect;
 export type Coupon = typeof couponsTable.$inferSelect;
 export type BannerAd = typeof bannerAdTable.$inferSelect;
+export type B2BBannerAd = typeof b2bBannerAdTable.$inferSelect;
 export type PopupAd = typeof popupAdTable.$inferSelect;

@@ -390,6 +390,7 @@ router.put(
       website: website !== undefined ? website : b.website,
       hours: hours !== undefined ? hours : b.hours,
       description: description !== undefined ? description : b.description,
+      lastUpdated: new Date(),
     };
 
     if (b.status === "rejected") {
@@ -489,8 +490,8 @@ router.post(
       .select()
       .from(businessPhotosTable)
       .where(eq(businessPhotosTable.businessId, id));
-    if (existing.length >= 6) {
-      res.status(400).json({ error: "Maximum 6 photos allowed" });
+    if (existing.length >= 3) {
+      res.status(400).json({ error: "Maximum 3 photos allowed" });
       return;
     }
     await db.insert(businessPhotosTable).values({

@@ -1,4 +1,4 @@
-@import url('https://fonts.googleapis.com/css2?family=Montserrat:ital,wght@0,300..900;1,300..900&family=Permanent+Marker&display=swap');
+@import url('https://fonts.googleapis.com/css2?family=Barlow+Condensed:wght@600;700;800&family=Montserrat:ital,wght@0,300..900;1,300..900&family=Permanent+Marker&display=swap');
 @import "tailwindcss";
 @import "tw-animate-css";
 @import "leaflet/dist/leaflet.css";
@@ -46,6 +46,7 @@
   --font-serif: var(--app-font-serif);
   --font-mono: var(--app-font-mono);
   --font-display: var(--app-font-display);
+  --font-heading: var(--app-font-heading);
 
   --radius-sm: calc(var(--radius) - 4px);
   --radius-md: calc(var(--radius) - 2px);
@@ -54,76 +55,52 @@
 }
 
 :root {
-  /* Texas Hill Country palette */
-  /* Background: Warm off-white #F5F0E8 */
-  --background: 40 29% 94%;
-  /* Foreground: Near black #121212 */
-  --foreground: 0 0% 7%;
-  /* Border: subdued warm gray */
-  --border: 40 10% 80%;
-  
+  /* Dark, high-contrast street-culture palette */
+  /* Background: near-black */
+  --background: 0 0% 7%;
+  /* Foreground: bright white */
+  --foreground: 0 0% 96%;
+  /* Border: dark gray */
+  --border: 0 0% 18%;
+
   /* Primary: Deep forest green #1A3E1E */
   --primary: 126 41% 17%;
-  --primary-foreground: 40 29% 94%;
-  
+  --primary-foreground: 0 0% 96%;
+
   /* Secondary: Burnished gold #D4AF37 */
   --secondary: 46 65% 52%;
   --secondary-foreground: 0 0% 7%;
-  
-  /* Card: Pure white / bright off-white */
-  --card: 0 0% 100%;
-  --card-foreground: 0 0% 7%;
-  --card-border: 40 10% 85%;
-  
+
+  /* Card: slightly lighter than background */
+  --card: 0 0% 11%;
+  --card-foreground: 0 0% 96%;
+  --card-border: 0 0% 18%;
+
   /* Popover */
-  --popover: 0 0% 100%;
-  --popover-foreground: 0 0% 7%;
-  --popover-border: 40 10% 85%;
-  
+  --popover: 0 0% 11%;
+  --popover-foreground: 0 0% 96%;
+  --popover-border: 0 0% 18%;
+
   /* Muted */
-  --muted: 40 15% 90%;
-  --muted-foreground: 40 5% 40%;
-  
-  /* Accent */
-  --accent: 46 65% 52%;
+  --muted: 0 0% 15%;
+  --muted-foreground: 0 0% 55%;
+
+  /* Accent: bright green #00C853 */
+  --accent: 145 100% 39%;
   --accent-foreground: 0 0% 7%;
-  
+
   /* Destructive */
   --destructive: 0 84% 60%;
   --destructive-foreground: 0 0% 100%;
-  
-  --input: 40 10% 80%;
-  --ring: 126 41% 17%;
+
+  --input: 0 0% 18%;
+  --ring: 145 100% 39%;
 
   --app-font-sans: 'Montserrat', sans-serif;
+  --app-font-heading: 'Barlow Condensed', sans-serif;
   --app-font-display: 'Permanent Marker', cursive;
-  
-  --radius: 0.25rem;
-}
 
-.dark {
-  /* No dark mode needed per vibe, but setting fallbacks just in case */
-  --background: 0 0% 7%;
-  --foreground: 40 29% 94%;
-  --border: 0 0% 20%;
-  --primary: 126 41% 17%;
-  --primary-foreground: 40 29% 94%;
-  --secondary: 46 65% 52%;
-  --secondary-foreground: 0 0% 7%;
-  --card: 0 0% 10%;
-  --card-foreground: 40 29% 94%;
-  --card-border: 0 0% 20%;
-  --popover: 0 0% 10%;
-  --popover-foreground: 40 29% 94%;
-  --popover-border: 0 0% 20%;
-  --muted: 0 0% 15%;
-  --muted-foreground: 0 0% 60%;
-  --accent: 46 65% 52%;
-  --accent-foreground: 0 0% 7%;
-  --destructive: 0 84% 60%;
-  --destructive-foreground: 0 0% 100%;
-  --input: 0 0% 20%;
-  --ring: 126 41% 17%;
+  --radius: 0.75rem;
 }
 
 @layer base {
@@ -133,9 +110,11 @@
   body {
     @apply font-sans antialiased bg-background text-foreground;
   }
+  /* Permanent Marker only for .font-display (brand name / age gate) */
   h1, h2, h3, h4, h5, h6 {
-    font-family: var(--app-font-display);
+    font-family: var(--app-font-heading);
+    font-weight: 700;
     text-transform: uppercase;
-    letter-spacing: 0.05em;
+    letter-spacing: 0.04em;
   }
 }
