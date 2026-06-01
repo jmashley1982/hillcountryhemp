@@ -1,0 +1,62 @@
+import { Switch, Route, Router as WouterRouter } from "wouter";
+import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
+import { Toaster } from "@/components/ui/toaster";
+import { TooltipProvider } from "@/components/ui/tooltip";
+import { Layout } from "@/components/layout";
+import { AgeGate } from "@/components/age-gate";
+import { PopupAd } from "@/components/popup-ad";
+import NotFound from "@/pages/not-found";
+
+import Home from "@/pages/home";
+import Login from "@/pages/login";
+import Register from "@/pages/register";
+import Advertise from "@/pages/advertise";
+import BusinessDetail from "@/pages/business-detail";
+import Dashboard from "@/pages/dashboard";
+import AddEditBusiness from "@/pages/add-edit-business";
+import Admin from "@/pages/admin";
+
+const queryClient = new QueryClient({
+  defaultOptions: {
+    queries: {
+      retry: false,
+      refetchOnWindowFocus: false,
+    },
+  },
+});
+
+function Router() {
+  return (
+    <Layout>
+      <Switch>
+        <Route path="/" component={Home} />
+        <Route path="/login" component={Login} />
+        <Route path="/register" component={Register} />
+        <Route path="/advertise" component={Advertise} />
+        <Route path="/business/:id" component={BusinessDetail} />
+        <Route path="/dashboard" component={Dashboard} />
+        <Route path="/dashboard/add" component={AddEditBusiness} />
+        <Route path="/dashboard/edit/:id" component={AddEditBusiness} />
+        <Route path="/admin" component={Admin} />
+        <Route component={NotFound} />
+      </Switch>
+    </Layout>
+  );
+}
+
+function App() {
+  return (
+    <QueryClientProvider client={queryClient}>
+      <TooltipProvider>
+        <WouterRouter base={import.meta.env.BASE_URL.replace(/\/$/, "")}>
+          <AgeGate />
+          <PopupAd />
+          <Router />
+        </WouterRouter>
+        <Toaster />
+      </TooltipProvider>
+    </QueryClientProvider>
+  );
+}
+
+export default App;

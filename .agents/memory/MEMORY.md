@@ -1,0 +1,1 @@
+- [THC Hemp Finder stack](thc-hemp-finder-stack.md) — session auth, Nominatim geocoding, leaflet lazy-import pitfall, admin seed pattern
