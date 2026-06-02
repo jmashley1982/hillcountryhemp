@@ -100,7 +100,7 @@ export function Layout({ children }: { children: React.ReactNode }) {
 
       {/* Mobile Nav */}
       {mobileMenuOpen && (
-        <div className="md:hidden border-b border-border bg-[#111] p-4 flex flex-col gap-4 absolute top-16 left-0 right-0 z-40 shadow-xl">
+        <div className="md:hidden border-b border-border bg-[#111] p-4 flex flex-col gap-4 absolute top-16 left-0 right-0 z-[1100] shadow-xl">
           <Link href="/" onClick={() => setMobileMenuOpen(false)} className="text-lg font-bold uppercase tracking-wider block p-2 text-white">Find Shops</Link>
           <Link href="/advertise" onClick={() => setMobileMenuOpen(false)} className="text-lg font-bold uppercase tracking-wider block p-2 text-white">Advertise</Link>
           <hr className="border-border" />
