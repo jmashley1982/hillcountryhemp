@@ -1,6 +1,40 @@
-import { isNull, or, eq } from "drizzle-orm";
+import { isNull, or, eq, and } from "drizzle-orm";
 import { db, businessesTable } from "@workspace/db";
 import { logger } from "./lib/logger.js";
+
+/**
+ * Authoritative coordinate overrides for businesses where Nominatim returned
+ * wrong results. Applied unconditionally on startup so manual data-fix SQL is
+ * not needed in production.
+ */
+const COORD_OVERRIDES: Array<{ id: number; lat: number; lng: number; name: string }> = [
+  // Nominatim geocoded the Business IH-35 address to the wrong spot.
+  // Correct coordinates sourced from Google Maps (@29.693431,-98.1161716).
+  { id: 1, lat: 29.693431, lng: -98.116716, name: "Viking Vapor & Smoke" },
+];
+
+/**
+ * Apply hard-coded coordinate overrides and log current coordinates so
+ * regressions are visible in server logs.
+ */
+export async function applyCoordOverrides(): Promise<void> {
+  for (const override of COORD_OVERRIDES) {
+    await db
+      .update(businessesTable)
+      .set({ lat: override.lat, lng: override.lng })
+      .where(eq(businessesTable.id, override.id));
+
+    const [row] = await db
+      .select({ lat: businessesTable.lat, lng: businessesTable.lng })
+      .from(businessesTable)
+      .where(eq(businessesTable.id, override.id));
+
+    logger.info(
+      { id: override.id, name: override.name, lat: row?.lat, lng: row?.lng },
+      "applyCoordOverrides: coordinates confirmed",
+    );
+  }
+}
 
 async function geocode(
   address: string,
@@ -19,7 +53,14 @@ async function geocode(
   return null;
 }
 
+/**
+ * Re-geocode approved businesses that have null lat/lng.
+ * Must run after applyCoordOverrides so override businesses are never
+ * accidentally cleared by a Nominatim failure.
+ */
 export async function geocodeNullCoords(): Promise<void> {
+  const overrideIds = new Set(COORD_OVERRIDES.map((o) => o.id));
+
   const rows = await db
     .select({
       id: businessesTable.id,
@@ -27,19 +68,26 @@ export async function geocodeNullCoords(): Promise<void> {
       name: businessesTable.name,
     })
     .from(businessesTable)
-    .where(or(isNull(businessesTable.lat), isNull(businessesTable.lng)));
+    .where(
+      and(
+        eq(businessesTable.status, "approved"),
+        or(isNull(businessesTable.lat), isNull(businessesTable.lng)),
+      ),
+    );
 
-  if (rows.length === 0) {
-    logger.info("geocodeNullCoords: no businesses with missing coordinates");
+  const toGeocode = rows.filter((r) => !overrideIds.has(r.id));
+
+  if (toGeocode.length === 0) {
+    logger.info("geocodeNullCoords: no approved businesses with missing coordinates");
     return;
   }
 
   logger.info(
-    { count: rows.length },
-    "geocodeNullCoords: geocoding businesses with null coordinates",
+    { count: toGeocode.length },
+    "geocodeNullCoords: geocoding approved businesses with null coordinates",
   );
 
-  for (const row of rows) {
+  for (const row of toGeocode) {
     const coords = await geocode(row.address);
     if (coords) {
       await db
