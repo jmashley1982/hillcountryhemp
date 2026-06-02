@@ -81,7 +81,10 @@ export function Layout({ children }: { children: React.ReactNode }) {
                 <div className="flex items-center gap-4">
                   <Link href="/login" className="text-sm font-bold uppercase text-white/80 hover:text-[#99CC66] transition-colors">Login</Link>
                   <Link href="/register">
-                    <Button className="bg-[#99CC66] hover:bg-[#82B54F] text-black font-bold shadow-md">List Your Business</Button>
+                    <span className="relative inline-block">
+                      <Button className="bg-[#99CC66] hover:bg-[#82B54F] text-black font-bold shadow-md">List Your Business</Button>
+                      <span className="absolute -top-2.5 -right-2.5 bg-[#FE4A49] text-white text-[9px] font-black uppercase tracking-wide px-1.5 py-0.5 rounded-full shadow-md rotate-12 leading-none pointer-events-none select-none">FREE!</span>
+                    </span>
                   </Link>
                 </div>
               )
@@ -120,7 +123,10 @@ export function Layout({ children }: { children: React.ReactNode }) {
                   <Button variant="outline" className="w-full font-bold border-2">Login</Button>
                 </Link>
                 <Link href="/register" onClick={() => setMobileMenuOpen(false)}>
-                  <Button className="w-full font-bold bg-[#99CC66] text-black hover:bg-[#82B54F]">List Your Business</Button>
+                  <span className="relative inline-block w-full">
+                    <Button className="w-full font-bold bg-[#99CC66] text-black hover:bg-[#82B54F]">List Your Business</Button>
+                    <span className="absolute -top-2.5 -right-2.5 bg-[#FE4A49] text-white text-[9px] font-black uppercase tracking-wide px-1.5 py-0.5 rounded-full shadow-md rotate-12 leading-none pointer-events-none select-none">FREE!</span>
+                  </span>
                 </Link>
               </>
             )
