@@ -31,8 +31,7 @@ export function B2BBannerAd() {
       <img
         src={`/api/uploads/${banner.image_path}`}
         alt="Business Advertisement"
-        className="w-full object-contain opacity-90 hover:opacity-100 transition-opacity"
-        style={{ maxHeight: "72px" }}
+        className="w-full h-auto block opacity-90 hover:opacity-100 transition-opacity"
       />
     </a>
   );
