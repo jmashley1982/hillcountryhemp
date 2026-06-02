@@ -32,8 +32,8 @@ export default function Home() {
   });
 
   return (
-    <div className="flex flex-col h-full flex-1">
-      <div className="flex-1 flex flex-col md:flex-row overflow-hidden h-[calc(100dvh-64px)]">
+    <div className="flex-1 flex flex-col min-h-0">
+      <div className="flex-1 flex flex-col md:flex-row overflow-hidden min-h-0">
         {/* Sidebar */}
         <div
           className={`w-full md:w-96 bg-card border-r border-border flex flex-col z-10 ${viewMode === "map" ? "hidden md:flex" : "flex"}`}
