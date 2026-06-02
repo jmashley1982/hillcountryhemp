@@ -1,8 +1,5 @@
 import { Router } from "express";
 import multer from "multer";
-import path from "path";
-import { fileURLToPath } from "url";
-import fs from "fs";
 import { eq, and, inArray } from "drizzle-orm";
 import {
   db,
@@ -15,22 +12,10 @@ import {
   businessBrandsTable,
 } from "@workspace/db";
 import { requireLogin, requireBusiness } from "../middlewares/auth.js";
+import { uploadBufferToGCS, makeUploadFilename, deleteFromGCS } from "../lib/gcs.js";
 
-const __filename = fileURLToPath(import.meta.url);
-const __dirname = path.dirname(__filename);
-
-const uploadsDir = path.join(__dirname, "..", "uploads");
-if (!fs.existsSync(uploadsDir)) fs.mkdirSync(uploadsDir, { recursive: true });
-
-const storage = multer.diskStorage({
-  destination: uploadsDir,
-  filename: (_req, file, cb) => {
-    const unique = Date.now() + "-" + Math.round(Math.random() * 1e9);
-    cb(null, file.fieldname + "-" + unique + path.extname(file.originalname));
-  },
-});
 const upload = multer({
-  storage,
+  storage: multer.memoryStorage(),
   limits: { fileSize: 5 * 1024 * 1024 },
   fileFilter: (_req, file, cb) => {
     if (file.mimetype.startsWith("image/")) cb(null, true);
@@ -38,7 +23,7 @@ const upload = multer({
   },
 });
 const uploadCoupon = multer({
-  storage,
+  storage: multer.memoryStorage(),
   limits: { fileSize: 5 * 1024 * 1024 },
   fileFilter: (_req, file, cb) => {
     if (file.mimetype.startsWith("image/") || file.mimetype === "application/pdf")
@@ -605,15 +590,14 @@ router.post(
       res.status(403).json({ error: "Forbidden" });
       return;
     }
-    if (b.logoPath) {
-      const old = path.join(uploadsDir, b.logoPath);
-      if (fs.existsSync(old)) fs.unlinkSync(old);
-    }
+    if (b.logoPath) await deleteFromGCS(b.logoPath);
+    const filename = makeUploadFilename("logo", req.file.originalname);
+    await uploadBufferToGCS(filename, req.file.buffer, req.file.mimetype);
     await db
       .update(businessesTable)
-      .set({ logoPath: req.file.filename })
+      .set({ logoPath: filename })
       .where(eq(businessesTable.id, id));
-    res.json({ logo_path: req.file.filename });
+    res.json({ logo_path: filename });
   },
 );
 
@@ -649,12 +633,14 @@ router.post(
       res.status(400).json({ error: "Maximum 3 photos allowed" });
       return;
     }
+    const filename = makeUploadFilename("photo", req.file.originalname);
+    await uploadBufferToGCS(filename, req.file.buffer, req.file.mimetype);
     await db.insert(businessPhotosTable).values({
       businessId: id,
-      photoPath: req.file.filename,
+      photoPath: filename,
       displayOrder: existing.length + 1,
     });
-    res.status(201).json({ path: req.file.filename });
+    res.status(201).json({ path: filename });
   },
 );
 
@@ -698,8 +684,7 @@ router.delete(
       res.status(404).json({ error: "Photo not found" });
       return;
     }
-    const filePath = path.join(uploadsDir, photo.photoPath);
-    if (fs.existsSync(filePath)) fs.unlinkSync(filePath);
+    await deleteFromGCS(photo.photoPath);
     await db
       .delete(businessPhotosTable)
       .where(eq(businessPhotosTable.id, photoId));
@@ -739,12 +724,14 @@ router.post(
       res.status(400).json({ error: "Maximum 3 coupons allowed" });
       return;
     }
+    const filename = makeUploadFilename("coupon", req.file.originalname);
+    await uploadBufferToGCS(filename, req.file.buffer, req.file.mimetype);
     await db.insert(couponsTable).values({
       businessId: id,
-      imagePath: req.file.filename,
+      imagePath: filename,
       title: (req.body as { title?: string }).title ?? null,
     });
-    res.status(201).json({ path: req.file.filename });
+    res.status(201).json({ path: filename });
   },
 );
 
@@ -785,8 +772,7 @@ router.delete(
       res.status(404).json({ error: "Coupon not found" });
       return;
     }
-    const filePath = path.join(uploadsDir, coupon.imagePath);
-    if (fs.existsSync(filePath)) fs.unlinkSync(filePath);
+    await deleteFromGCS(coupon.imagePath);
     await db.delete(couponsTable).where(eq(couponsTable.id, couponId));
     res.json({ success: true });
   },
@@ -809,10 +795,7 @@ router.delete(
       .select()
       .from(businessesTable)
       .where(eq(businessesTable.id, id));
-    if (b?.logoPath) {
-      const p = path.join(uploadsDir, b.logoPath);
-      if (fs.existsSync(p)) fs.unlinkSync(p);
-    }
+    if (b?.logoPath) await deleteFromGCS(b.logoPath);
     await db.delete(businessesTable).where(eq(businessesTable.id, id));
     res.json({ success: true });
   },

@@ -2,3 +2,4 @@
 - [Brand palette](thc-brand-palette.md) — Hill Country Hemp Finder name/domain/logo + Willow/Frosted/Tomato/Iron-grey colors; recolor both hard-coded hex AND :root tokens
 - [Leaflet mobile height](leaflet-mobile-height.md) — map vanishes on mobile when no definite-height ancestor; min-h-* is not definite, anchor html/body/#root to height:100%
 - [Business listing structured fields](business-listing-fields.md) — address/hours composed server-side, social stored as bare handles, coupons allow PDF; legacy-row merge rules.
+- [GCS file uploads](gcs-uploads.md) — all uploads go to GCS via memory storage + sidecar auth; local disk is fallback for dev only.

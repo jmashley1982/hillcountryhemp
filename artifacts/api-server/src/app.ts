@@ -4,10 +4,12 @@ import pinoHttp from "pino-http";
 import session from "express-session";
 import ConnectPgSimple from "connect-pg-simple";
 import path from "path";
+import fs from "fs";
 import { fileURLToPath } from "url";
 import router from "./routes";
 import { logger } from "./lib/logger";
 import { pool } from "@workspace/db";
+import { streamFromGCS } from "./lib/gcs.js";
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
@@ -63,9 +65,21 @@ app.use(
   }),
 );
 
-// Serve uploaded files
+// Serve uploaded files — local disk first (dev), then GCS (production)
 const uploadsDir = path.join(__dirname, "..", "uploads");
-app.use("/api/uploads", express.static(uploadsDir));
+if (!fs.existsSync(uploadsDir)) fs.mkdirSync(uploadsDir, { recursive: true });
+app.use("/api/uploads", (req, res, next) => {
+  const filename = req.path.replace(/^\//, "");
+  if (!filename) { next(); return; }
+  const localPath = path.join(uploadsDir, filename);
+  if (fs.existsSync(localPath)) {
+    res.sendFile(localPath);
+    return;
+  }
+  streamFromGCS(filename, res).then((served) => {
+    if (!served) res.status(404).json({ error: "Not found" });
+  }).catch(() => res.status(404).json({ error: "Not found" }));
+});
 
 app.use("/api", router);
 

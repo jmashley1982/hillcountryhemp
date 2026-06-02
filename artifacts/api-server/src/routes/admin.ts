@@ -1,9 +1,7 @@
 import { Router } from "express";
 import multer from "multer";
-import path from "path";
-import { fileURLToPath } from "url";
-import fs from "fs";
 import { eq } from "drizzle-orm";
+import { uploadBufferToGCS, makeUploadFilename } from "../lib/gcs.js";
 import {
   db,
   usersTable,
@@ -14,19 +12,7 @@ import {
 } from "@workspace/db";
 import { requireLogin, requireAdmin } from "../middlewares/auth.js";
 
-const __filename = fileURLToPath(import.meta.url);
-const __dirname = path.dirname(__filename);
-
-const uploadsDir = path.join(__dirname, "..", "uploads");
-
-const storage = multer.diskStorage({
-  destination: uploadsDir,
-  filename: (_req, file, cb) => {
-    const unique = Date.now() + "-" + Math.round(Math.random() * 1e9);
-    cb(null, "ad-" + unique + path.extname(file.originalname));
-  },
-});
-const upload = multer({ storage });
+const upload = multer({ storage: multer.memoryStorage(), limits: { fileSize: 5 * 1024 * 1024 } });
 
 const router = Router();
 
@@ -192,8 +178,8 @@ router.delete(
       .from(businessesTable)
       .where(eq(businessesTable.id, id));
     if (b?.logoPath) {
-      const p = path.join(uploadsDir, b.logoPath);
-      if (fs.existsSync(p)) fs.unlinkSync(p);
+      const { deleteFromGCS: _del } = await import("../lib/gcs.js");
+      await _del(b.logoPath);
     }
     await db.delete(businessesTable).where(eq(businessesTable.id, id));
     res.json({ success: true });
@@ -240,19 +226,22 @@ router.put(
       .from(bannerAdTable)
       .where(eq(bannerAdTable.id, 1));
 
+    let newFilename: string | undefined;
+    if (req.file) {
+      newFilename = makeUploadFilename("ad", req.file.originalname);
+      await uploadBufferToGCS(newFilename, req.file.buffer, req.file.mimetype);
+    }
+
     if (existing) {
       const updates: Partial<typeof bannerAdTable.$inferInsert> = {
         linkUrl: link_url ?? existing.linkUrl,
       };
-      if (req.file) updates.imagePath = req.file.filename;
-      await db
-        .update(bannerAdTable)
-        .set(updates)
-        .where(eq(bannerAdTable.id, 1));
+      if (newFilename) updates.imagePath = newFilename;
+      await db.update(bannerAdTable).set(updates).where(eq(bannerAdTable.id, 1));
     } else {
       await db.insert(bannerAdTable).values({
         id: 1,
-        imagePath: req.file?.filename ?? null,
+        imagePath: newFilename ?? null,
         linkUrl: link_url ?? null,
       });
     }
@@ -277,17 +266,23 @@ router.put(
       .from(popupAdTable)
       .where(eq(popupAdTable.id, 1));
 
+    let newFilename: string | undefined;
+    if (req.file) {
+      newFilename = makeUploadFilename("popup", req.file.originalname);
+      await uploadBufferToGCS(newFilename, req.file.buffer, req.file.mimetype);
+    }
+
     if (existing) {
       const updates: Partial<typeof popupAdTable.$inferInsert> = {
         linkUrl: link_url ?? existing.linkUrl,
         isActive: active,
       };
-      if (req.file) updates.imagePath = req.file.filename;
+      if (newFilename) updates.imagePath = newFilename;
       await db.update(popupAdTable).set(updates).where(eq(popupAdTable.id, 1));
     } else {
       await db.insert(popupAdTable).values({
         id: 1,
-        imagePath: req.file?.filename ?? null,
+        imagePath: newFilename ?? null,
         linkUrl: link_url ?? null,
         isActive: active,
       });
@@ -309,16 +304,22 @@ router.put(
       .from(b2bBannerAdTable)
       .where(eq(b2bBannerAdTable.id, 1));
 
+    let newFilename: string | undefined;
+    if (req.file) {
+      newFilename = makeUploadFilename("ad", req.file.originalname);
+      await uploadBufferToGCS(newFilename, req.file.buffer, req.file.mimetype);
+    }
+
     if (existing) {
       const updates: Partial<typeof b2bBannerAdTable.$inferInsert> = {
         linkUrl: link_url ?? existing.linkUrl,
       };
-      if (req.file) updates.imagePath = req.file.filename;
+      if (newFilename) updates.imagePath = newFilename;
       await db.update(b2bBannerAdTable).set(updates).where(eq(b2bBannerAdTable.id, 1));
     } else {
       await db.insert(b2bBannerAdTable).values({
         id: 1,
-        imagePath: req.file?.filename ?? null,
+        imagePath: newFilename ?? null,
         linkUrl: link_url ?? null,
       });
     }
