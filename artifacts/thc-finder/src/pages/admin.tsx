@@ -27,6 +27,7 @@ import { z } from "zod";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
+import { B2BBannerAd } from "@/components/b2b-banner-ad";
 import {
   Form,
   FormControl,
@@ -694,32 +695,19 @@ function PopupTab() {
 }
 
 function B2BBannerTab() {
-  const [b2bData, setB2bData] = useState<{ image_path: string | null; link_url: string | null } | null>(null);
-  const [loading, setLoading] = useState(true);
-  const [refreshKey, setRefreshKey] = useState(0);
-
-  useEffect(() => {
-    fetch("/api/admin/b2b-banner")
-      .then((r) => r.json())
-      .then((d: { image_path: string | null; link_url: string | null }) => { setB2bData(d); setLoading(false); })
-      .catch(() => setLoading(false));
-  }, [refreshKey]);
-
-  if (loading) return <div className="animate-pulse font-bold p-4">Loading...</div>;
   return (
     <div className="space-y-4">
       <p className="text-sm text-muted-foreground font-medium">
         This banner appears on the Dashboard and Add/Edit Business pages — visible only to logged-in business owners.
+        It is currently a dedicated sponsored placement for <strong>Texas Wholesale</strong>.
       </p>
-      <AdUploader
-        label="B2B Banner Ad"
-        endpoint="/api/admin/b2b-banner"
-        field="banner"
-        currentImage={b2bData?.image_path ?? null}
-        currentLink={b2bData?.link_url ?? null}
-        hint="Recommended size: 728×90 pixels (horizontal banner). Max file size: 5 MB."
-        onSuccess={() => setRefreshKey((k) => k + 1)}
-      />
+      <div className="rounded-lg border-2 border-dashed border-border overflow-hidden">
+        <p className="text-xs text-muted-foreground px-3 pt-2 pb-1 font-medium">Live preview:</p>
+        <B2BBannerAd />
+      </div>
+      <p className="text-xs text-muted-foreground">
+        To change this placement, update the <code>B2BBannerAd</code> component in the codebase.
+      </p>
     </div>
   );
 }
