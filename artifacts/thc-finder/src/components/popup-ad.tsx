@@ -28,7 +28,8 @@ export function PopupAd() {
       data-testid="popup-ad-overlay"
     >
       <div
-        className="relative max-w-2xl w-full"
+        className="relative max-w-sm w-full mx-4"
+        style={{ maxHeight: "90vh", overflowY: "auto" }}
         onClick={(e) => e.stopPropagation()}
       >
         <button
