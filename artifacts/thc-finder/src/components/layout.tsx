@@ -3,7 +3,7 @@ import { Link, useLocation } from "wouter";
 import { useGetMe, useLogout } from "@workspace/api-client-react";
 import { LogOut, LayoutDashboard, Menu, X } from "lucide-react";
 import { Button } from "./ui/button";
-import logoUrl from "@assets/magnific_a-logo-for-an-app-called-_BmilZlpoQR_1780360768055.png";
+import logoUrl from "@assets/magnific_a-logo-for-an-app-called-_TeJK7kKVNR_1780364254574.png";
 
 export function Layout({ children }: { children: React.ReactNode }) {
   const { data: user, isLoading } = useGetMe();
@@ -30,7 +30,7 @@ export function Layout({ children }: { children: React.ReactNode }) {
             <img
               src={logoUrl}
               alt="Texas Hill Country Hemp Finder"
-              className="h-11 w-auto group-hover:opacity-90 transition-opacity"
+              className="h-[51px] w-auto group-hover:opacity-90 transition-opacity"
             />
           </Link>
 

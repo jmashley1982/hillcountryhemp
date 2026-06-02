@@ -1,6 +1,6 @@
 import { useEffect, useState } from "react";
 import { Button } from "./ui/button";
-import logoUrl from "@assets/magnific_a-logo-for-an-app-called-_BmilZlpoQR_1780360768055.png";
+import logoUrl from "@assets/magnific_a-logo-for-an-app-called-_TeJK7kKVNR_1780364254574.png";
 
 export function AgeGate() {
   const [show, setShow] = useState(false);
@@ -29,7 +29,7 @@ export function AgeGate() {
         <img
           src={logoUrl}
           alt="Texas Hill Country Hemp Finder"
-          className="h-20 w-auto mx-auto mb-6 relative z-10"
+          className="h-[92px] w-auto mx-auto mb-6 relative z-10"
         />
         <h2 className="text-4xl text-primary mb-2 relative z-10">Hold Up, Partner.</h2>
         <p className="font-bold text-xl mb-6 relative z-10 text-foreground">Are you 21 or older?</p>
