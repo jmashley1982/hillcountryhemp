@@ -1,6 +1,6 @@
 import { useGetBusiness } from "@workspace/api-client-react";
 import { useParams, Link } from "wouter";
-import { MapPin, Phone, Globe, Clock, Star, ArrowLeft, RefreshCw, Wind } from "lucide-react";
+import { MapPin, Phone, Globe, Clock, Star, ArrowLeft, RefreshCw, Wind, ExternalLink } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 
 function formatDate(dateStr: string) {
@@ -9,6 +9,17 @@ function formatDate(dateStr: string) {
   } catch {
     return "";
   }
+}
+
+function formatPhone(raw: string): string {
+  const digits = raw.replace(/\D/g, "");
+  if (digits.length === 11 && digits[0] === "1") {
+    return `(${digits.slice(1, 4)}) ${digits.slice(4, 7)}-${digits.slice(7)}`;
+  }
+  if (digits.length === 10) {
+    return `(${digits.slice(0, 3)}) ${digits.slice(3, 6)}-${digits.slice(6)}`;
+  }
+  return raw;
 }
 
 type BrandWithLogo = { id: number; name: string; logo_path?: string | null };
@@ -27,6 +38,9 @@ export default function BusinessDetail() {
 
   const lastUpdated = (biz as { last_updated?: string }).last_updated;
   const onSiteSmokingArea = (biz as { on_site_smoking_area?: number }).on_site_smoking_area;
+  const instagram = (biz as { instagram?: string | null }).instagram;
+  const facebook = (biz as { facebook?: string | null }).facebook;
+  const googleReviewsUrl = (biz as { google_reviews_url?: string | null }).google_reviews_url;
 
   return (
     <div className="container mx-auto px-4 py-8 max-w-5xl">
@@ -106,14 +120,14 @@ export default function BusinessDetail() {
               {biz.phone && (
                 <div className="flex items-center gap-3">
                   <Phone className="h-5 w-5 text-primary shrink-0" />
-                  <a href={`tel:${biz.phone}`} className="hover:text-[#99CC66] transition-colors text-sm">{biz.phone}</a>
+                  <a href={`tel:${biz.phone}`} className="hover:text-[#99CC66] transition-colors text-sm">{formatPhone(biz.phone)}</a>
                 </div>
               )}
 
               {biz.website && (
                 <div className="flex items-center gap-3">
                   <Globe className="h-5 w-5 text-primary shrink-0" />
-                  <a href={biz.website} target="_blank" rel="noopener noreferrer" className="hover:text-[#99CC66] transition-colors line-clamp-1 text-sm">{biz.website}</a>
+                  <a href={biz.website} target="_blank" rel="noopener noreferrer" className="hover:text-[#99CC66] transition-colors line-clamp-1 text-sm">{biz.website.replace(/^https?:\/\//, "")}</a>
                 </div>
               )}
 
@@ -128,6 +142,44 @@ export default function BusinessDetail() {
                 <div className="flex items-center gap-3 bg-[#84C7D0]/10 border border-[#84C7D0]/30 rounded-xl px-3 py-2">
                   <Wind className="h-4 w-4 text-[#84C7D0] shrink-0" />
                   <span className="text-xs font-bold text-[#84C7D0] uppercase tracking-wider">On-site smoking area</span>
+                </div>
+              )}
+
+              {(instagram || facebook || googleReviewsUrl) && (
+                <div className="pt-2 border-t border-border space-y-2">
+                  {instagram && (
+                    <a
+                      href={instagram}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="flex items-center gap-2 text-sm font-bold text-pink-500 hover:text-pink-400 transition-colors"
+                    >
+                      <ExternalLink className="h-4 w-4 shrink-0" />
+                      Instagram
+                    </a>
+                  )}
+                  {facebook && (
+                    <a
+                      href={facebook}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="flex items-center gap-2 text-sm font-bold text-blue-400 hover:text-blue-300 transition-colors"
+                    >
+                      <ExternalLink className="h-4 w-4 shrink-0" />
+                      Facebook
+                    </a>
+                  )}
+                  {googleReviewsUrl && (
+                    <a
+                      href={googleReviewsUrl}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="flex items-center gap-2 px-3 py-2 rounded-xl bg-[#99CC66]/15 border border-[#99CC66]/40 text-sm font-bold text-[#99CC66] hover:bg-[#99CC66]/25 transition-colors"
+                    >
+                      <Star className="h-4 w-4 shrink-0 fill-[#99CC66]" />
+                      Google Reviews
+                    </a>
+                  )}
                 </div>
               )}
 

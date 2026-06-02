@@ -101,7 +101,7 @@ router.get(
       .from(businessesTable)
       .innerJoin(usersTable, eq(usersTable.id, businessesTable.ownerId))
       .where(eq(businessesTable.status, "pending"))
-      .orderBy(businessesTable.createdAt);
+      .orderBy(businessesTable.name);
     res.json(
       rows.map((r) => ({ ...r, created_at: r.created_at.toISOString() })),
     );
@@ -135,7 +135,7 @@ router.get(
       })
       .from(businessesTable)
       .innerJoin(usersTable, eq(usersTable.id, businessesTable.ownerId))
-      .orderBy(businessesTable.createdAt);
+      .orderBy(businessesTable.name);
     res.json(
       rows.map((r) => ({ ...r, created_at: r.created_at.toISOString() })),
     );

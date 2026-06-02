@@ -26,6 +26,17 @@ function formatDate(dateStr: string) {
   }
 }
 
+function formatPhone(raw: string): string {
+  const digits = raw.replace(/\D/g, "");
+  if (digits.length === 11 && digits[0] === "1") {
+    return `(${digits.slice(1, 4)}) ${digits.slice(4, 7)}-${digits.slice(7)}`;
+  }
+  if (digits.length === 10) {
+    return `(${digits.slice(0, 3)}) ${digits.slice(3, 6)}-${digits.slice(6)}`;
+  }
+  return raw;
+}
+
 type BrandWithLogo = { id: number; name: string; logo_path?: string | null };
 
 interface ShopOverlayProps {
@@ -57,8 +68,10 @@ export function ShopOverlay({ businessId, onClose }: ShopOverlayProps) {
   }, [onClose]);
 
   const lastUpdated = (biz as { last_updated?: string } | undefined)?.last_updated;
-  const onSiteSmokingArea = (biz as { on_site_smoking_area?: number } | undefined)
-    ?.on_site_smoking_area;
+  const onSiteSmokingArea = (biz as { on_site_smoking_area?: number } | undefined)?.on_site_smoking_area;
+  const instagram = (biz as { instagram?: string | null } | undefined)?.instagram;
+  const facebook = (biz as { facebook?: string | null } | undefined)?.facebook;
+  const googleReviewsUrl = (biz as { google_reviews_url?: string | null } | undefined)?.google_reviews_url;
 
   return (
     <div
@@ -150,7 +163,7 @@ export function ShopOverlay({ businessId, onClose }: ShopOverlayProps) {
                       href={`tel:${biz.phone}`}
                       className="hover:text-[#99CC66] transition-colors text-sm"
                     >
-                      {biz.phone}
+                      {formatPhone(biz.phone)}
                     </a>
                   </div>
                 )}
@@ -163,7 +176,7 @@ export function ShopOverlay({ businessId, onClose }: ShopOverlayProps) {
                       rel="noopener noreferrer"
                       className="hover:text-[#99CC66] transition-colors line-clamp-1 text-sm"
                     >
-                      {biz.website}
+                      {biz.website.replace(/^https?:\/\//, "")}
                     </a>
                   </div>
                 )}
@@ -179,6 +192,31 @@ export function ShopOverlay({ businessId, onClose }: ShopOverlayProps) {
                     <span className="text-xs font-bold text-[#84C7D0] uppercase tracking-wider">
                       On-site smoking area
                     </span>
+                  </div>
+                )}
+                {(instagram || facebook || googleReviewsUrl) && (
+                  <div className="pt-2 border-t border-border space-y-2">
+                    {instagram && (
+                      <a href={instagram} target="_blank" rel="noopener noreferrer"
+                        className="flex items-center gap-2 text-sm font-bold text-pink-500 hover:text-pink-400 transition-colors">
+                        <ExternalLink className="h-4 w-4 shrink-0" />
+                        Instagram
+                      </a>
+                    )}
+                    {facebook && (
+                      <a href={facebook} target="_blank" rel="noopener noreferrer"
+                        className="flex items-center gap-2 text-sm font-bold text-blue-400 hover:text-blue-300 transition-colors">
+                        <ExternalLink className="h-4 w-4 shrink-0" />
+                        Facebook
+                      </a>
+                    )}
+                    {googleReviewsUrl && (
+                      <a href={googleReviewsUrl} target="_blank" rel="noopener noreferrer"
+                        className="flex items-center gap-2 px-3 py-2 rounded-xl bg-[#99CC66]/15 border border-[#99CC66]/40 text-sm font-bold text-[#99CC66] hover:bg-[#99CC66]/25 transition-colors">
+                        <Star className="h-4 w-4 shrink-0 fill-[#99CC66]" />
+                        Google Reviews
+                      </a>
+                    )}
                   </div>
                 )}
                 {lastUpdated && (

@@ -635,6 +635,12 @@ components:
           type: integer
         created_at:
           type: string
+        instagram:
+          type: ["string", "null"]
+        facebook:
+          type: ["string", "null"]
+        google_reviews_url:
+          type: ["string", "null"]
         categories:
           type: array
           items:
@@ -678,6 +684,12 @@ components:
           type: integer
         created_at:
           type: string
+        instagram:
+          type: ["string", "null"]
+        facebook:
+          type: ["string", "null"]
+        google_reviews_url:
+          type: ["string", "null"]
         categories:
           type: array
           items:
@@ -748,6 +760,12 @@ components:
           type: string
         description:
           type: string
+        instagram:
+          type: string
+        facebook:
+          type: string
+        google_reviews_url:
+          type: string
         categories:
           type: array
           items:
@@ -771,6 +789,12 @@ components:
         hours:
           type: string
         description:
+          type: string
+        instagram:
+          type: string
+        facebook:
+          type: string
+        google_reviews_url:
           type: string
         categories:
           type: array

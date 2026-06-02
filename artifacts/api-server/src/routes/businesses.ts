@@ -80,7 +80,12 @@ async function enrichBusiness(b: {
   status: string;
   rejectionReason: string | null;
   isFeatured: number;
+  onSiteSmokingArea: number;
+  instagram: string | null;
+  facebook: string | null;
+  googleReviewsUrl: string | null;
   createdAt: Date;
+  lastUpdated: Date;
 }) {
   const cats = await db
     .select({ category: businessCategoriesTable.category })
@@ -116,6 +121,9 @@ async function enrichBusiness(b: {
     rejection_reason: b.rejectionReason,
     is_featured: b.isFeatured,
     on_site_smoking_area: b.onSiteSmokingArea,
+    instagram: b.instagram,
+    facebook: b.facebook,
+    google_reviews_url: b.googleReviewsUrl,
     created_at: b.createdAt.toISOString(),
     last_updated: b.lastUpdated.toISOString(),
     categories: cats.map((c) => c.category),
@@ -291,7 +299,7 @@ router.post(
   requireLogin,
   requireBusiness,
   async (req, res): Promise<void> => {
-    const { name, address, phone, website, hours, description, categories, brand_ids, on_site_smoking_area } =
+    const { name, address, phone, website, hours, description, instagram, facebook, google_reviews_url, categories, brand_ids, on_site_smoking_area } =
       req.body as {
         name: string;
         address: string;
@@ -299,6 +307,9 @@ router.post(
         website?: string;
         hours?: string;
         description?: string;
+        instagram?: string;
+        facebook?: string;
+        google_reviews_url?: string;
         categories?: string[];
         brand_ids?: number[];
         on_site_smoking_area?: boolean;
@@ -320,6 +331,9 @@ router.post(
         website: website ?? null,
         hours: hours ?? null,
         description: description ?? null,
+        instagram: instagram ?? null,
+        facebook: facebook ?? null,
+        googleReviewsUrl: google_reviews_url ?? null,
         onSiteSmokingArea: on_site_smoking_area ? 1 : 0,
       })
       .returning();
@@ -363,7 +377,7 @@ router.put(
       return;
     }
 
-    const { name, address, phone, website, hours, description, categories, brand_ids, on_site_smoking_area } =
+    const { name, address, phone, website, hours, description, instagram, facebook, google_reviews_url, categories, brand_ids, on_site_smoking_area } =
       req.body as {
         name?: string;
         address?: string;
@@ -371,6 +385,9 @@ router.put(
         website?: string;
         hours?: string;
         description?: string;
+        instagram?: string;
+        facebook?: string;
+        google_reviews_url?: string;
         categories?: string[];
         brand_ids?: number[];
         on_site_smoking_area?: boolean;
@@ -395,6 +412,9 @@ router.put(
       website: website !== undefined ? website : b.website,
       hours: hours !== undefined ? hours : b.hours,
       description: description !== undefined ? description : b.description,
+      instagram: instagram !== undefined ? instagram : b.instagram,
+      facebook: facebook !== undefined ? facebook : b.facebook,
+      googleReviewsUrl: google_reviews_url !== undefined ? google_reviews_url : b.googleReviewsUrl,
       onSiteSmokingArea: on_site_smoking_area !== undefined ? (on_site_smoking_area ? 1 : 0) : b.onSiteSmokingArea,
       lastUpdated: new Date(),
     };

@@ -93,6 +93,9 @@ export const GetBusinessesResponseItem = zod.object({
   "rejection_reason": zod.string().nullish(),
   "is_featured": zod.number(),
   "created_at": zod.string(),
+  "instagram": zod.string().nullish(),
+  "facebook": zod.string().nullish(),
+  "google_reviews_url": zod.string().nullish(),
   "categories": zod.array(zod.string()).optional(),
   "brands": zod.array(zod.object({
   "id": zod.number(),
@@ -113,6 +116,9 @@ export const CreateBusinessBody = zod.object({
   "website": zod.string().optional(),
   "hours": zod.string().optional(),
   "description": zod.string().optional(),
+  "instagram": zod.string().optional(),
+  "facebook": zod.string().optional(),
+  "google_reviews_url": zod.string().optional(),
   "categories": zod.array(zod.string()).optional(),
   "brand_ids": zod.array(zod.number()).optional()
 })
@@ -137,6 +143,9 @@ export const GetOwnedBusinessesResponseItem = zod.object({
   "rejection_reason": zod.string().nullish(),
   "is_featured": zod.number(),
   "created_at": zod.string(),
+  "instagram": zod.string().nullish(),
+  "facebook": zod.string().nullish(),
+  "google_reviews_url": zod.string().nullish(),
   "categories": zod.array(zod.string()).optional(),
   "brands": zod.array(zod.object({
   "id": zod.number(),
@@ -185,6 +194,9 @@ export const GetBusinessResponse = zod.object({
   "rejection_reason": zod.string().nullish(),
   "is_featured": zod.number(),
   "created_at": zod.string(),
+  "instagram": zod.string().nullish(),
+  "facebook": zod.string().nullish(),
+  "google_reviews_url": zod.string().nullish(),
   "categories": zod.array(zod.string()),
   "photos": zod.array(zod.object({
   "id": zod.number(),
@@ -220,6 +232,9 @@ export const UpdateBusinessBody = zod.object({
   "website": zod.string().optional(),
   "hours": zod.string().optional(),
   "description": zod.string().optional(),
+  "instagram": zod.string().optional(),
+  "facebook": zod.string().optional(),
+  "google_reviews_url": zod.string().optional(),
   "categories": zod.array(zod.string()).optional(),
   "brand_ids": zod.array(zod.number()).optional()
 })

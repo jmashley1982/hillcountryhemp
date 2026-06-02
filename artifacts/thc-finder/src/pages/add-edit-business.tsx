@@ -59,6 +59,9 @@ const schema = z.object({
   website: z.string().url("Must be a valid URL").or(z.literal("")).optional(),
   hours: z.string().optional(),
   description: z.string().optional(),
+  instagram: z.string().url("Must be a valid URL").or(z.literal("")).optional(),
+  facebook: z.string().url("Must be a valid URL").or(z.literal("")).optional(),
+  google_reviews_url: z.string().url("Must be a valid URL").or(z.literal("")).optional(),
   categories: z.array(z.string()).optional(),
   brand_ids: z.array(z.number()).optional(),
   on_site_smoking_area: z.boolean().optional(),
@@ -104,6 +107,9 @@ export default function AddEditBusiness() {
       website: "",
       hours: "",
       description: "",
+      instagram: "",
+      facebook: "",
+      google_reviews_url: "",
       categories: [],
       brand_ids: [],
       on_site_smoking_area: false,
@@ -116,6 +122,7 @@ export default function AddEditBusiness() {
 
   useEffect(() => {
     if (existing) {
+      const ext = existing as typeof existing & { instagram?: string | null; facebook?: string | null; google_reviews_url?: string | null };
       form.reset({
         name: existing.name,
         address: existing.address,
@@ -123,6 +130,9 @@ export default function AddEditBusiness() {
         website: existing.website ?? "",
         hours: existing.hours ?? "",
         description: existing.description ?? "",
+        instagram: ext.instagram ?? "",
+        facebook: ext.facebook ?? "",
+        google_reviews_url: ext.google_reviews_url ?? "",
         categories: existing.categories ?? [],
         brand_ids: existing.brands?.map((b) => b.id) ?? [],
         on_site_smoking_area: !!(existing as { on_site_smoking_area?: number }).on_site_smoking_area,
@@ -419,6 +429,71 @@ export default function AddEditBusiness() {
                 </FormItem>
               )}
             />
+
+            {/* Social Links */}
+            <div className="space-y-4 p-4 bg-card border-2 border-border rounded-2xl shadow-[0_4px_20px_rgba(0,0,0,0.15)]">
+              <p className="font-bold uppercase text-xs tracking-wider">Social & Reviews</p>
+              <FormField
+                control={form.control}
+                name="instagram"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel className="font-bold uppercase text-xs tracking-wider text-muted-foreground">
+                      Instagram URL
+                    </FormLabel>
+                    <FormControl>
+                      <Input
+                        {...field}
+                        className="border-2 font-medium"
+                        placeholder="https://instagram.com/yourshop"
+                        data-testid="input-instagram"
+                      />
+                    </FormControl>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+              <FormField
+                control={form.control}
+                name="facebook"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel className="font-bold uppercase text-xs tracking-wider text-muted-foreground">
+                      Facebook URL
+                    </FormLabel>
+                    <FormControl>
+                      <Input
+                        {...field}
+                        className="border-2 font-medium"
+                        placeholder="https://facebook.com/yourshop"
+                        data-testid="input-facebook"
+                      />
+                    </FormControl>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+              <FormField
+                control={form.control}
+                name="google_reviews_url"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel className="font-bold uppercase text-xs tracking-wider text-muted-foreground">
+                      Google Reviews URL
+                    </FormLabel>
+                    <FormControl>
+                      <Input
+                        {...field}
+                        className="border-2 font-medium"
+                        placeholder="https://g.page/r/yourshop/review"
+                        data-testid="input-google-reviews"
+                      />
+                    </FormControl>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+            </div>
 
             <FormField
               control={form.control}

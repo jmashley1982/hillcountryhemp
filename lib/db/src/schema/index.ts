@@ -34,6 +34,9 @@ export const businessesTable = pgTable("businesses", {
   rejectionReason: text("rejection_reason"),
   isFeatured: integer("is_featured").notNull().default(0),
   onSiteSmokingArea: integer("on_site_smoking_area").notNull().default(0),
+  instagram: text("instagram"),
+  facebook: text("facebook"),
+  googleReviewsUrl: text("google_reviews_url"),
   createdAt: timestamp("created_at").defaultNow().notNull(),
   lastUpdated: timestamp("last_updated").defaultNow().notNull(),
 });

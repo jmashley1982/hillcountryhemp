@@ -30,6 +30,12 @@ export interface Business {
   rejection_reason?: string | null;
   is_featured: number;
   created_at: string;
+  /** @nullable */
+  instagram?: string | null;
+  /** @nullable */
+  facebook?: string | null;
+  /** @nullable */
+  google_reviews_url?: string | null;
   categories?: string[];
   brands?: Brand[];
 }

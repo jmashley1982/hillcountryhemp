@@ -91,6 +91,12 @@ export interface Business {
   rejection_reason?: string | null;
   is_featured: number;
   created_at: string;
+  /** @nullable */
+  instagram?: string | null;
+  /** @nullable */
+  facebook?: string | null;
+  /** @nullable */
+  google_reviews_url?: string | null;
   categories?: string[];
   brands?: Brand[];
 }
@@ -119,6 +125,12 @@ export interface BusinessDetail {
   rejection_reason?: string | null;
   is_featured: number;
   created_at: string;
+  /** @nullable */
+  instagram?: string | null;
+  /** @nullable */
+  facebook?: string | null;
+  /** @nullable */
+  google_reviews_url?: string | null;
   categories: string[];
   photos: Photo[];
   coupons: Coupon[];
@@ -159,6 +171,9 @@ export interface BusinessInput {
   website?: string;
   hours?: string;
   description?: string;
+  instagram?: string;
+  facebook?: string;
+  google_reviews_url?: string;
   categories?: string[];
   brand_ids?: number[];
 }
@@ -170,6 +185,9 @@ export interface BusinessUpdate {
   website?: string;
   hours?: string;
   description?: string;
+  instagram?: string;
+  facebook?: string;
+  google_reviews_url?: string;
   categories?: string[];
   brand_ids?: number[];
 }

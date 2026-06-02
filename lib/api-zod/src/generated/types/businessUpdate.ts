@@ -12,6 +12,9 @@ export interface BusinessUpdate {
   website?: string;
   hours?: string;
   description?: string;
+  instagram?: string;
+  facebook?: string;
+  google_reviews_url?: string;
   categories?: string[];
   brand_ids?: number[];
 }
