@@ -220,7 +220,7 @@ export default function Home() {
                         {biz.name}
                       </h3>
                       {biz.is_featured === 1 && (
-                        <Star className="h-5 w-5 fill-[#99CC66] text-[#99CC66] shrink-0 ml-2" />
+                        <Star className="h-5 w-5 fill-[#D4AF37] text-[#D4AF37] shrink-0 ml-2" />
                       )}
                     </div>
                     <p className="text-xs text-muted-foreground mb-2 font-medium flex items-center gap-1">

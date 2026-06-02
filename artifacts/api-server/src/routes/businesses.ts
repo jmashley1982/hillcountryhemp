@@ -509,7 +509,8 @@ router.put(
 
     let newLat = b.lat;
     let newLng = b.lng;
-    if (hasCompleteAddress && composedAddress !== b.address) {
+    const needsGeocode = hasCompleteAddress && (composedAddress !== b.address || b.lat == null || b.lng == null);
+    if (needsGeocode) {
       const coords = await geocode(composedAddress);
       if (coords) {
         newLat = coords.lat;
