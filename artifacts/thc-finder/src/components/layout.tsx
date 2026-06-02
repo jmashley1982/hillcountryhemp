@@ -1,6 +1,6 @@
 import { useEffect, useState } from "react";
 import { Link, useLocation } from "wouter";
-import { useGetMe, useLogout } from "@workspace/api-client-react";
+import { useGetMe, useLogout, useGetBanner } from "@workspace/api-client-react";
 import { LogOut, LayoutDashboard, Menu, X } from "lucide-react";
 import { Button } from "./ui/button";
 import logoUrl from "@assets/magnific_a-logo-for-an-app-called-_TeJK7kKVNR_1780364254574.png";
@@ -8,6 +8,7 @@ import logoUrl from "@assets/magnific_a-logo-for-an-app-called-_TeJK7kKVNR_17803
 export function Layout({ children }: { children: React.ReactNode }) {
   const { data: user, isLoading } = useGetMe();
   const logout = useLogout();
+  const { data: banner } = useGetBanner();
   const [, setLocation] = useLocation();
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
 
@@ -21,6 +22,23 @@ export function Layout({ children }: { children: React.ReactNode }) {
 
   return (
     <div className="min-h-[100dvh] flex flex-col bg-background relative">
+      {/* Top banner — above everything */}
+      {banner?.image_path && (
+        <a
+          href={banner.link_url || "#"}
+          className="block w-full bg-black"
+          target={banner.link_url ? "_blank" : undefined}
+          rel="noopener noreferrer"
+          data-testid="banner-ad"
+        >
+          <img
+            src={`/api/uploads/${banner.image_path}`}
+            alt="Advertisement"
+            className="w-full h-auto block opacity-90 hover:opacity-100 transition-opacity"
+          />
+        </a>
+      )}
+
       {/* Navbar — iron-grey brand gradient */}
       <header className="sticky top-0 z-50 w-full border-b border-border shadow-lg"
         style={{ background: "linear-gradient(135deg, #1a2226 0%, #2c3a40 45%, #0a1012 100%)" }}

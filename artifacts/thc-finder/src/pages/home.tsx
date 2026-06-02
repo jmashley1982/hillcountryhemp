@@ -1,4 +1,4 @@
-import { useGetBusinesses, useGetBanner } from "@workspace/api-client-react";
+import { useGetBusinesses } from "@workspace/api-client-react";
 import { useState } from "react";
 import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
@@ -31,26 +31,8 @@ export default function Home() {
     category: selectedCat || undefined,
   });
 
-  const { data: banner } = useGetBanner();
-
   return (
     <div className="flex flex-col h-full flex-1">
-      {banner?.image_path && (
-        <a
-          href={banner.link_url || "#"}
-          className="block w-full bg-black"
-          target={banner.link_url ? "_blank" : undefined}
-          rel="noopener noreferrer"
-          data-testid="banner-ad"
-        >
-          <img
-            src={`/api/uploads/${banner.image_path}`}
-            alt="Advertisement"
-            className="w-full h-auto block opacity-90 hover:opacity-100 transition-opacity"
-          />
-        </a>
-      )}
-
       <div className="flex-1 flex flex-col md:flex-row overflow-hidden h-[calc(100dvh-64px)]">
         {/* Sidebar */}
         <div
