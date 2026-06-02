@@ -296,12 +296,12 @@ export default function AddEditBusiness() {
       <div className="container mx-auto px-4 py-8 max-w-2xl">
         <Link
           href="/dashboard"
-          className="inline-flex items-center text-sm font-bold uppercase tracking-wider hover:text-[#D4AF37] mb-6 transition-colors text-muted-foreground"
+          className="inline-flex items-center text-sm font-bold uppercase tracking-wider hover:text-[#99CC66] mb-6 transition-colors text-muted-foreground"
         >
           <ArrowLeft className="h-4 w-4 mr-2" /> Back to Dashboard
         </Link>
 
-        <h1 className="text-4xl text-[#D4AF37] mb-2">
+        <h1 className="text-4xl text-[#99CC66] mb-2">
           {isEdit ? "Edit Listing" : "List Your Business"}
         </h1>
         <p className="text-muted-foreground font-medium mb-8">
@@ -447,7 +447,7 @@ export default function AddEditBusiness() {
               <input
                 type="checkbox"
                 id="on_site_smoking_area"
-                className="w-5 h-5 rounded accent-[#00C853] cursor-pointer"
+                className="w-5 h-5 rounded accent-[#84C7D0] cursor-pointer"
                 checked={form.watch("on_site_smoking_area") ?? false}
                 onChange={(e) => form.setValue("on_site_smoking_area", e.target.checked)}
                 data-testid="checkbox-smoking-area"
@@ -472,7 +472,7 @@ export default function AddEditBusiness() {
                     }
                     className={`cursor-pointer font-bold border-2 rounded-full transition-all ${
                       selectedCategories.includes(cat)
-                        ? "bg-[#00C853] text-black border-[#00C853]"
+                        ? "bg-[#84C7D0] text-black border-[#84C7D0]"
                         : "hover:bg-muted"
                     }`}
                     onClick={() => toggleCategory(cat)}
@@ -501,7 +501,7 @@ export default function AddEditBusiness() {
                       }
                       className={`cursor-pointer font-bold border-2 rounded-full transition-all ${
                         selectedBrandIds.includes(brand.id)
-                          ? "bg-[#D4AF37] text-black border-[#D4AF37]"
+                          ? "bg-[#99CC66] text-black border-[#99CC66]"
                           : "hover:bg-muted"
                       }`}
                       onClick={() => toggleBrand(brand.id)}
@@ -545,7 +545,7 @@ export default function AddEditBusiness() {
         {/* Upload section (only for edit) */}
         {isEdit && existing && (
           <div className="mt-10 space-y-8 border-t-2 border-border pt-8">
-            <h2 className="text-2xl text-[#D4AF37]">Photos & Media</h2>
+            <h2 className="text-2xl text-[#99CC66]">Photos & Media</h2>
 
             {/* Logo */}
             <div>
@@ -666,7 +666,7 @@ export default function AddEditBusiness() {
                   {existing.coupons.map((coupon) => (
                     <div
                       key={coupon.id}
-                      className="relative group rounded-lg overflow-hidden border-2 border-dashed border-[#D4AF37]/50"
+                      className="relative group rounded-lg overflow-hidden border-2 border-dashed border-[#99CC66]/50"
                       data-testid={`coupon-${coupon.id}`}
                     >
                       <img

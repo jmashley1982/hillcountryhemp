@@ -48,15 +48,15 @@ export default function Dashboard() {
       <B2BBannerAd />
       <div className="container mx-auto px-4 py-8 max-w-4xl">
         {/* CTA card */}
-        <div className="mb-6 bg-gradient-to-r from-primary/80 to-[#0e2410] border border-[#D4AF37]/30 rounded-2xl p-5 flex items-start gap-4 shadow-[0_4px_20px_rgba(0,0,0,0.4)]">
-          <Sparkles className="h-6 w-6 text-[#D4AF37] shrink-0 mt-0.5" />
+        <div className="mb-6 bg-gradient-to-r from-primary/80 to-[#1a2226] border border-[#99CC66]/30 rounded-2xl p-5 flex items-start gap-4 shadow-[0_4px_20px_rgba(0,0,0,0.4)]">
+          <Sparkles className="h-6 w-6 text-[#99CC66] shrink-0 mt-0.5" />
           <div>
             <p className="font-bold text-white text-sm">Keep your page fresh!</p>
             <p className="text-white/70 text-sm mt-0.5">Add a new coupon or update your photos to attract more customers.</p>
           </div>
           {businesses.length > 0 && businesses[0].status === "approved" && (
             <Link href={`/dashboard/edit/${businesses[0].id}`} className="ml-auto shrink-0">
-              <Button size="sm" className="bg-[#D4AF37] hover:bg-[#c49f2a] text-black font-bold">
+              <Button size="sm" className="bg-[#99CC66] hover:bg-[#82B54F] text-black font-bold">
                 <ImagePlus className="h-3.5 w-3.5 mr-1.5" /> Update
               </Button>
             </Link>
@@ -65,7 +65,7 @@ export default function Dashboard() {
 
         <div className="flex items-center justify-between mb-8">
           <div>
-            <h1 className="text-4xl text-[#D4AF37]">My Listings</h1>
+            <h1 className="text-4xl text-[#99CC66]">My Listings</h1>
             <p className="text-muted-foreground font-bold mt-1">{user?.email}</p>
           </div>
           <Link href="/dashboard/add">
@@ -81,7 +81,7 @@ export default function Dashboard() {
         {businesses.length === 0 ? (
           <div className="bg-card border-2 border-dashed border-border rounded-2xl p-12 text-center">
             <Building2 className="h-12 w-12 mx-auto text-muted-foreground mb-4" />
-            <h2 className="text-2xl text-[#D4AF37] mb-2">No Listings Yet</h2>
+            <h2 className="text-2xl text-[#99CC66] mb-2">No Listings Yet</h2>
             <p className="text-muted-foreground font-medium mb-6">
               List your hemp shop to get discovered by customers in the Hill Country.
             </p>
@@ -100,13 +100,13 @@ export default function Dashboard() {
               return (
                 <div
                   key={biz.id}
-                  className="bg-card border-2 border-border rounded-2xl p-6 hover:border-[#D4AF37]/40 transition-all shadow-[0_4px_20px_rgba(0,0,0,0.25)]"
+                  className="bg-card border-2 border-border rounded-2xl p-6 hover:border-[#99CC66]/40 transition-all shadow-[0_4px_20px_rgba(0,0,0,0.25)]"
                   data-testid={`card-business-${biz.id}`}
                 >
                   <div className="flex items-start justify-between gap-4">
                     <div className="flex-1 min-w-0">
                       <div className="flex items-center gap-3 mb-2 flex-wrap">
-                        <h2 className="text-2xl text-[#D4AF37]">{biz.name}</h2>
+                        <h2 className="text-2xl text-[#99CC66]">{biz.name}</h2>
                         <span
                           className={`inline-flex items-center gap-1.5 px-3 py-1 rounded-full border font-bold text-xs uppercase tracking-wider ${status.color}`}
                           data-testid={`status-${biz.id}`}
@@ -115,7 +115,7 @@ export default function Dashboard() {
                           {status.label}
                         </span>
                         {biz.is_featured === 1 && (
-                          <span className="px-2 py-1 rounded-full bg-[#D4AF37]/20 text-[#D4AF37] border border-[#D4AF37]/40 font-bold text-xs uppercase tracking-wider">
+                          <span className="px-2 py-1 rounded-full bg-[#99CC66]/20 text-[#99CC66] border border-[#99CC66]/40 font-bold text-xs uppercase tracking-wider">
                             Featured
                           </span>
                         )}

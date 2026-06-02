@@ -1,17 +1,17 @@
 <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1200 80" width="1200" height="80" preserveAspectRatio="xMidYMid slice">
   <defs>
     <linearGradient id="bg" x1="0%" y1="0%" x2="100%" y2="0%">
-      <stop offset="0%" style="stop-color:#0e2410"/>
-      <stop offset="50%" style="stop-color:#1A3E1E"/>
-      <stop offset="100%" style="stop-color:#000000"/>
+      <stop offset="0%" style="stop-color:#1a2226"/>
+      <stop offset="50%" style="stop-color:#4C5B61"/>
+      <stop offset="100%" style="stop-color:#10171a"/>
     </linearGradient>
   </defs>
   <rect width="1200" height="80" fill="url(#bg)"/>
-  <rect x="0" y="0" width="1200" height="2" fill="#D4AF37" opacity="0.85"/>
-  <rect x="0" y="78" width="1200" height="2" fill="#D4AF37" opacity="0.85"/>
-  <text x="36" y="35" font-family="Arial Black, sans-serif" font-size="22" font-weight="900" fill="#D4AF37" letter-spacing="1">ADVERTISE YOUR HEMP BUSINESS HERE</text>
-  <text x="36" y="60" font-family="Arial, sans-serif" font-size="14" fill="#ffffff" opacity="0.85">Reach thousands of hemp shoppers across Texas Hill Country — list your shop on THC Finder today</text>
-  <rect x="990" y="16" width="174" height="48" rx="8" fill="#D4AF37"/>
-  <text x="1077" y="40" font-family="Arial Black, sans-serif" font-size="15" font-weight="900" fill="#000000" text-anchor="middle">GET LISTED</text>
-  <text x="1077" y="56" font-family="Arial, sans-serif" font-size="11" fill="#333333" text-anchor="middle">thcfinder.com</text>
+  <rect x="0" y="0" width="1200" height="2" fill="#99CC66" opacity="0.9"/>
+  <rect x="0" y="78" width="1200" height="2" fill="#99CC66" opacity="0.9"/>
+  <text x="36" y="35" font-family="Arial Black, sans-serif" font-size="22" font-weight="900" fill="#99CC66" letter-spacing="1">ADVERTISE YOUR HEMP BUSINESS HERE</text>
+  <text x="36" y="60" font-family="Arial, sans-serif" font-size="14" fill="#ffffff" opacity="0.9">Reach thousands of hemp shoppers across Texas Hill Country — list your shop today</text>
+  <rect x="966" y="16" width="198" height="48" rx="8" fill="#99CC66"/>
+  <text x="1065" y="40" font-family="Arial Black, sans-serif" font-size="15" font-weight="900" fill="#10171a" text-anchor="middle">GET LISTED</text>
+  <text x="1065" y="56" font-family="Arial, sans-serif" font-size="10" fill="#1a2226" text-anchor="middle">hillcountryhempfinder.com</text>
 </svg>

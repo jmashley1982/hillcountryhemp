@@ -32,10 +32,10 @@ export default function Advertise() {
           Drop us a line to secure your placement. Inventory is limited to maintain maximum visibility for our partners.
         </p>
         <a 
-          href="mailto:ads@thcfinder.com" 
+          href="mailto:ads@hillcountryhempfinder.com" 
           className="inline-block bg-secondary text-secondary-foreground px-8 py-4 rounded-lg font-bold text-lg uppercase tracking-wider hover:bg-secondary/90 transition-colors shadow-lg border-b-4 border-black/20"
         >
-          Email ads@thcfinder.com
+          Email ads@hillcountryhempfinder.com
         </a>
       </div>
     </div>

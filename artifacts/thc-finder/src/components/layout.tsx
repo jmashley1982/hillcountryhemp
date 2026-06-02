@@ -1,8 +1,9 @@
 import { useEffect, useState } from "react";
 import { Link, useLocation } from "wouter";
 import { useGetMe, useLogout } from "@workspace/api-client-react";
-import { MapPin, LogOut, LayoutDashboard, Menu, X } from "lucide-react";
+import { LogOut, LayoutDashboard, Menu, X } from "lucide-react";
 import { Button } from "./ui/button";
+import logoUrl from "@assets/magnific_a-logo-for-an-app-called-_BmilZlpoQR_1780360768055.png";
 
 export function Layout({ children }: { children: React.ReactNode }) {
   const { data: user, isLoading } = useGetMe();
@@ -20,27 +21,23 @@ export function Layout({ children }: { children: React.ReactNode }) {
 
   return (
     <div className="min-h-[100dvh] flex flex-col bg-background relative">
-      {/* Navbar — gradient from deep green to black */}
+      {/* Navbar — iron-grey brand gradient */}
       <header className="sticky top-0 z-50 w-full border-b border-border shadow-lg"
-        style={{ background: "linear-gradient(135deg, #0e2410 0%, #1A3E1E 45%, #000000 100%)" }}
+        style={{ background: "linear-gradient(135deg, #1a2226 0%, #2c3a40 45%, #0a1012 100%)" }}
       >
         <div className="container mx-auto flex h-16 items-center justify-between px-4">
-          <Link href="/" className="flex items-center gap-2 group shrink-0">
-            <div className="bg-[#D4AF37] text-black p-1.5 rounded-lg rotate-3 group-hover:-rotate-3 transition-transform shadow-md">
-              <MapPin className="h-5 w-5" />
-            </div>
-            <div className="flex flex-col leading-none">
-              <span className="font-display text-2xl tracking-wider text-[#D4AF37]">THC Finder</span>
-              <span className="text-[10px] font-bold uppercase tracking-widest text-white/60 hidden sm:block">
-                Find Hemp in the Hill Country
-              </span>
-            </div>
+          <Link href="/" className="flex items-center group shrink-0">
+            <img
+              src={logoUrl}
+              alt="Texas Hill Country Hemp Finder"
+              className="h-11 w-auto group-hover:opacity-90 transition-opacity"
+            />
           </Link>
 
           {/* Desktop Nav */}
           <nav className="hidden md:flex items-center gap-6">
-            <Link href="/" className="text-sm font-bold uppercase tracking-wider text-white/80 hover:text-[#D4AF37] transition-colors">Find Shops</Link>
-            <Link href="/advertise" className="text-sm font-bold uppercase tracking-wider text-white/80 hover:text-[#D4AF37] transition-colors">Advertise</Link>
+            <Link href="/" className="text-sm font-bold uppercase tracking-wider text-white/80 hover:text-[#99CC66] transition-colors">Find Shops</Link>
+            <Link href="/advertise" className="text-sm font-bold uppercase tracking-wider text-white/80 hover:text-[#99CC66] transition-colors">Advertise</Link>
 
             <div className="h-6 w-px bg-white/20 mx-2" />
 
@@ -48,7 +45,7 @@ export function Layout({ children }: { children: React.ReactNode }) {
               user ? (
                 <div className="flex items-center gap-4">
                   <Link href={user.role === 'admin' ? '/admin' : '/dashboard'}>
-                    <Button variant="outline" className="font-bold border-2 border-[#D4AF37]/50 text-[#D4AF37] bg-transparent hover:bg-[#D4AF37]/10 hover:border-[#D4AF37]">
+                    <Button variant="outline" className="font-bold border-2 border-[#99CC66]/50 text-[#99CC66] bg-transparent hover:bg-[#99CC66]/10 hover:border-[#99CC66]">
                       <LayoutDashboard className="h-4 w-4 mr-2" />
                       {user.role === 'admin' ? 'Admin' : 'Dashboard'}
                     </Button>
@@ -59,9 +56,9 @@ export function Layout({ children }: { children: React.ReactNode }) {
                 </div>
               ) : (
                 <div className="flex items-center gap-4">
-                  <Link href="/login" className="text-sm font-bold uppercase text-white/80 hover:text-[#D4AF37] transition-colors">Login</Link>
+                  <Link href="/login" className="text-sm font-bold uppercase text-white/80 hover:text-[#99CC66] transition-colors">Login</Link>
                   <Link href="/register">
-                    <Button className="bg-[#D4AF37] hover:bg-[#c49f2a] text-black font-bold shadow-md">List Your Business</Button>
+                    <Button className="bg-[#99CC66] hover:bg-[#82B54F] text-black font-bold shadow-md">List Your Business</Button>
                   </Link>
                 </div>
               )
@@ -85,7 +82,7 @@ export function Layout({ children }: { children: React.ReactNode }) {
             user ? (
               <>
                 <Link href={user.role === 'admin' ? '/admin' : '/dashboard'} onClick={() => setMobileMenuOpen(false)}>
-                  <Button className="w-full justify-start font-bold border-2 border-[#D4AF37]/50 text-[#D4AF37] bg-transparent hover:bg-[#D4AF37]/10" variant="outline">
+                  <Button className="w-full justify-start font-bold border-2 border-[#99CC66]/50 text-[#99CC66] bg-transparent hover:bg-[#99CC66]/10" variant="outline">
                     <LayoutDashboard className="h-4 w-4 mr-2" />
                     {user.role === 'admin' ? 'Admin' : 'Dashboard'}
                   </Button>
@@ -100,7 +97,7 @@ export function Layout({ children }: { children: React.ReactNode }) {
                   <Button variant="outline" className="w-full font-bold border-2">Login</Button>
                 </Link>
                 <Link href="/register" onClick={() => setMobileMenuOpen(false)}>
-                  <Button className="w-full font-bold bg-[#D4AF37] text-black hover:bg-[#c49f2a]">List Your Business</Button>
+                  <Button className="w-full font-bold bg-[#99CC66] text-black hover:bg-[#82B54F]">List Your Business</Button>
                 </Link>
               </>
             )

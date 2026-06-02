@@ -57,7 +57,7 @@ export default function Home() {
           className={`w-full md:w-96 bg-card border-r border-border flex flex-col z-10 ${viewMode === "map" ? "hidden md:flex" : "flex"}`}
         >
           <div className="p-4 border-b border-border bg-card shadow-sm">
-            <h1 className="text-xl text-[#D4AF37] mb-1 tracking-wide">
+            <h1 className="text-xl text-[#99CC66] mb-1 tracking-wide">
               Find Hill Country Hemp
             </h1>
             <p className="text-xs text-muted-foreground font-medium mb-4 leading-relaxed">
@@ -82,7 +82,7 @@ export default function Home() {
                   variant={selectedCat === cat ? "default" : "outline"}
                   className={`cursor-pointer font-bold border-2 rounded-full px-3 py-1 text-[11px] shadow-sm transition-all ${
                     selectedCat === cat
-                      ? "bg-[#00C853] text-black border-[#00C853] shadow-[#00C853]/30"
+                      ? "bg-[#84C7D0] text-black border-[#84C7D0] shadow-[#84C7D0]/30"
                       : "hover:bg-muted border-border text-muted-foreground hover:text-foreground"
                   }`}
                   onClick={() =>
@@ -118,10 +118,10 @@ export default function Home() {
                   <div
                     className={`bg-card rounded-2xl border-2 p-4 cursor-pointer transition-all hover:-translate-y-0.5 ${
                       biz.is_featured
-                        ? "border-[#D4AF37]/60 shadow-[0_4px_20px_rgba(212,175,55,0.15)]"
+                        ? "border-[#99CC66]/60 shadow-[0_4px_20px_rgba(153,204,102,0.15)]"
                         : highlightedId === biz.id
-                          ? "border-[#00C853] shadow-[0_4px_20px_rgba(0,200,83,0.15)]"
-                          : "border-border hover:border-[#00C853]/50 hover:shadow-[0_4px_20px_rgba(0,0,0,0.25)]"
+                          ? "border-[#84C7D0] shadow-[0_4px_20px_rgba(132,199,208,0.15)]"
+                          : "border-border hover:border-[#84C7D0]/50 hover:shadow-[0_4px_20px_rgba(0,0,0,0.25)]"
                     }`}
                     onMouseEnter={() => setHighlightedId(biz.id)}
                     onMouseLeave={() => setHighlightedId(null)}
@@ -131,7 +131,7 @@ export default function Home() {
                         {biz.name}
                       </h3>
                       {biz.is_featured === 1 && (
-                        <Star className="h-5 w-5 fill-[#D4AF37] text-[#D4AF37] shrink-0 ml-2" />
+                        <Star className="h-5 w-5 fill-[#99CC66] text-[#99CC66] shrink-0 ml-2" />
                       )}
                     </div>
                     <p className="text-xs text-muted-foreground mb-2 font-medium flex items-center gap-1">

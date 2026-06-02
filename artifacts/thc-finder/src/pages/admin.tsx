@@ -167,7 +167,7 @@ function FullDetails({ biz }: { biz: BizRow }) {
         {biz.website && (
           <div>
             <p className="text-[10px] uppercase font-bold text-muted-foreground tracking-wider mb-0.5">Website</p>
-            <a href={biz.website} target="_blank" rel="noopener noreferrer" className="text-[#D4AF37] hover:underline flex items-center gap-1">
+            <a href={biz.website} target="_blank" rel="noopener noreferrer" className="text-[#99CC66] hover:underline flex items-center gap-1">
               {biz.website.replace(/^https?:\/\//, "")} <ExternalLink className="h-3 w-3" />
             </a>
           </div>
@@ -200,7 +200,7 @@ function FullDetails({ biz }: { biz: BizRow }) {
           <p className="text-[10px] uppercase font-bold text-muted-foreground tracking-wider mb-1">Brands</p>
           <div className="flex flex-wrap gap-1">
             {biz.brands.map((b) => (
-              <span key={b.id} className="text-[10px] font-bold bg-[#D4AF37]/10 text-[#D4AF37] px-2 py-0.5 rounded-full border border-[#D4AF37]/30">{b.name}</span>
+              <span key={b.id} className="text-[10px] font-bold bg-[#99CC66]/10 text-[#99CC66] px-2 py-0.5 rounded-full border border-[#99CC66]/30">{b.name}</span>
             ))}
           </div>
         </div>
@@ -243,12 +243,12 @@ function BusinessCard({
       <div className="flex items-start justify-between gap-4 flex-wrap">
         <div className="flex-1 min-w-0">
           <div className="flex items-center gap-2 flex-wrap mb-1">
-            <h3 className="font-heading text-xl text-[#D4AF37]">{biz.name}</h3>
+            <h3 className="font-heading text-xl text-[#99CC66]">{biz.name}</h3>
             <span className={`text-xs font-bold px-2 py-0.5 rounded-full ${statusColors[biz.status] ?? "bg-muted text-foreground"}`}>
               {biz.status}
             </span>
             {biz.is_featured === 1 && (
-              <span className="text-xs font-bold px-2 py-0.5 rounded-full bg-[#D4AF37]/20 text-[#D4AF37]">Featured</span>
+              <span className="text-xs font-bold px-2 py-0.5 rounded-full bg-[#99CC66]/20 text-[#99CC66]">Featured</span>
             )}
           </div>
           <p className="text-sm text-muted-foreground font-medium">{biz.address}</p>
@@ -298,7 +298,7 @@ function BusinessCard({
           <Button
             size="sm"
             variant="outline"
-            className={`font-bold border-2 ${biz.is_featured === 1 ? "border-[#D4AF37]/60 text-[#D4AF37]" : ""}`}
+            className={`font-bold border-2 ${biz.is_featured === 1 ? "border-[#99CC66]/60 text-[#99CC66]" : ""}`}
             onClick={() =>
               toggleFeature.mutate({ id: biz.id }, {
                 onSuccess: () => {
@@ -309,7 +309,7 @@ function BusinessCard({
             }
             data-testid={`button-feature-${biz.id}`}
           >
-            <Star className={`h-3.5 w-3.5 mr-1 ${biz.is_featured === 1 ? "fill-[#D4AF37] text-[#D4AF37]" : ""}`} />
+            <Star className={`h-3.5 w-3.5 mr-1 ${biz.is_featured === 1 ? "fill-[#99CC66] text-[#99CC66]" : ""}`} />
             {biz.is_featured === 1 ? "Unfeature" : "Feature"}
           </Button>
 
@@ -456,7 +456,7 @@ function BrandsTab() {
                     <img
                       src={`/api/uploads/${brandWithLogo.logo_path}`}
                       alt={brand.name}
-                      className="w-9 h-9 rounded-full object-cover ring-2 ring-[#D4AF37]/40"
+                      className="w-9 h-9 rounded-full object-cover ring-2 ring-[#99CC66]/40"
                     />
                   ) : (
                     <div className="w-9 h-9 rounded-full bg-muted flex items-center justify-center border-2 border-dashed border-border">
@@ -466,7 +466,7 @@ function BrandsTab() {
                   <span className="font-bold text-lg">
                     {brand.name}
                     {brand.is_featured === 1 && (
-                      <Star className="inline h-4 w-4 ml-2 fill-[#D4AF37] text-[#D4AF37]" />
+                      <Star className="inline h-4 w-4 ml-2 fill-[#99CC66] text-[#99CC66]" />
                     )}
                   </span>
                 </div>
@@ -495,7 +495,7 @@ function BrandsTab() {
                   <Button
                     size="sm"
                     variant="outline"
-                    className={`font-bold border-2 ${brand.is_featured === 1 ? "border-[#D4AF37]/60 text-[#D4AF37]" : ""}`}
+                    className={`font-bold border-2 ${brand.is_featured === 1 ? "border-[#99CC66]/60 text-[#99CC66]" : ""}`}
                     onClick={() =>
                       toggleFeature.mutate({ id: brand.id }, {
                         onSuccess: () => {
@@ -742,7 +742,7 @@ export default function Admin() {
   return (
     <div className="container mx-auto px-4 py-8 max-w-5xl">
       <div className="mb-8">
-        <h1 className="text-4xl text-[#D4AF37]">Admin Panel</h1>
+        <h1 className="text-4xl text-[#99CC66]">Admin Panel</h1>
         <p className="text-muted-foreground font-bold mt-1">{user?.email} — Super Admin</p>
       </div>
 
@@ -755,7 +755,7 @@ export default function Admin() {
             className={`flex items-center gap-2 px-4 py-2 rounded-xl font-bold text-sm uppercase tracking-wider border-2 transition-all ${
               activeTab === id
                 ? "bg-primary text-primary-foreground border-primary"
-                : "border-border hover:border-[#D4AF37]/50 hover:text-[#D4AF37]"
+                : "border-border hover:border-[#99CC66]/50 hover:text-[#99CC66]"
             }`}
             data-testid={`tab-${id}`}
           >

@@ -55,46 +55,48 @@
 }
 
 :root {
-  /* Dark, high-contrast street-culture palette */
-  /* Background: near-black */
-  --background: 0 0% 7%;
+  /* Texas Hill Country Hemp Finder brand palette */
+  /* Willow Green #99CC66 · Iron Grey #4C5B61 · Tomato #FE4A49 · Frosted Blue #84C7D0 */
+
+  /* Background: deep iron-grey-tinted near-black */
+  --background: 200 14% 8%;
   /* Foreground: bright white */
   --foreground: 0 0% 96%;
-  /* Border: dark gray */
-  --border: 0 0% 18%;
+  /* Border: dark iron grey */
+  --border: 200 10% 22%;
 
-  /* Primary: Deep forest green #1A3E1E */
-  --primary: 126 41% 17%;
-  --primary-foreground: 0 0% 96%;
+  /* Primary: Willow Green #99CC66 */
+  --primary: 90 50% 60%;
+  --primary-foreground: 200 20% 8%;
 
-  /* Secondary: Burnished gold #D4AF37 */
-  --secondary: 46 65% 52%;
-  --secondary-foreground: 0 0% 7%;
+  /* Secondary: Frosted Blue #84C7D0 */
+  --secondary: 187 45% 67%;
+  --secondary-foreground: 200 20% 8%;
 
-  /* Card: slightly lighter than background */
-  --card: 0 0% 11%;
+  /* Card: iron-grey-tinted, lighter than background */
+  --card: 200 13% 12%;
   --card-foreground: 0 0% 96%;
-  --card-border: 0 0% 18%;
+  --card-border: 200 10% 22%;
 
   /* Popover */
-  --popover: 0 0% 11%;
+  --popover: 200 13% 12%;
   --popover-foreground: 0 0% 96%;
-  --popover-border: 0 0% 18%;
+  --popover-border: 200 10% 22%;
 
-  /* Muted */
-  --muted: 0 0% 15%;
-  --muted-foreground: 0 0% 55%;
+  /* Muted: Iron Grey #4C5B61 family */
+  --muted: 200 12% 17%;
+  --muted-foreground: 200 8% 62%;
 
-  /* Accent: bright green #00C853 */
-  --accent: 145 100% 39%;
-  --accent-foreground: 0 0% 7%;
+  /* Accent: Willow Green */
+  --accent: 90 50% 60%;
+  --accent-foreground: 200 20% 8%;
 
-  /* Destructive */
-  --destructive: 0 84% 60%;
+  /* Destructive: Tomato #FE4A49 */
+  --destructive: 0 99% 64%;
   --destructive-foreground: 0 0% 100%;
 
-  --input: 0 0% 18%;
-  --ring: 145 100% 39%;
+  --input: 200 10% 22%;
+  --ring: 90 50% 60%;
 
   --app-font-sans: 'Montserrat', sans-serif;
   --app-font-heading: 'Barlow Condensed', sans-serif;
