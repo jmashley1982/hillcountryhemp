@@ -3,7 +3,6 @@ import { useLocation, Link } from "wouter";
 import { useEffect, useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Plus, Edit, Clock, CheckCircle, XCircle, Building2, Sparkles, ImagePlus, Lightbulb } from "lucide-react";
-import { B2BBannerAd } from "@/components/b2b-banner-ad";
 import { SuggestBrandModal } from "@/components/suggest-brand-modal";
 
 const statusConfig = {
@@ -47,7 +46,6 @@ export default function Dashboard() {
 
   return (
     <div className="min-h-screen bg-background">
-      <B2BBannerAd />
       <div className="container mx-auto px-4 py-8 max-w-4xl">
         {/* CTA card */}
         <div className="mb-6 bg-gradient-to-r from-primary/80 to-[#1a2226] border border-[#99CC66]/30 rounded-2xl p-5 flex items-start gap-4 shadow-[0_4px_20px_rgba(0,0,0,0.4)]">

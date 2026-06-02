@@ -488,6 +488,17 @@ export const GetBannerResponse = zod.object({
 
 
 /**
+ * @summary Get dashboard banner ad (public)
+ */
+export const GetB2bBannerResponse = zod.object({
+  "id": zod.number(),
+  "image_path": zod.string().nullish(),
+  "mobile_image_path": zod.string().nullish(),
+  "link_url": zod.string().nullish()
+})
+
+
+/**
  * @summary Get popup ad (admin view)
  */
 export const GetAdminPopupResponse = zod.object({

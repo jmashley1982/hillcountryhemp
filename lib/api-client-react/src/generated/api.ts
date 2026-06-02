@@ -1972,6 +1972,83 @@ export function useGetBanner<TData = Awaited<ReturnType<typeof getBanner>>, TErr
 
 
 
+export const getGetB2bBannerUrl = () => {
+
+
+
+
+  return `/api/admin/b2b-banner`
+}
+
+/**
+ * @summary Get dashboard banner ad (public)
+ */
+export const getB2bBanner = async ( options?: RequestInit): Promise<BannerAd> => {
+
+  return customFetch<BannerAd>(getGetB2bBannerUrl(),
+  {
+    ...options,
+    method: 'GET'
+
+
+  }
+);}
+
+
+
+
+
+export const getGetB2bBannerQueryKey = () => {
+    return [
+    `/api/admin/b2b-banner`
+    ] as const;
+    }
+
+
+export const getGetB2bBannerQueryOptions = <TData = Awaited<ReturnType<typeof getB2bBanner>>, TError = ErrorType<unknown>>( options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof getB2bBanner>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+) => {
+
+const {query: queryOptions, request: requestOptions} = options ?? {};
+
+  const queryKey =  queryOptions?.queryKey ?? getGetB2bBannerQueryKey();
+
+
+
+    const queryFn: QueryFunction<Awaited<ReturnType<typeof getB2bBanner>>> = ({ signal }) => getB2bBanner({ signal, ...requestOptions });
+
+
+
+
+
+   return  { queryKey, queryFn, ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof getB2bBanner>>, TError, TData> & { queryKey: QueryKey }
+}
+
+export type GetB2bBannerQueryResult = NonNullable<Awaited<ReturnType<typeof getB2bBanner>>>
+export type GetB2bBannerQueryError = ErrorType<unknown>
+
+
+/**
+ * @summary Get dashboard banner ad (public)
+ */
+
+export function useGetB2bBanner<TData = Awaited<ReturnType<typeof getB2bBanner>>, TError = ErrorType<unknown>>(
+  options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof getB2bBanner>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+
+ ):  UseQueryResult<TData, TError> & { queryKey: QueryKey } {
+
+  const queryOptions = getGetB2bBannerQueryOptions(options)
+
+  const query = useQuery(queryOptions) as  UseQueryResult<TData, TError> & { queryKey: QueryKey };
+
+  return { ...query, queryKey: queryOptions.queryKey };
+}
+
+
+
+
+
+
+
 export const getGetAdminPopupUrl = () => {
 
 

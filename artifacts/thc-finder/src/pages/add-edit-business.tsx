@@ -36,7 +36,6 @@ import {
   Ticket,
   Loader2,
 } from "lucide-react";
-import { B2BBannerAd } from "@/components/b2b-banner-ad";
 
 const ALL_CATEGORIES = [
   "Flower",
@@ -406,7 +405,6 @@ export default function AddEditBusiness() {
 
   return (
     <div className="min-h-screen bg-background">
-      <B2BBannerAd />
       <div className="container mx-auto px-4 py-8 max-w-2xl">
         <Link
           href="/dashboard"

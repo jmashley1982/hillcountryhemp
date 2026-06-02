@@ -6,6 +6,7 @@ import {
   useGetAdminBrands,
   useGetAdminPopup,
   useGetBanner,
+  useGetB2bBanner,
   useGetAdminClaims,
   useApproveBusiness,
   useRejectBusiness,
@@ -21,6 +22,7 @@ import {
   getGetAllBusinessesQueryKey,
   getGetAdminBrandsQueryKey,
   getGetBannerQueryKey,
+  getGetB2bBannerQueryKey,
   getGetAdminPopupQueryKey,
   getGetAdminClaimsQueryKey,
 } from "@workspace/api-client-react";
@@ -33,7 +35,6 @@ import { zodResolver } from "@hookform/resolvers/zod";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
-import { B2BBannerAd } from "@/components/b2b-banner-ad";
 import {
   Form,
   FormControl,
@@ -1120,20 +1121,19 @@ function PopupTab() {
 }
 
 function B2BBannerTab() {
+  const queryClient = useQueryClient();
+  const { data: b2b, isLoading } = useGetB2bBanner({ query: { queryKey: getGetB2bBannerQueryKey() } });
+  if (isLoading) return <div className="animate-pulse font-bold p-4">Loading...</div>;
   return (
-    <div className="space-y-4">
-      <p className="text-sm text-muted-foreground font-medium">
-        This banner appears on the Dashboard and Add/Edit Business pages — visible only to logged-in business owners.
-        It is currently a dedicated sponsored placement for <strong>Texas Wholesale</strong>.
-      </p>
-      <div className="rounded-lg border-2 border-dashed border-border overflow-hidden">
-        <p className="text-xs text-muted-foreground px-3 pt-2 pb-1 font-medium">Live preview:</p>
-        <B2BBannerAd />
-      </div>
-      <p className="text-xs text-muted-foreground">
-        To change this placement, update the <code>B2BBannerAd</code> component in the codebase.
-      </p>
-    </div>
+    <AdUploader
+      endpoint="/api/admin/b2b-banner"
+      desktopField="banner"
+      mobileField="banner_mobile"
+      currentDesktopImage={b2b?.image_path ?? null}
+      currentMobileImage={b2b?.mobile_image_path ?? null}
+      currentLink={b2b?.link_url ?? null}
+      onSuccess={() => queryClient.invalidateQueries({ queryKey: getGetB2bBannerQueryKey() })}
+    />
   );
 }
 

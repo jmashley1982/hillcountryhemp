@@ -1,16 +1,51 @@
 import { useEffect, useState } from "react";
 import { Link, useLocation } from "wouter";
-import { useGetMe, useLogout, useGetBanner } from "@workspace/api-client-react";
+import { useGetMe, useLogout, useGetBanner, useGetB2bBanner } from "@workspace/api-client-react";
 import { LogOut, LayoutDashboard, Menu, X } from "lucide-react";
 import { Button } from "./ui/button";
 import logoUrl from "@assets/magnific_a-logo-for-an-app-called-_TeJK7kKVNR_1780364254574.png";
+
+const DASHBOARD_ROUTES = ["/dashboard", "/add-business", "/admin"];
+
+function BannerSlot({ imagePath, mobileImagePath, linkUrl }: {
+  imagePath: string | null | undefined;
+  mobileImagePath: string | null | undefined;
+  linkUrl: string | null | undefined;
+}) {
+  if (!imagePath && !mobileImagePath) return null;
+  return (
+    <a
+      href={linkUrl || "#"}
+      className="block w-full bg-black"
+      target={linkUrl ? "_blank" : undefined}
+      rel="noopener noreferrer"
+      data-testid="banner-ad"
+    >
+      <picture>
+        {mobileImagePath && (
+          <source media="(max-width: 767px)" srcSet={`/api/uploads/${mobileImagePath}`} />
+        )}
+        <img
+          src={`/api/uploads/${imagePath ?? mobileImagePath!}`}
+          alt="Advertisement"
+          className="w-full h-auto block opacity-90 hover:opacity-100 transition-opacity"
+        />
+      </picture>
+    </a>
+  );
+}
 
 export function Layout({ children }: { children: React.ReactNode }) {
   const { data: user, isLoading } = useGetMe();
   const logout = useLogout();
   const { data: banner } = useGetBanner();
-  const [, setLocation] = useLocation();
+  const { data: dashBanner } = useGetB2bBanner();
+  const [location, setLocation] = useLocation();
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
+
+  const isDashboardRoute = DASHBOARD_ROUTES.some(
+    (r) => location === r || location.startsWith(r + "/"),
+  );
 
   const handleLogout = () => {
     logout.mutate(undefined, {
@@ -22,26 +57,19 @@ export function Layout({ children }: { children: React.ReactNode }) {
 
   return (
     <div className="h-full flex flex-col bg-background relative overflow-hidden">
-      {/* Top banner — above everything; desktop image on md+, mobile image on <md */}
-      {(banner?.image_path || banner?.mobile_image_path) && (
-        <a
-          href={banner.link_url || "#"}
-          className="block w-full bg-black"
-          target={banner.link_url ? "_blank" : undefined}
-          rel="noopener noreferrer"
-          data-testid="banner-ad"
-        >
-          <picture>
-            {banner.mobile_image_path && (
-              <source media="(max-width: 767px)" srcSet={`/api/uploads/${banner.mobile_image_path}`} />
-            )}
-            <img
-              src={`/api/uploads/${banner.image_path ?? banner.mobile_image_path!}`}
-              alt="Advertisement"
-              className="w-full h-auto block opacity-90 hover:opacity-100 transition-opacity"
-            />
-          </picture>
-        </a>
+      {/* Top banner — route-aware: dashboard banner on business/admin pages, main banner everywhere else */}
+      {isDashboardRoute ? (
+        <BannerSlot
+          imagePath={dashBanner?.image_path}
+          mobileImagePath={dashBanner?.mobile_image_path}
+          linkUrl={dashBanner?.link_url}
+        />
+      ) : (
+        <BannerSlot
+          imagePath={banner?.image_path}
+          mobileImagePath={banner?.mobile_image_path}
+          linkUrl={banner?.link_url}
+        />
       )}
 
       {/* Navbar — iron-grey brand gradient */}

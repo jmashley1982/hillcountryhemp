@@ -533,6 +533,18 @@ paths:
               schema:
                 $ref: "#/components/schemas/BannerAd"
 
+  /admin/b2b-banner:
+    get:
+      operationId: getB2bBanner
+      summary: Get dashboard banner ad (public)
+      responses:
+        "200":
+          description: Dashboard banner ad
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/BannerAd"
+
   /admin/popup:
     get:
       operationId: getAdminPopup
