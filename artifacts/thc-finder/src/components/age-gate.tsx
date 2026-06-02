@@ -20,7 +20,7 @@ export function AgeGate() {
   if (!show) return null;
 
   return (
-    <div className="fixed inset-0 z-[100] flex items-center justify-center bg-black/90 p-4 backdrop-blur-md">
+    <div className="fixed inset-0 z-[9999] flex items-center justify-center bg-black/90 p-4 backdrop-blur-md">
       <div className="bg-card w-full max-w-md p-8 text-center border-4 border-primary rounded-xl shadow-2xl relative overflow-hidden">
         <div className="absolute -top-10 -right-10 text-primary/10">
           <svg width="200" height="200" viewBox="0 0 24 24" fill="currentColor"><path d="M12 2L14.5 9H22L16 13.5L18.5 21L12 17L5.5 21L8 13.5L2 9H9.5L12 2Z"/></svg>
