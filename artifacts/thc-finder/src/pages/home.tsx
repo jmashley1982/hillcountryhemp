@@ -123,8 +123,8 @@ export default function Home() {
   return (
     <div className="flex-1 flex flex-col min-h-0 relative">
       {/* ── Horizontal filter bar: Brand / Category / City ── */}
-      <div className="bg-card border-b border-border px-3 py-2 shadow-sm flex-none overflow-x-auto">
-        <div className="flex items-center gap-x-3 gap-y-2 min-w-0 flex-wrap">
+      <div className="bg-muted/30 border-b-2 border-border px-3 py-2 flex-none overflow-x-auto scrollbar-none">
+        <div className="flex items-center gap-x-4 flex-nowrap">
           {/* Brand */}
           <FilterGroup
             label="Brand"
