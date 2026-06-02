@@ -83,19 +83,36 @@ interface BusinessMapProps {
 export function BusinessMap({ businesses, onSelectBusiness }: BusinessMapProps) {
   const [userLocation, setUserLocation] = useState<[number, number] | null>(null);
   const [locating, setLocating] = useState(false);
+  const [locationError, setLocationError] = useState<string | null>(null);
 
   const mappable = businesses.filter(
     (b) => b.lat != null && b.lng != null,
   ) as (BusinessMarker & { lat: number; lng: number })[];
 
   const handleLocate = () => {
+    if (!navigator.geolocation) {
+      setLocationError("Location not supported by this browser");
+      return;
+    }
     setLocating(true);
+    setLocationError(null);
     navigator.geolocation.getCurrentPosition(
       (pos) => {
         setUserLocation([pos.coords.latitude, pos.coords.longitude]);
         setLocating(false);
       },
-      () => setLocating(false),
+      (err) => {
+        setLocating(false);
+        if (err.code === err.PERMISSION_DENIED) {
+          setLocationError("Location permission denied");
+        } else if (err.code === err.TIMEOUT) {
+          setLocationError("Location timed out — try again");
+        } else {
+          setLocationError("Could not get location");
+        }
+        setTimeout(() => setLocationError(null), 4000);
+      },
+      { enableHighAccuracy: false, timeout: 10000, maximumAge: 60000 },
     );
   };
 
@@ -133,11 +150,11 @@ export function BusinessMap({ businesses, onSelectBusiness }: BusinessMapProps) 
       </MapContainer>
 
       {/* Map overlay buttons */}
-      <div className="absolute top-4 right-4 z-[1000] flex flex-col gap-2">
+      <div className="absolute top-4 right-4 z-[1000] flex flex-col items-end gap-2">
         <Button
           size="sm"
           variant="secondary"
-          className="font-bold shadow-lg border-2 bg-white hover:bg-gray-50 text-gray-800"
+          className="font-bold shadow-lg border-2 bg-white hover:bg-gray-50 text-gray-800 touch-manipulation"
           onClick={handleLocate}
           disabled={locating}
           data-testid="button-locate"
@@ -145,12 +162,17 @@ export function BusinessMap({ businesses, onSelectBusiness }: BusinessMapProps) 
           <Navigation className="h-4 w-4 mr-1" />
           {locating ? "Locating..." : "My Location"}
         </Button>
+        {locationError && (
+          <div className="bg-red-600 text-white text-xs font-bold px-3 py-1.5 rounded-lg shadow-lg max-w-[200px] text-center leading-tight">
+            {locationError}
+          </div>
+        )}
       </div>
 
       {/* Legend */}
       <div className="absolute bottom-8 left-4 z-[1000] bg-white/90 backdrop-blur-sm rounded-lg p-3 border-2 border-gray-200 shadow-md">
         <div className="flex items-center gap-2 text-xs font-bold text-gray-700 mb-1.5">
-          <span className="inline-block w-3 h-3 rounded-full bg-green-700" /> Shop
+          <span className="inline-block w-3 h-3 rounded-full bg-green-700" /> Store
         </div>
         <div className="flex items-center gap-2 text-xs font-bold text-yellow-600">
           <Star className="h-3 w-3 fill-current" /> Featured
