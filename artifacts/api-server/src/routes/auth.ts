@@ -99,7 +99,7 @@ router.post("/auth/forgot-password", async (req, res): Promise<void> => {
   const [user] = await db
     .select({ id: usersTable.id, email: usersTable.email })
     .from(usersTable)
-    .where(eq(usersTable.email, email.trim().toLowerCase()));
+    .where(eq(usersTable.email, email.trim()));
 
   if (user) {
     const token = crypto.randomBytes(32).toString("hex");

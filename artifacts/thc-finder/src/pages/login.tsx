@@ -28,6 +28,14 @@ export default function Login() {
     }
   }, [user, setLocation]);
 
+  useEffect(() => {
+    const params = new URLSearchParams(window.location.search);
+    if (params.get("reset") === "success") {
+      toast({ title: "Password updated!", description: "You can now log in with your new password." });
+      window.history.replaceState({}, "", window.location.pathname);
+    }
+  }, [toast]);
+
   const form = useForm<LoginForm>({
     resolver: zodResolver(loginSchema),
     defaultValues: { email: "", password: "" },

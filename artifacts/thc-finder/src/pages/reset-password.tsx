@@ -45,7 +45,7 @@ export default function ResetPassword() {
       {
         onSuccess: () => {
           setDone(true);
-          setTimeout(() => setLocation("/login"), 3000);
+          setTimeout(() => setLocation("/login?reset=success"), 3000);
         },
         onError: (err: unknown) => {
           const msg =
