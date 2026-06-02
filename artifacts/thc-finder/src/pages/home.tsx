@@ -1,19 +1,28 @@
-import { useGetBusinesses } from "@workspace/api-client-react";
+import { useGetBusinesses, useGetBrands } from "@workspace/api-client-react";
 import { useState } from "react";
 import { Input } from "@/components/ui/input";
-import { Badge } from "@/components/ui/badge";
-import { Search, Map as MapIcon, List, Star, MapPin } from "lucide-react";
+import { Search, Map as MapIcon, List, Star, MapPin, ChevronDown } from "lucide-react";
 import { Link } from "wouter";
 import { BusinessMap } from "@/components/map";
 import { ShopOverlay } from "@/components/shop-overlay";
 import { SuggestBrandModal } from "@/components/suggest-brand-modal";
 
-const ALL_CATEGORIES = [
-  "Flower",
-  "Pre-Rolls",
+const DEFAULT_CITIES = ["New Braunfels", "Seguin", "San Marcos"];
+const MORE_CITIES = [
+  "Kyle",
+  "Buda",
+  "Schertz",
+  "Cibolo",
+  "Canyon Lake",
+  "Dripping Springs",
+  "Wimberley",
+  "Bulverde",
+  "Garden Ridge",
+];
+
+const DEFAULT_CATEGORIES = ["Flower", "Pre-Rolls", "Drinks", "Edibles"];
+const MORE_CATEGORIES = [
   "Concentrates",
-  "Edibles",
-  "Drinks",
   "Topicals",
   "CBD Products",
   "Bongs/Pipes",
@@ -22,17 +31,92 @@ const ALL_CATEGORIES = [
   "Batteries/E-Devices",
 ];
 
+const DEFAULT_BRANDS = ["Hometown Hero", "Jelly/NYB", "Sherpa"];
+
+interface FilterSectionProps {
+  label: string;
+  defaultItems: string[];
+  moreItems: string[];
+  selected: string | null;
+  expanded: boolean;
+  onToggleExpand: () => void;
+  onSelect: (item: string) => void;
+  testIdPrefix?: string;
+}
+
+function FilterSection({
+  label,
+  defaultItems,
+  moreItems,
+  selected,
+  expanded,
+  onToggleExpand,
+  onSelect,
+  testIdPrefix,
+}: FilterSectionProps) {
+  const activeClass =
+    "bg-[#84C7D0] text-black border-[#84C7D0] shadow-[#84C7D0]/30";
+  const inactiveClass =
+    "hover:bg-muted border-border text-muted-foreground hover:text-foreground";
+
+  const renderChip = (item: string) => (
+    <button
+      key={item}
+      onClick={() => onSelect(item)}
+      className={`cursor-pointer font-bold border-2 rounded-full px-3 py-1 text-[11px] shadow-sm transition-all ${
+        selected === item ? activeClass : inactiveClass
+      }`}
+      data-testid={testIdPrefix ? `${testIdPrefix}-${item.replace(/\s+/g, "-").replace(/\//g, "-").toLowerCase()}` : undefined}
+    >
+      {item}
+    </button>
+  );
+
+  return (
+    <div className="border-b border-border pb-3 mb-3 last:border-b-0 last:mb-0 last:pb-0">
+      <button
+        className="flex w-full items-center justify-between py-1 mb-2 text-sm font-bold text-foreground/80 uppercase tracking-wide hover:text-foreground transition-colors"
+        onClick={onToggleExpand}
+        data-testid={testIdPrefix ? `${testIdPrefix}-toggle` : undefined}
+      >
+        <span>{label}</span>
+        <ChevronDown
+          className={`h-4 w-4 transition-transform duration-200 ${expanded ? "rotate-180" : ""}`}
+        />
+      </button>
+      <div className="flex flex-wrap gap-1.5">
+        {defaultItems.map(renderChip)}
+        {expanded && moreItems.map(renderChip)}
+      </div>
+    </div>
+  );
+}
+
 export default function Home() {
   const [search, setSearch] = useState("");
   const [selectedCat, setSelectedCat] = useState<string | null>(null);
+  const [selectedCity, setSelectedCity] = useState<string | null>(null);
+  const [selectedBrand, setSelectedBrand] = useState<string | null>(null);
+  const [cityExpanded, setCityExpanded] = useState(false);
+  const [catExpanded, setCatExpanded] = useState(false);
+  const [brandExpanded, setBrandExpanded] = useState(false);
   const [viewMode, setViewMode] = useState<"map" | "list">("map");
   const [highlightedId, setHighlightedId] = useState<number | null>(null);
   const [selectedBizId, setSelectedBizId] = useState<number | null>(null);
   const [suggestOpen, setSuggestOpen] = useState(false);
 
+  const { data: allBrands = [] } = useGetBrands();
+
+  const defaultBrandNames = DEFAULT_BRANDS;
+  const moreBrandNames = allBrands
+    .map((b) => b.name)
+    .filter((name) => !defaultBrandNames.includes(name));
+
   const { data: businesses = [], isLoading } = useGetBusinesses({
     search: search || undefined,
     category: selectedCat || undefined,
+    city: selectedCity || undefined,
+    brand: selectedBrand || undefined,
   });
 
   return (
@@ -61,25 +145,44 @@ export default function Home() {
               />
             </div>
 
-            <div className="flex flex-wrap gap-1.5">
-              {ALL_CATEGORIES.map((cat) => (
-                <Badge
-                  key={cat}
-                  variant={selectedCat === cat ? "default" : "outline"}
-                  className={`cursor-pointer font-bold border-2 rounded-full px-3 py-1 text-[11px] shadow-sm transition-all ${
-                    selectedCat === cat
-                      ? "bg-[#84C7D0] text-black border-[#84C7D0] shadow-[#84C7D0]/30"
-                      : "hover:bg-muted border-border text-muted-foreground hover:text-foreground"
-                  }`}
-                  onClick={() =>
-                    setSelectedCat(selectedCat === cat ? null : cat)
-                  }
-                  data-testid={`filter-${cat.replace(/\s+/g, "-").toLowerCase()}`}
-                >
-                  {cat}
-                </Badge>
-              ))}
-            </div>
+            <FilterSection
+              label="City"
+              defaultItems={DEFAULT_CITIES}
+              moreItems={MORE_CITIES}
+              selected={selectedCity}
+              expanded={cityExpanded}
+              onToggleExpand={() => setCityExpanded((v) => !v)}
+              onSelect={(city) =>
+                setSelectedCity(selectedCity === city ? null : city)
+              }
+              testIdPrefix="filter-city"
+            />
+
+            <FilterSection
+              label="Category"
+              defaultItems={DEFAULT_CATEGORIES}
+              moreItems={MORE_CATEGORIES}
+              selected={selectedCat}
+              expanded={catExpanded}
+              onToggleExpand={() => setCatExpanded((v) => !v)}
+              onSelect={(cat) =>
+                setSelectedCat(selectedCat === cat ? null : cat)
+              }
+              testIdPrefix="filter-cat"
+            />
+
+            <FilterSection
+              label="Brand"
+              defaultItems={defaultBrandNames}
+              moreItems={moreBrandNames}
+              selected={selectedBrand}
+              expanded={brandExpanded}
+              onToggleExpand={() => setBrandExpanded((v) => !v)}
+              onSelect={(brand) =>
+                setSelectedBrand(selectedBrand === brand ? null : brand)
+              }
+              testIdPrefix="filter-brand"
+            />
           </div>
 
           <div className="flex-1 overflow-y-auto p-4 space-y-3 bg-muted/10">

@@ -70,6 +70,7 @@ export const GetBusinessesQueryParams = zod.object({
   "search": zod.coerce.string().optional(),
   "category": zod.coerce.string().optional(),
   "brand": zod.coerce.string().optional(),
+  "city": zod.coerce.string().optional(),
   "featured": zod.coerce.string().optional(),
   "lat": zod.coerce.string().optional(),
   "lng": zod.coerce.string().optional(),

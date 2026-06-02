@@ -255,6 +255,7 @@ export type GetBusinessesParams = {
 search?: string;
 category?: string;
 brand?: string;
+city?: string;
 featured?: string;
 lat?: string;
 lng?: string;

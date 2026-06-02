@@ -214,7 +214,7 @@ const router = Router();
 
 // Public: list approved businesses
 router.get("/businesses", async (req, res): Promise<void> => {
-  const { search, category, brand, featured, lat, lng, radius, sort } =
+  const { search, category, brand, city, featured, lat, lng, radius, sort } =
     req.query as Record<string, string | undefined>;
 
   let rows = await db
@@ -249,6 +249,11 @@ router.get("/businesses", async (req, res): Promise<void> => {
     enriched = enriched.filter((b) =>
       b.brands.some((br) => br.name.toLowerCase().includes(q)),
     );
+  }
+
+  if (city) {
+    const q = city.toLowerCase();
+    enriched = enriched.filter((b) => b.city?.toLowerCase().includes(q));
   }
 
   if (lat && lng && radius) {
