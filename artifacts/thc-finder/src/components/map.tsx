@@ -35,10 +35,10 @@ interface BusinessMarker {
   id: number;
   name: string;
   address: string;
-  lat: number | null;
-  lng: number | null;
+  lat?: number | null;
+  lng?: number | null;
   is_featured: number;
-  categories: string[];
+  categories?: string[];
 }
 
 interface MapControllerProps {
@@ -121,25 +121,7 @@ export function BusinessMap({ businesses, onSelectBusiness }: BusinessMapProps) 
             eventHandlers={{
               click: () => onSelectBusiness?.(b.id),
             }}
-          >
-            <Popup>
-              <div className="min-w-[160px]">
-                <p className="font-bold text-sm text-gray-900 mb-1">{b.name}</p>
-                {b.is_featured === 1 && (
-                  <p className="text-xs text-yellow-600 font-bold mb-1 flex items-center gap-1">
-                    <Star className="h-3 w-3 fill-current" /> Featured Shop
-                  </p>
-                )}
-                <p className="text-xs text-gray-500 mb-3">{b.address}</p>
-                <a
-                  href={`/business/${b.id}`}
-                  className="block text-center text-xs font-bold uppercase tracking-wider bg-green-800 text-white px-3 py-1.5 rounded hover:bg-green-700 transition-colors"
-                >
-                  View Details
-                </a>
-              </div>
-            </Popup>
-          </Marker>
+          />
         ))}
         {userLocation && (
           <Marker position={userLocation}>

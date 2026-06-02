@@ -5,6 +5,7 @@ import { Badge } from "@/components/ui/badge";
 import { Search, Map as MapIcon, List, Star, MapPin } from "lucide-react";
 import { Link } from "wouter";
 import { BusinessMap } from "@/components/map";
+import { ShopOverlay } from "@/components/shop-overlay";
 
 const ALL_CATEGORIES = [
   "Flower",
@@ -25,6 +26,7 @@ export default function Home() {
   const [selectedCat, setSelectedCat] = useState<string | null>(null);
   const [viewMode, setViewMode] = useState<"map" | "list">("map");
   const [highlightedId, setHighlightedId] = useState<number | null>(null);
+  const [selectedBizId, setSelectedBizId] = useState<number | null>(null);
 
   const { data: businesses = [], isLoading } = useGetBusinesses({
     search: search || undefined,
@@ -32,11 +34,11 @@ export default function Home() {
   });
 
   return (
-    <div className="flex-1 flex flex-col min-h-0">
+    <div className="flex-1 flex flex-col min-h-0 relative">
       <div className="flex-1 flex flex-col md:flex-row overflow-hidden min-h-0">
         {/* Sidebar */}
         <div
-          className={`w-full md:w-96 bg-card border-r border-border flex flex-col z-10 ${viewMode === "map" ? "hidden md:flex" : "flex"}`}
+          className={`w-full flex-1 md:flex-none md:w-96 min-h-0 bg-card border-r border-border flex flex-col z-10 ${viewMode === "map" ? "hidden md:flex" : "flex"}`}
         >
           <div className="p-4 border-b border-border bg-card shadow-sm">
             <h1 className="text-xl text-[#99CC66] mb-1 tracking-wide">
@@ -153,28 +155,33 @@ export default function Home() {
         <div
           className={`flex-1 relative ${viewMode === "list" ? "hidden md:block" : "block"}`}
         >
-          {/* Mobile view toggle */}
-          <button
-            className="md:hidden absolute bottom-6 right-6 z-[1000] bg-primary text-primary-foreground p-4 rounded-full shadow-xl border-4 border-black/10 transition-transform hover:scale-105"
-            onClick={() => setViewMode(viewMode === "map" ? "list" : "map")}
-            data-testid="button-toggle-view"
-          >
-            {viewMode === "map" ? (
-              <List className="h-6 w-6" />
-            ) : (
-              <MapIcon className="h-6 w-6" />
-            )}
-          </button>
-
           <BusinessMap
             businesses={businesses}
-            onSelectBusiness={(id) => {
-              setHighlightedId(id);
-              setViewMode("list");
-            }}
+            onSelectBusiness={(id) => setSelectedBizId(id)}
           />
         </div>
       </div>
+
+      {/* Mobile view toggle — always reachable, even from the list */}
+      <button
+        className="md:hidden fixed bottom-6 right-6 z-[1500] bg-primary text-primary-foreground p-4 rounded-full shadow-xl border-4 border-black/10 transition-transform hover:scale-105"
+        onClick={() => setViewMode(viewMode === "map" ? "list" : "map")}
+        data-testid="button-toggle-view"
+      >
+        {viewMode === "map" ? (
+          <List className="h-6 w-6" />
+        ) : (
+          <MapIcon className="h-6 w-6" />
+        )}
+      </button>
+
+      {/* Shop detail overlay */}
+      {selectedBizId != null && (
+        <ShopOverlay
+          businessId={selectedBizId}
+          onClose={() => setSelectedBizId(null)}
+        />
+      )}
     </div>
   );
 }
