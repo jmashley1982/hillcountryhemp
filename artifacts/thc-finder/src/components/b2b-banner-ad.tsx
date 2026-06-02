@@ -2,13 +2,7 @@ import logo from "@assets/txwhlsl_logo_1780368105227.png";
 
 export function B2BBannerAd() {
   return (
-    <a
-      href="https://www.txwsa.com/"
-      target="_blank"
-      rel="noopener noreferrer"
-      className="block w-full bg-black border-b border-border"
-      data-testid="b2b-banner-ad"
-    >
+    <div className="block w-full bg-black border-b border-border" data-testid="b2b-banner-ad">
       <div className="flex items-center gap-4 px-4 py-3 sm:px-6 sm:py-4 max-w-6xl mx-auto">
         <img
           src={logo}
@@ -20,7 +14,7 @@ export function B2BBannerAd() {
             Texas Wholesale
           </p>
           <p className="text-xs sm:text-sm font-medium text-white/90 truncate">
-            San Antonio wholesaler — huge selection of hemp & vape gear
+            San Antonio wholesaler — huge selection of hemp &amp; vape gear
           </p>
         </div>
         <a
@@ -28,7 +22,6 @@ export function B2BBannerAd() {
           target="_blank"
           rel="noopener noreferrer"
           className="inline-flex items-center gap-2 px-4 py-2 rounded-xl bg-[#99CC66] text-black font-bold uppercase tracking-wider text-xs sm:text-sm hover:brightness-105 transition-all shrink-0"
-          onClick={(e) => e.stopPropagation()}
         >
           <img
             src={logo}
@@ -38,6 +31,6 @@ export function B2BBannerAd() {
           <span>Shop Now</span>
         </a>
       </div>
-    </a>
+    </div>
   );
 }

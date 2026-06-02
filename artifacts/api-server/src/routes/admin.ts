@@ -17,7 +17,7 @@ import { requireLogin, requireAdmin } from "../middlewares/auth.js";
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
 
-const uploadsDir = path.join(__dirname, "..", "..", "uploads");
+const uploadsDir = path.join(__dirname, "..", "uploads");
 
 const storage = multer.diskStorage({
   destination: uploadsDir,
@@ -234,7 +234,7 @@ router.put(
   requireAdmin,
   upload.single("banner"),
   async (req, res): Promise<void> => {
-    const { linkUrl } = req.body as { linkUrl?: string };
+    const { link_url } = req.body as { link_url?: string };
     const [existing] = await db
       .select()
       .from(bannerAdTable)
@@ -242,7 +242,7 @@ router.put(
 
     if (existing) {
       const updates: Partial<typeof bannerAdTable.$inferInsert> = {
-        linkUrl: linkUrl ?? existing.linkUrl,
+        linkUrl: link_url ?? existing.linkUrl,
       };
       if (req.file) updates.imagePath = req.file.filename;
       await db
@@ -253,7 +253,7 @@ router.put(
       await db.insert(bannerAdTable).values({
         id: 1,
         imagePath: req.file?.filename ?? null,
-        linkUrl: linkUrl ?? null,
+        linkUrl: link_url ?? null,
       });
     }
     res.json({ success: true });
