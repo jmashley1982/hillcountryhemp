@@ -4,7 +4,7 @@ description: Non-obvious decisions for the THC Hemp Finder project — auth, upl
 ---
 
 ## Categories (authoritative list)
-Hemp Flower, Hemp Pre-Rolls, Edibles, Topicals, CBD Products, Smoking Accessories, Dab Equipment. "Smoke Shop" and "Vape Shop" were removed.
+Flower, Pre-Rolls, Concentrates, Edibles, Drinks, Topicals, CBD Products, Bongs/Pipes, Cones/Papers, Lighters/Torches, Batteries/E-Devices. Update ALL_CATEGORIES in both home.tsx AND add-edit-business.tsx together.
 
 **How to apply:** Update `ALL_CATEGORIES` in both `home.tsx` and `add-edit-business.tsx` together.
 

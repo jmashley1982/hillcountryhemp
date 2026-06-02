@@ -39,13 +39,17 @@ import {
 import { B2BBannerAd } from "@/components/b2b-banner-ad";
 
 const ALL_CATEGORIES = [
-  "Hemp Flower",
-  "Hemp Pre-Rolls",
+  "Flower",
+  "Pre-Rolls",
+  "Concentrates",
   "Edibles",
+  "Drinks",
   "Topicals",
   "CBD Products",
-  "Smoking Accessories",
-  "Dab Equipment",
+  "Bongs/Pipes",
+  "Cones/Papers",
+  "Lighters/Torches",
+  "Batteries/E-Devices",
 ];
 
 const schema = z.object({
@@ -57,6 +61,7 @@ const schema = z.object({
   description: z.string().optional(),
   categories: z.array(z.string()).optional(),
   brand_ids: z.array(z.number()).optional(),
+  on_site_smoking_area: z.boolean().optional(),
 });
 type FormData = z.infer<typeof schema>;
 
@@ -101,6 +106,7 @@ export default function AddEditBusiness() {
       description: "",
       categories: [],
       brand_ids: [],
+      on_site_smoking_area: false,
     },
   });
 
@@ -119,6 +125,7 @@ export default function AddEditBusiness() {
         description: existing.description ?? "",
         categories: existing.categories ?? [],
         brand_ids: existing.brands?.map((b) => b.id) ?? [],
+        on_site_smoking_area: !!(existing as { on_site_smoking_area?: number }).on_site_smoking_area,
       });
     }
   }, [existing, form]);
@@ -434,6 +441,22 @@ export default function AddEditBusiness() {
                 </FormItem>
               )}
             />
+
+            {/* On-site smoking area */}
+            <div className="flex items-center gap-3 p-4 bg-card border-2 border-border rounded-2xl shadow-[0_4px_20px_rgba(0,0,0,0.15)]">
+              <input
+                type="checkbox"
+                id="on_site_smoking_area"
+                className="w-5 h-5 rounded accent-[#00C853] cursor-pointer"
+                checked={form.watch("on_site_smoking_area") ?? false}
+                onChange={(e) => form.setValue("on_site_smoking_area", e.target.checked)}
+                data-testid="checkbox-smoking-area"
+              />
+              <label htmlFor="on_site_smoking_area" className="cursor-pointer">
+                <p className="font-bold uppercase text-xs tracking-wider text-foreground">On-Site Smoking Area</p>
+                <p className="text-xs text-muted-foreground mt-0.5">Check this if your shop has a designated area for customers to smoke on-premises.</p>
+              </label>
+            </div>
 
             {/* Categories */}
             <div>

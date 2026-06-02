@@ -33,6 +33,7 @@ export const businessesTable = pgTable("businesses", {
   status: text("status").notNull().default("pending"),
   rejectionReason: text("rejection_reason"),
   isFeatured: integer("is_featured").notNull().default(0),
+  onSiteSmokingArea: integer("on_site_smoking_area").notNull().default(0),
   createdAt: timestamp("created_at").defaultNow().notNull(),
   lastUpdated: timestamp("last_updated").defaultNow().notNull(),
 });

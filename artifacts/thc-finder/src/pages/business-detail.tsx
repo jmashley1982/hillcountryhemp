@@ -1,6 +1,6 @@
 import { useGetBusiness } from "@workspace/api-client-react";
 import { useParams, Link } from "wouter";
-import { MapPin, Phone, Globe, Clock, Star, ArrowLeft, RefreshCw } from "lucide-react";
+import { MapPin, Phone, Globe, Clock, Star, ArrowLeft, RefreshCw, Wind } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 
 function formatDate(dateStr: string) {
@@ -26,6 +26,7 @@ export default function BusinessDetail() {
   }
 
   const lastUpdated = (biz as { last_updated?: string }).last_updated;
+  const onSiteSmokingArea = (biz as { on_site_smoking_area?: number }).on_site_smoking_area;
 
   return (
     <div className="container mx-auto px-4 py-8 max-w-5xl">
@@ -120,6 +121,13 @@ export default function BusinessDetail() {
                 <div className="flex items-start gap-3">
                   <Clock className="h-5 w-5 text-primary shrink-0 mt-0.5" />
                   <span className="whitespace-pre-line text-sm">{biz.hours}</span>
+                </div>
+              )}
+
+              {!!onSiteSmokingArea && (
+                <div className="flex items-center gap-3 bg-[#00C853]/10 border border-[#00C853]/30 rounded-xl px-3 py-2">
+                  <Wind className="h-4 w-4 text-[#00C853] shrink-0" />
+                  <span className="text-xs font-bold text-[#00C853] uppercase tracking-wider">On-site smoking area</span>
                 </div>
               )}
 

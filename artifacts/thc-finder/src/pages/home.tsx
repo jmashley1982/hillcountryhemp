@@ -7,13 +7,17 @@ import { Link } from "wouter";
 import { BusinessMap } from "@/components/map";
 
 const ALL_CATEGORIES = [
-  "Hemp Flower",
-  "Hemp Pre-Rolls",
+  "Flower",
+  "Pre-Rolls",
+  "Concentrates",
   "Edibles",
+  "Drinks",
   "Topicals",
   "CBD Products",
-  "Smoking Accessories",
-  "Dab Equipment",
+  "Bongs/Pipes",
+  "Cones/Papers",
+  "Lighters/Torches",
+  "Batteries/E-Devices",
 ];
 
 export default function Home() {

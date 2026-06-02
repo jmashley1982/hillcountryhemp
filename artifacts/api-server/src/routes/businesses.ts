@@ -115,7 +115,9 @@ async function enrichBusiness(b: {
     status: b.status,
     rejection_reason: b.rejectionReason,
     is_featured: b.isFeatured,
+    on_site_smoking_area: b.onSiteSmokingArea,
     created_at: b.createdAt.toISOString(),
+    last_updated: b.lastUpdated.toISOString(),
     categories: cats.map((c) => c.category),
     brands: brandRows,
   };
@@ -289,7 +291,7 @@ router.post(
   requireLogin,
   requireBusiness,
   async (req, res): Promise<void> => {
-    const { name, address, phone, website, hours, description, categories, brand_ids } =
+    const { name, address, phone, website, hours, description, categories, brand_ids, on_site_smoking_area } =
       req.body as {
         name: string;
         address: string;
@@ -299,6 +301,7 @@ router.post(
         description?: string;
         categories?: string[];
         brand_ids?: number[];
+        on_site_smoking_area?: boolean;
       };
     if (!name || !address) {
       res.status(400).json({ error: "Name and address required" });
@@ -317,6 +320,7 @@ router.post(
         website: website ?? null,
         hours: hours ?? null,
         description: description ?? null,
+        onSiteSmokingArea: on_site_smoking_area ? 1 : 0,
       })
       .returning();
 
@@ -359,7 +363,7 @@ router.put(
       return;
     }
 
-    const { name, address, phone, website, hours, description, categories, brand_ids } =
+    const { name, address, phone, website, hours, description, categories, brand_ids, on_site_smoking_area } =
       req.body as {
         name?: string;
         address?: string;
@@ -369,6 +373,7 @@ router.put(
         description?: string;
         categories?: string[];
         brand_ids?: number[];
+        on_site_smoking_area?: boolean;
       };
 
     let newLat = b.lat;
@@ -390,6 +395,7 @@ router.put(
       website: website !== undefined ? website : b.website,
       hours: hours !== undefined ? hours : b.hours,
       description: description !== undefined ? description : b.description,
+      onSiteSmokingArea: on_site_smoking_area !== undefined ? (on_site_smoking_area ? 1 : 0) : b.onSiteSmokingArea,
       lastUpdated: new Date(),
     };
 
