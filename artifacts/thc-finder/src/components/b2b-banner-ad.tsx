@@ -1,38 +1,29 @@
-import { useEffect, useState } from "react";
-
-interface B2BBannerData {
-  id: number;
-  image_path: string | null;
-  link_url: string | null;
-}
+import logo from "@assets/txwhlsl_logo_1780368105227.png";
 
 export function B2BBannerAd() {
-  const [banner, setBanner] = useState<B2BBannerData | null>(null);
-
-  useEffect(() => {
-    fetch("/api/admin/b2b-banner")
-      .then((r) => r.json())
-      .then((data: B2BBannerData) => {
-        if (data.image_path) setBanner(data);
-      })
-      .catch(() => {});
-  }, []);
-
-  if (!banner?.image_path) return null;
-
   return (
     <a
-      href={banner.link_url || "#"}
-      className="block w-full bg-black border-b border-border"
-      target={banner.link_url ? "_blank" : undefined}
+      href="https://texaswholesaler.com"
+      target="_blank"
       rel="noopener noreferrer"
+      className="block w-full bg-black border-b border-border"
       data-testid="b2b-banner-ad"
     >
-      <img
-        src={`/api/uploads/${banner.image_path}`}
-        alt="Business Advertisement"
-        className="w-full h-auto block opacity-90 hover:opacity-100 transition-opacity"
-      />
+      <div className="flex items-center gap-4 px-4 py-3 sm:px-6 sm:py-4 max-w-6xl mx-auto">
+        <img
+          src={logo}
+          alt="Texas Wholesale"
+          className="h-14 sm:h-16 w-auto object-contain shrink-0 rounded-sm"
+        />
+        <div className="min-w-0">
+          <p className="text-sm sm:text-base font-bold uppercase tracking-wider text-[#FE4A49]">
+            Texas Wholesale
+          </p>
+          <p className="text-xs sm:text-sm font-medium text-white/90 truncate">
+            San Antonio wholesaler — huge selection of hemp & vape gear
+          </p>
+        </div>
+      </div>
     </a>
   );
 }
