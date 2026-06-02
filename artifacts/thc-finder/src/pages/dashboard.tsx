@@ -72,11 +72,10 @@ export default function Dashboard() {
           </div>
           <div className="flex items-center gap-3">
             <button
-              className="text-xs text-muted-foreground/60 hover:text-muted-foreground transition-colors font-medium underline-offset-2 hover:underline flex items-center gap-1"
+              className="text-[11px] text-muted-foreground/40 hover:text-muted-foreground/70 transition-colors font-medium underline-offset-2 hover:underline"
               onClick={() => setSuggestOpen(true)}
               data-testid="button-suggest-brand-dashboard"
             >
-              <Lightbulb className="h-3.5 w-3.5" />
               Suggest a brand
             </button>
             <Link href="/dashboard/add">
