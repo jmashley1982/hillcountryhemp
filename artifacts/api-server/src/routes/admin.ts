@@ -81,8 +81,8 @@ router.get("/admin/b2b-banner", async (_req, res): Promise<void> => {
     .where(eq(b2bBannerAdTable.id, 1));
   res.json(
     b2b
-      ? { id: b2b.id, image_path: b2b.imagePath, mobile_image_path: b2b.mobileImagePath, link_url: b2b.linkUrl }
-      : { id: 1, image_path: null, link_url: null },
+      ? { id: b2b.id, image_path: b2b.imagePath, mobile_image_path: b2b.mobileImagePath, link_url: b2b.linkUrl, mobile_link_url: b2b.mobileLinkUrl }
+      : { id: 1, image_path: null, link_url: null, mobile_link_url: null },
   );
 });
 
@@ -93,8 +93,8 @@ router.get("/admin/banner", async (_req, res): Promise<void> => {
     .where(eq(bannerAdTable.id, 1));
   res.json(
     banner
-      ? { id: banner.id, image_path: banner.imagePath, mobile_image_path: banner.mobileImagePath, link_url: banner.linkUrl }
-      : { id: 1, image_path: null, link_url: null },
+      ? { id: banner.id, image_path: banner.imagePath, mobile_image_path: banner.mobileImagePath, link_url: banner.linkUrl, mobile_link_url: banner.mobileLinkUrl }
+      : { id: 1, image_path: null, link_url: null, mobile_link_url: null },
   );
 });
 
@@ -105,8 +105,8 @@ router.get("/admin/popup", async (_req, res): Promise<void> => {
     .where(eq(popupAdTable.id, 1));
   res.json(
     popup
-      ? { id: popup.id, image_path: popup.imagePath, mobile_image_path: popup.mobileImagePath, link_url: popup.linkUrl, is_active: popup.isActive }
-      : { id: 1, image_path: null, link_url: null, is_active: 0 },
+      ? { id: popup.id, image_path: popup.imagePath, mobile_image_path: popup.mobileImagePath, link_url: popup.linkUrl, mobile_link_url: popup.mobileLinkUrl, is_active: popup.isActive }
+      : { id: 1, image_path: null, link_url: null, mobile_link_url: null, is_active: 0 },
   );
 });
 
@@ -420,13 +420,13 @@ router.put(
   requireAdmin,
   upload.fields([{ name: "banner", maxCount: 1 }, { name: "banner_mobile", maxCount: 1 }]),
   async (req, res): Promise<void> => {
-    const { link_url } = req.body as { link_url?: string };
+    const body = req.body as { link_url?: string; mobile_link_url?: string };
     const files = req.files as { [f: string]: Express.Multer.File[] } | undefined;
     const [existing] = await db.select().from(bannerAdTable).where(eq(bannerAdTable.id, 1));
 
-    const updates: Partial<typeof bannerAdTable.$inferInsert> = {
-      linkUrl: link_url ?? existing?.linkUrl,
-    };
+    const updates: Partial<typeof bannerAdTable.$inferInsert> = {};
+    if (body.link_url !== undefined) updates.linkUrl = body.link_url || null;
+    if (body.mobile_link_url !== undefined) updates.mobileLinkUrl = body.mobile_link_url || null;
     if (files?.["banner"]?.[0]) {
       const f = files["banner"][0];
       const name = makeUploadFilename("ad", f.originalname);
@@ -442,28 +442,27 @@ router.put(
     if (existing) {
       await db.update(bannerAdTable).set(updates).where(eq(bannerAdTable.id, 1));
     } else {
-      await db.insert(bannerAdTable).values({ id: 1, imagePath: null, mobileImagePath: null, linkUrl: link_url ?? null, ...updates });
+      await db.insert(bannerAdTable).values({ id: 1, imagePath: null, mobileImagePath: null, linkUrl: null, mobileLinkUrl: null, ...updates });
     }
     res.json({ success: true });
   },
 );
 
-// Update popup (admin write) — accepts desktop (image) and/or mobile (image_mobile)
+// Update popup (admin write) — accepts desktop (image) and/or mobile (image_mobile), each with own link
 router.put(
   "/admin/popup",
   requireLogin,
   requireAdmin,
   upload.fields([{ name: "image", maxCount: 1 }, { name: "image_mobile", maxCount: 1 }]),
   async (req, res): Promise<void> => {
-    const { link_url, is_active } = req.body as { link_url?: string; is_active?: string };
-    const active = is_active === "true" ? 1 : 0;
+    const body = req.body as { link_url?: string; mobile_link_url?: string; is_active?: string };
     const files = req.files as { [f: string]: Express.Multer.File[] } | undefined;
     const [existing] = await db.select().from(popupAdTable).where(eq(popupAdTable.id, 1));
 
-    const updates: Partial<typeof popupAdTable.$inferInsert> = {
-      linkUrl: link_url ?? existing?.linkUrl,
-      isActive: active,
-    };
+    const updates: Partial<typeof popupAdTable.$inferInsert> = {};
+    if (body.link_url !== undefined) updates.linkUrl = body.link_url || null;
+    if (body.mobile_link_url !== undefined) updates.mobileLinkUrl = body.mobile_link_url || null;
+    if (body.is_active !== undefined) updates.isActive = body.is_active === "true" ? 1 : 0;
     if (files?.["image"]?.[0]) {
       const f = files["image"][0];
       const name = makeUploadFilename("popup", f.originalname);
@@ -479,26 +478,26 @@ router.put(
     if (existing) {
       await db.update(popupAdTable).set(updates).where(eq(popupAdTable.id, 1));
     } else {
-      await db.insert(popupAdTable).values({ id: 1, imagePath: null, mobileImagePath: null, linkUrl: link_url ?? null, isActive: active, ...updates });
+      await db.insert(popupAdTable).values({ id: 1, imagePath: null, mobileImagePath: null, linkUrl: null, mobileLinkUrl: null, isActive: 0, ...updates });
     }
     res.json({ success: true });
   },
 );
 
-// Update B2B banner (admin write) — accepts desktop (banner) and/or mobile (banner_mobile)
+// Update B2B banner (admin write) — accepts desktop (banner) and/or mobile (banner_mobile), each with own link
 router.put(
   "/admin/b2b-banner",
   requireLogin,
   requireAdmin,
   upload.fields([{ name: "banner", maxCount: 1 }, { name: "banner_mobile", maxCount: 1 }]),
   async (req, res): Promise<void> => {
-    const { link_url } = req.body as { link_url?: string };
+    const body = req.body as { link_url?: string; mobile_link_url?: string };
     const files = req.files as { [f: string]: Express.Multer.File[] } | undefined;
     const [existing] = await db.select().from(b2bBannerAdTable).where(eq(b2bBannerAdTable.id, 1));
 
-    const updates: Partial<typeof b2bBannerAdTable.$inferInsert> = {
-      linkUrl: link_url ?? existing?.linkUrl,
-    };
+    const updates: Partial<typeof b2bBannerAdTable.$inferInsert> = {};
+    if (body.link_url !== undefined) updates.linkUrl = body.link_url || null;
+    if (body.mobile_link_url !== undefined) updates.mobileLinkUrl = body.mobile_link_url || null;
     if (files?.["banner"]?.[0]) {
       const f = files["banner"][0];
       const name = makeUploadFilename("ad", f.originalname);
@@ -514,7 +513,7 @@ router.put(
     if (existing) {
       await db.update(b2bBannerAdTable).set(updates).where(eq(b2bBannerAdTable.id, 1));
     } else {
-      await db.insert(b2bBannerAdTable).values({ id: 1, imagePath: null, mobileImagePath: null, linkUrl: link_url ?? null, ...updates });
+      await db.insert(b2bBannerAdTable).values({ id: 1, imagePath: null, mobileImagePath: null, linkUrl: null, mobileLinkUrl: null, ...updates });
     }
     res.json({ success: true });
   },

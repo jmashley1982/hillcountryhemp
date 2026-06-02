@@ -7,30 +7,40 @@ import logoUrl from "@assets/magnific_a-logo-for-an-app-called-_TeJK7kKVNR_17803
 
 const DASHBOARD_ROUTES = ["/dashboard", "/add-business", "/admin"];
 
-function BannerSlot({ imagePath, mobileImagePath, linkUrl }: {
+function BannerSlot({ imagePath, mobileImagePath, linkUrl, mobileLinkUrl }: {
   imagePath: string | null | undefined;
   mobileImagePath: string | null | undefined;
   linkUrl: string | null | undefined;
+  mobileLinkUrl: string | null | undefined;
 }) {
-  if (!imagePath && !mobileImagePath) return null;
+  const hasDesktop = !!imagePath;
+  const hasMobile = !!mobileImagePath;
+  if (!hasDesktop && !hasMobile) return null;
+
+  const imgClass = "w-full h-auto block opacity-90 hover:opacity-100 transition-opacity";
+
+  if (hasDesktop && hasMobile) {
+    return (
+      <>
+        <a href={linkUrl || "#"} className="hidden md:block w-full bg-black"
+          target={linkUrl ? "_blank" : undefined} rel="noopener noreferrer" data-testid="banner-ad-desktop">
+          <img src={`/api/uploads/${imagePath}`} alt="Advertisement" className={imgClass} />
+        </a>
+        <a href={mobileLinkUrl || linkUrl || "#"} className="block md:hidden w-full bg-black"
+          target={(mobileLinkUrl || linkUrl) ? "_blank" : undefined} rel="noopener noreferrer" data-testid="banner-ad-mobile">
+          <img src={`/api/uploads/${mobileImagePath}`} alt="Advertisement" className={imgClass} />
+        </a>
+      </>
+    );
+  }
+
+  const src = imagePath ?? mobileImagePath!;
+  const href = (imagePath ? linkUrl : mobileLinkUrl) || "#";
+  const hasLink = !!(imagePath ? linkUrl : mobileLinkUrl);
   return (
-    <a
-      href={linkUrl || "#"}
-      className="block w-full bg-black"
-      target={linkUrl ? "_blank" : undefined}
-      rel="noopener noreferrer"
-      data-testid="banner-ad"
-    >
-      <picture>
-        {mobileImagePath && (
-          <source media="(max-width: 767px)" srcSet={`/api/uploads/${mobileImagePath}`} />
-        )}
-        <img
-          src={`/api/uploads/${imagePath ?? mobileImagePath!}`}
-          alt="Advertisement"
-          className="w-full h-auto block opacity-90 hover:opacity-100 transition-opacity"
-        />
-      </picture>
+    <a href={href} className="block w-full bg-black"
+      target={hasLink ? "_blank" : undefined} rel="noopener noreferrer" data-testid="banner-ad">
+      <img src={`/api/uploads/${src}`} alt="Advertisement" className={imgClass} />
     </a>
   );
 }
@@ -63,12 +73,14 @@ export function Layout({ children }: { children: React.ReactNode }) {
           imagePath={dashBanner?.image_path}
           mobileImagePath={dashBanner?.mobile_image_path}
           linkUrl={dashBanner?.link_url}
+          mobileLinkUrl={dashBanner?.mobile_link_url}
         />
       ) : (
         <BannerSlot
           imagePath={banner?.image_path}
           mobileImagePath={banner?.mobile_image_path}
           linkUrl={banner?.link_url}
+          mobileLinkUrl={banner?.mobile_link_url}
         />
       )}
 

@@ -13,5 +13,7 @@ export interface PopupAd {
   mobile_image_path?: string | null;
   /** @nullable */
   link_url?: string | null;
+  /** @nullable */
+  mobile_link_url?: string | null;
   is_active: number;
 }

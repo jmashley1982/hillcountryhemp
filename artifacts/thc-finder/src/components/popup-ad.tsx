@@ -50,9 +50,13 @@ export function PopupAd() {
   const hasImage = popup?.image_path || popup?.mobile_image_path;
   if (!show || !hasImage) return null;
 
-  const activePath = isMobile && popup.mobile_image_path
-    ? popup.mobile_image_path
+  const useMobileSlot = isMobile && !!popup.mobile_image_path;
+  const activePath = useMobileSlot
+    ? popup.mobile_image_path!
     : (popup.image_path ?? popup.mobile_image_path!);
+  const activeLink = useMobileSlot
+    ? (popup.mobile_link_url || popup.link_url)
+    : popup.link_url;
 
   const imgClass = "w-full max-h-[82vh] object-contain rounded-xl shadow-2xl border-4 border-white block";
 
@@ -75,25 +79,12 @@ export function PopupAd() {
           <X className="h-5 w-5 text-gray-900" />
         </button>
 
-        {popup.link_url ? (
-          <a
-            href={popup.link_url}
-            target="_blank"
-            rel="noopener noreferrer"
-            onClick={handleClose}
-          >
-            <img
-              src={`/api/uploads/${activePath}`}
-              alt="Special Offer"
-              className={imgClass}
-            />
+        {activeLink ? (
+          <a href={activeLink} target="_blank" rel="noopener noreferrer" onClick={handleClose}>
+            <img src={`/api/uploads/${activePath}`} alt="Special Offer" className={imgClass} />
           </a>
         ) : (
-          <img
-            src={`/api/uploads/${activePath}`}
-            alt="Special Offer"
-            className={imgClass}
-          />
+          <img src={`/api/uploads/${activePath}`} alt="Special Offer" className={imgClass} />
         )}
       </div>
     </div>

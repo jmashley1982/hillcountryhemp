@@ -1150,6 +1150,8 @@ components:
           type: ["string", "null"]
         link_url:
           type: ["string", "null"]
+        mobile_link_url:
+          type: ["string", "null"]
 
     PopupAd:
       type: object
@@ -1162,6 +1164,8 @@ components:
         mobile_image_path:
           type: ["string", "null"]
         link_url:
+          type: ["string", "null"]
+        mobile_link_url:
           type: ["string", "null"]
         is_active:
           type: integer

@@ -63,9 +63,11 @@ import {
   Briefcase,
   MapPin,
   Flag,
+  Monitor,
+  Smartphone,
 } from "lucide-react";
 
-type Tab = "pending" | "all" | "brands" | "banner" | "popup" | "b2b" | "add-store" | "claims";
+type Tab = "pending" | "all" | "brands" | "add-store" | "claims" | "map-banner-d" | "map-banner-m" | "map-popup-d" | "map-popup-m" | "dash-banner-d" | "dash-banner-m";
 
 function formatPhone(raw: string | null | undefined): string {
   if (!raw) return "";
@@ -908,46 +910,46 @@ function BrandsTab() {
   );
 }
 
-function AdUploader({
+function SlotUploader({
   endpoint,
-  desktopField,
-  mobileField,
-  currentDesktopImage,
-  currentMobileImage,
+  imageField,
+  linkField,
+  aspectRatio,
+  description,
+  currentImage,
   currentLink,
-  currentActive,
   showActiveToggle,
+  currentActive,
   onSuccess,
 }: {
   endpoint: string;
-  desktopField: string;
-  mobileField: string;
-  currentDesktopImage?: string | null;
-  currentMobileImage?: string | null;
+  imageField: string;
+  linkField: string;
+  aspectRatio: string;
+  description: string;
+  currentImage?: string | null;
   currentLink?: string | null;
-  currentActive?: number;
   showActiveToggle?: boolean;
+  currentActive?: number;
   onSuccess: () => void;
 }) {
   const { toast } = useToast();
-  const [uploading, setUploading] = useState<"desktop" | "mobile" | "link" | null>(null);
+  const [uploading, setUploading] = useState<"image" | "link" | null>(null);
   const [link, setLink] = useState(currentLink ?? "");
   const [isActive, setIsActive] = useState(currentActive === 1);
-  const desktopRef = useRef<HTMLInputElement>(null);
-  const mobileRef = useRef<HTMLInputElement>(null);
+  const fileRef = useRef<HTMLInputElement>(null);
 
   useEffect(() => { setLink(currentLink ?? ""); }, [currentLink]);
   useEffect(() => { setIsActive(currentActive === 1); }, [currentActive]);
 
-  const uploadImage = async (field: string, file: File, slot: "desktop" | "mobile") => {
-    setUploading(slot);
+  const uploadImage = async (file: File) => {
+    setUploading("image");
     try {
       const fd = new FormData();
-      fd.append(field, file);
-      if (showActiveToggle) fd.append("is_active", String(isActive));
+      fd.append(imageField, file);
       const res = await fetch(endpoint, { method: "PUT", body: fd });
       if (!res.ok) throw new Error("Upload failed");
-      toast({ title: `${slot === "desktop" ? "Desktop" : "Mobile"} image updated` });
+      toast({ title: "Image updated" });
       onSuccess();
     } catch {
       toast({ title: "Upload failed", variant: "destructive" });
@@ -960,7 +962,7 @@ function AdUploader({
     setUploading("link");
     try {
       const fd = new FormData();
-      fd.append("link_url", link);
+      fd.append(linkField, link);
       if (showActiveToggle) fd.append("is_active", String(isActive));
       await fetch(endpoint, { method: "PUT", body: fd });
       toast({ title: "Saved" });
@@ -973,165 +975,191 @@ function AdUploader({
   const busy = uploading !== null;
 
   return (
-    <div className="space-y-6">
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-        {/* Desktop slot */}
-        <div className="space-y-3">
-          <div className="flex items-center justify-between">
-            <h3 className="font-bold text-sm uppercase tracking-wider">Desktop</h3>
-            <span className="text-[11px] font-bold bg-muted text-muted-foreground px-2 py-0.5 rounded">8:1</span>
-          </div>
-          {currentDesktopImage ? (
-            <div className="border-2 border-border rounded-xl overflow-hidden">
-              <img src={`/api/uploads/${currentDesktopImage}`} alt="Desktop ad" className="w-full h-auto block" />
-            </div>
-          ) : (
-            <div className="border-2 border-dashed border-yellow-600/50 rounded-xl bg-yellow-950/20 flex items-center justify-center py-8">
-              <div className="text-center space-y-1">
-                <p className="text-yellow-400 font-bold text-xs uppercase tracking-wider">Missing</p>
-                <p className="text-yellow-500/60 text-[10px]">Upload an 8:1 aspect ratio image</p>
-              </div>
-            </div>
-          )}
-          <input
-            ref={desktopRef}
-            type="file"
-            accept="image/*"
-            className="hidden"
-            onChange={(e) => { const f = e.target.files?.[0]; if (f) uploadImage(desktopField, f, "desktop"); }}
-          />
-          <Button
-            className="w-full font-bold"
-            onClick={() => desktopRef.current?.click()}
-            disabled={busy}
-            data-testid={`button-upload-${desktopField}`}
-          >
-            {uploading === "desktop" ? <Loader2 className="h-4 w-4 mr-2 animate-spin" /> : <Upload className="h-4 w-4 mr-2" />}
-            {currentDesktopImage ? "Replace Desktop" : "Upload Desktop"}
-          </Button>
-        </div>
+    <div className="space-y-6 max-w-xl">
+      <p className="text-sm text-muted-foreground font-medium">{description}</p>
 
-        {/* Mobile slot */}
-        <div className="space-y-3">
-          <div className="flex items-center justify-between">
-            <h3 className="font-bold text-sm uppercase tracking-wider">Mobile</h3>
-            <span className="text-[11px] font-bold bg-muted text-muted-foreground px-2 py-0.5 rounded">21:9</span>
-          </div>
-          {currentMobileImage ? (
-            <div className="border-2 border-border rounded-xl overflow-hidden">
-              <img src={`/api/uploads/${currentMobileImage}`} alt="Mobile ad" className="w-full h-auto block" />
-            </div>
-          ) : (
-            <div className="border-2 border-dashed border-yellow-600/50 rounded-xl bg-yellow-950/20 flex items-center justify-center py-8">
-              <div className="text-center space-y-1">
-                <p className="text-yellow-400 font-bold text-xs uppercase tracking-wider">Missing</p>
-                <p className="text-yellow-500/60 text-[10px]">Upload a 21:9 aspect ratio image</p>
-              </div>
-            </div>
-          )}
-          <input
-            ref={mobileRef}
-            type="file"
-            accept="image/*"
-            className="hidden"
-            onChange={(e) => { const f = e.target.files?.[0]; if (f) uploadImage(mobileField, f, "mobile"); }}
-          />
-          <Button
-            className="w-full font-bold"
-            onClick={() => mobileRef.current?.click()}
-            disabled={busy}
-            data-testid={`button-upload-${mobileField}`}
-          >
-            {uploading === "mobile" ? <Loader2 className="h-4 w-4 mr-2 animate-spin" /> : <Upload className="h-4 w-4 mr-2" />}
-            {currentMobileImage ? "Replace Mobile" : "Upload Mobile"}
-          </Button>
+      {/* Image preview */}
+      <div className="space-y-3">
+        <div className="flex items-center gap-2">
+          <span className="text-[11px] font-bold bg-muted text-muted-foreground px-2 py-0.5 rounded">
+            {aspectRatio}
+          </span>
+          <span className="text-xs text-muted-foreground">aspect ratio</span>
         </div>
+        {currentImage ? (
+          <div className="border-2 border-border rounded-xl overflow-hidden">
+            <img src={`/api/uploads/${currentImage}`} alt="Ad creative" className="w-full h-auto block" />
+          </div>
+        ) : (
+          <div className="border-2 border-dashed border-yellow-600/50 rounded-xl bg-yellow-950/20 flex items-center justify-center py-10">
+            <div className="text-center space-y-1">
+              <p className="text-yellow-400 font-bold text-xs uppercase tracking-wider">No image uploaded</p>
+              <p className="text-yellow-500/60 text-[10px]">Upload a {aspectRatio} image</p>
+            </div>
+          </div>
+        )}
+        <input
+          ref={fileRef}
+          type="file"
+          accept="image/*"
+          className="hidden"
+          onChange={(e) => { const f = e.target.files?.[0]; if (f) uploadImage(f); }}
+        />
+        <Button
+          className="w-full font-bold"
+          onClick={() => fileRef.current?.click()}
+          disabled={busy}
+          data-testid={`button-upload-${imageField}`}
+        >
+          {uploading === "image" ? <Loader2 className="h-4 w-4 mr-2 animate-spin" /> : <Upload className="h-4 w-4 mr-2" />}
+          {currentImage ? "Replace Image" : "Upload Image"}
+        </Button>
       </div>
 
-      {/* Link URL + save controls */}
-      <div className="flex flex-col sm:flex-row gap-3 pt-4 border-t border-border">
-        <Input
-          value={link}
-          onChange={(e) => setLink(e.target.value)}
-          className="border-2 flex-1"
-          placeholder="https://link-url.com"
-          data-testid={`input-${desktopField}-link`}
-        />
-        {showActiveToggle && (
-          <label className="flex items-center gap-2 font-bold text-sm cursor-pointer shrink-0">
-            <input
-              type="checkbox"
-              checked={isActive}
-              onChange={(e) => setIsActive(e.target.checked)}
-              className="w-4 h-4"
-              data-testid="checkbox-popup-active"
-            />
-            Active
-          </label>
-        )}
-        <Button
-          variant="outline"
-          className="border-2 font-bold shrink-0"
-          onClick={saveLink}
-          disabled={busy}
-          data-testid={`button-save-${desktopField}-link`}
-        >
-          {uploading === "link" ? <Loader2 className="h-4 w-4 mr-2 animate-spin" /> : null}
-          Save Link
-        </Button>
+      {/* Link URL */}
+      <div className="space-y-3 pt-4 border-t border-border">
+        <h3 className="font-bold text-sm uppercase tracking-wider">Destination Link</h3>
+        <div className="flex flex-col sm:flex-row gap-3">
+          <Input
+            value={link}
+            onChange={(e) => setLink(e.target.value)}
+            className="border-2 flex-1"
+            placeholder="https://advertiser-site.com"
+            data-testid={`input-${imageField}-link`}
+          />
+          {showActiveToggle && (
+            <label className="flex items-center gap-2 font-bold text-sm cursor-pointer shrink-0">
+              <input
+                type="checkbox"
+                checked={isActive}
+                onChange={(e) => setIsActive(e.target.checked)}
+                className="w-4 h-4"
+                data-testid="checkbox-popup-active"
+              />
+              Active
+            </label>
+          )}
+          <Button
+            variant="outline"
+            className="border-2 font-bold shrink-0"
+            onClick={saveLink}
+            disabled={busy}
+            data-testid={`button-save-${imageField}-link`}
+          >
+            {uploading === "link" ? <Loader2 className="h-4 w-4 mr-2 animate-spin" /> : null}
+            Save
+          </Button>
+        </div>
       </div>
     </div>
   );
 }
 
-function BannerTab() {
+function MapBannerDesktopTab() {
   const queryClient = useQueryClient();
   const { data: banner, isLoading } = useGetBanner({ query: { queryKey: getGetBannerQueryKey() } });
   if (isLoading) return <div className="animate-pulse font-bold p-4">Loading...</div>;
   return (
-    <AdUploader
+    <SlotUploader
       endpoint="/api/admin/banner"
-      desktopField="banner"
-      mobileField="banner_mobile"
-      currentDesktopImage={banner?.image_path ?? null}
-      currentMobileImage={banner?.mobile_image_path ?? null}
+      imageField="banner"
+      linkField="link_url"
+      aspectRatio="8:1"
+      description="Shown above the nav on the map page for desktop visitors."
+      currentImage={banner?.image_path ?? null}
       currentLink={banner?.link_url ?? null}
       onSuccess={() => queryClient.invalidateQueries({ queryKey: getGetBannerQueryKey() })}
     />
   );
 }
 
-function PopupTab() {
+function MapBannerMobileTab() {
+  const queryClient = useQueryClient();
+  const { data: banner, isLoading } = useGetBanner({ query: { queryKey: getGetBannerQueryKey() } });
+  if (isLoading) return <div className="animate-pulse font-bold p-4">Loading...</div>;
+  return (
+    <SlotUploader
+      endpoint="/api/admin/banner"
+      imageField="banner_mobile"
+      linkField="mobile_link_url"
+      aspectRatio="21:9"
+      description="Shown above the nav on the map page for mobile visitors."
+      currentImage={banner?.mobile_image_path ?? null}
+      currentLink={banner?.mobile_link_url ?? null}
+      onSuccess={() => queryClient.invalidateQueries({ queryKey: getGetBannerQueryKey() })}
+    />
+  );
+}
+
+function MapPopupDesktopTab() {
   const queryClient = useQueryClient();
   const { data: popup, isLoading } = useGetAdminPopup({ query: { queryKey: getGetAdminPopupQueryKey() } });
   if (isLoading) return <div className="animate-pulse font-bold p-4">Loading...</div>;
   return (
-    <AdUploader
+    <SlotUploader
       endpoint="/api/admin/popup"
-      desktopField="image"
-      mobileField="image_mobile"
-      currentDesktopImage={popup?.image_path ?? null}
-      currentMobileImage={popup?.mobile_image_path ?? null}
+      imageField="image"
+      linkField="link_url"
+      aspectRatio="4:5"
+      description="Session popup shown to desktop visitors on the map page. Toggle Active to enable/disable."
+      currentImage={popup?.image_path ?? null}
       currentLink={popup?.link_url ?? null}
-      currentActive={popup?.is_active}
       showActiveToggle
+      currentActive={popup?.is_active}
       onSuccess={() => queryClient.invalidateQueries({ queryKey: getGetAdminPopupQueryKey() })}
     />
   );
 }
 
-function B2BBannerTab() {
+function MapPopupMobileTab() {
+  const queryClient = useQueryClient();
+  const { data: popup, isLoading } = useGetAdminPopup({ query: { queryKey: getGetAdminPopupQueryKey() } });
+  if (isLoading) return <div className="animate-pulse font-bold p-4">Loading...</div>;
+  return (
+    <SlotUploader
+      endpoint="/api/admin/popup"
+      imageField="image_mobile"
+      linkField="mobile_link_url"
+      aspectRatio="9:16"
+      description="Session popup shown to mobile visitors on the map page."
+      currentImage={popup?.mobile_image_path ?? null}
+      currentLink={popup?.mobile_link_url ?? null}
+      onSuccess={() => queryClient.invalidateQueries({ queryKey: getGetAdminPopupQueryKey() })}
+    />
+  );
+}
+
+function DashBannerDesktopTab() {
   const queryClient = useQueryClient();
   const { data: b2b, isLoading } = useGetB2bBanner({ query: { queryKey: getGetB2bBannerQueryKey() } });
   if (isLoading) return <div className="animate-pulse font-bold p-4">Loading...</div>;
   return (
-    <AdUploader
+    <SlotUploader
       endpoint="/api/admin/b2b-banner"
-      desktopField="banner"
-      mobileField="banner_mobile"
-      currentDesktopImage={b2b?.image_path ?? null}
-      currentMobileImage={b2b?.mobile_image_path ?? null}
+      imageField="banner"
+      linkField="link_url"
+      aspectRatio="8:1"
+      description="Shown above the nav on the business dashboard for desktop visitors."
+      currentImage={b2b?.image_path ?? null}
       currentLink={b2b?.link_url ?? null}
+      onSuccess={() => queryClient.invalidateQueries({ queryKey: getGetB2bBannerQueryKey() })}
+    />
+  );
+}
+
+function DashBannerMobileTab() {
+  const queryClient = useQueryClient();
+  const { data: b2b, isLoading } = useGetB2bBanner({ query: { queryKey: getGetB2bBannerQueryKey() } });
+  if (isLoading) return <div className="animate-pulse font-bold p-4">Loading...</div>;
+  return (
+    <SlotUploader
+      endpoint="/api/admin/b2b-banner"
+      imageField="banner_mobile"
+      linkField="mobile_link_url"
+      aspectRatio="21:9"
+      description="Shown above the nav on the business dashboard for mobile visitors."
+      currentImage={b2b?.mobile_image_path ?? null}
+      currentLink={b2b?.mobile_link_url ?? null}
       onSuccess={() => queryClient.invalidateQueries({ queryKey: getGetB2bBannerQueryKey() })}
     />
   );
@@ -1143,9 +1171,12 @@ const TABS: { id: Tab; label: string; icon: React.ElementType }[] = [
   { id: "add-store", label: "Add Store", icon: MapPin },
   { id: "claims", label: "Claims", icon: Flag },
   { id: "brands", label: "Brands", icon: Tag },
-  { id: "banner", label: "Banner Ad", icon: Image },
-  { id: "popup", label: "Popup Ad", icon: Megaphone },
-  { id: "b2b", label: "B2B Banner", icon: Briefcase },
+  { id: "map-banner-d", label: "Map Banner · Desktop", icon: Monitor },
+  { id: "map-banner-m", label: "Map Banner · Mobile", icon: Smartphone },
+  { id: "map-popup-d", label: "Map Popup · Desktop", icon: Megaphone },
+  { id: "map-popup-m", label: "Map Popup · Mobile", icon: Smartphone },
+  { id: "dash-banner-d", label: "Dash Banner · Desktop", icon: Monitor },
+  { id: "dash-banner-m", label: "Dash Banner · Mobile", icon: Smartphone },
 ];
 
 export default function Admin() {
@@ -1200,9 +1231,12 @@ export default function Admin() {
         {activeTab === "add-store" && <AddStoreTab />}
         {activeTab === "claims" && <ClaimsTab />}
         {activeTab === "brands" && <BrandsTab />}
-        {activeTab === "banner" && <BannerTab />}
-        {activeTab === "popup" && <PopupTab />}
-        {activeTab === "b2b" && <B2BBannerTab />}
+        {activeTab === "map-banner-d" && <MapBannerDesktopTab />}
+        {activeTab === "map-banner-m" && <MapBannerMobileTab />}
+        {activeTab === "map-popup-d" && <MapPopupDesktopTab />}
+        {activeTab === "map-popup-m" && <MapPopupMobileTab />}
+        {activeTab === "dash-banner-d" && <DashBannerDesktopTab />}
+        {activeTab === "dash-banner-m" && <DashBannerMobileTab />}
       </div>
     </div>
   );

@@ -483,7 +483,8 @@ export const GetBannerResponse = zod.object({
   "id": zod.number(),
   "image_path": zod.string().nullish(),
   "mobile_image_path": zod.string().nullish(),
-  "link_url": zod.string().nullish()
+  "link_url": zod.string().nullish(),
+  "mobile_link_url": zod.string().nullish()
 })
 
 
@@ -494,7 +495,8 @@ export const GetB2bBannerResponse = zod.object({
   "id": zod.number(),
   "image_path": zod.string().nullish(),
   "mobile_image_path": zod.string().nullish(),
-  "link_url": zod.string().nullish()
+  "link_url": zod.string().nullish(),
+  "mobile_link_url": zod.string().nullish()
 })
 
 
@@ -506,6 +508,7 @@ export const GetAdminPopupResponse = zod.object({
   "image_path": zod.string().nullish(),
   "mobile_image_path": zod.string().nullish(),
   "link_url": zod.string().nullish(),
+  "mobile_link_url": zod.string().nullish(),
   "is_active": zod.number()
 })
 
@@ -594,6 +597,7 @@ export const GetPopupResponse = zod.object({
   "image_path": zod.string().nullish(),
   "mobile_image_path": zod.string().nullish(),
   "link_url": zod.string().nullish(),
+  "mobile_link_url": zod.string().nullish(),
   "is_active": zod.number()
 })
 
