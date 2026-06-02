@@ -121,6 +121,16 @@ export const sessionsTable = pgTable("session", {
   expire: timestamp("expire", { precision: 6 }).notNull(),
 });
 
+export const passwordResetTokensTable = pgTable("password_reset_tokens", {
+  id: serial("id").primaryKey(),
+  userId: integer("user_id")
+    .notNull()
+    .references(() => usersTable.id, { onDelete: "cascade" }),
+  token: text("token").unique().notNull(),
+  expiresAt: timestamp("expires_at").notNull(),
+  usedAt: timestamp("used_at"),
+});
+
 export type User = typeof usersTable.$inferSelect;
 export type Business = typeof businessesTable.$inferSelect;
 export type Brand = typeof brandsTable.$inferSelect;
@@ -129,3 +139,4 @@ export type Coupon = typeof couponsTable.$inferSelect;
 export type BannerAd = typeof bannerAdTable.$inferSelect;
 export type B2BBannerAd = typeof b2bBannerAdTable.$inferSelect;
 export type PopupAd = typeof popupAdTable.$inferSelect;
+export type PasswordResetToken = typeof passwordResetTokensTable.$inferSelect;

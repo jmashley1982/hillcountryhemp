@@ -64,6 +64,31 @@ export const LogoutResponse = zod.object({
 
 
 /**
+ * @summary Request a password reset email
+ */
+export const ForgotPasswordBody = zod.object({
+  "email": zod.string()
+})
+
+export const ForgotPasswordResponse = zod.object({
+  "success": zod.boolean()
+})
+
+
+/**
+ * @summary Reset password using a token
+ */
+export const ResetPasswordBody = zod.object({
+  "token": zod.string(),
+  "newPassword": zod.string()
+})
+
+export const ResetPasswordResponse = zod.object({
+  "success": zod.boolean()
+})
+
+
+/**
  * @summary List approved businesses (public, with filters)
  */
 export const GetBusinessesQueryParams = zod.object({

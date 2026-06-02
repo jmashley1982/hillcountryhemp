@@ -10,6 +10,8 @@ import NotFound from "@/pages/not-found";
 import Home from "@/pages/home";
 import Login from "@/pages/login";
 import Register from "@/pages/register";
+import ForgotPassword from "@/pages/forgot-password";
+import ResetPassword from "@/pages/reset-password";
 import Advertise from "@/pages/advertise";
 import BusinessDetail from "@/pages/business-detail";
 import Dashboard from "@/pages/dashboard";
@@ -32,6 +34,8 @@ function Router() {
         <Route path="/" component={Home} />
         <Route path="/login" component={Login} />
         <Route path="/register" component={Register} />
+        <Route path="/forgot-password" component={ForgotPassword} />
+        <Route path="/reset-password" component={ResetPassword} />
         <Route path="/advertise" component={Advertise} />
         <Route path="/business/:id" component={BusinessDetail} />
         <Route path="/dashboard" component={Dashboard} />
