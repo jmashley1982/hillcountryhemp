@@ -1,6 +1,7 @@
 import app from "./app";
 import { logger } from "./lib/logger";
 import { seedAdmin } from "./seed-admin";
+import { geocodeNullCoords } from "./geocode-null-coords";
 
 const rawPort = process.env["PORT"];
 
@@ -22,5 +23,7 @@ app.listen(port, (err) => {
     process.exit(1);
   }
   logger.info({ port }, "Server listening");
-  seedAdmin().catch((e) => logger.error({ err: e }, "Admin seed failed"));
+  seedAdmin()
+    .then(() => geocodeNullCoords())
+    .catch((e) => logger.error({ err: e }, "Startup tasks failed"));
 });
