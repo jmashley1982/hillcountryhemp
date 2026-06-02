@@ -23,7 +23,7 @@ export function PopupAd() {
 
   return (
     <div
-      className="fixed inset-0 z-[90] flex items-center justify-center bg-black/70 backdrop-blur-sm p-4"
+      className="fixed inset-0 z-[9998] flex items-center justify-center bg-black/70 backdrop-blur-sm p-4"
       onClick={handleClose}
       data-testid="popup-ad-overlay"
     >
