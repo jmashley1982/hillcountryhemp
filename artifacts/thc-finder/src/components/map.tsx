@@ -55,6 +55,26 @@ function MapController({ userLocation }: MapControllerProps) {
   return null;
 }
 
+function MapResizeHandler() {
+  const map = useMap();
+  useEffect(() => {
+    const invalidate = () => map.invalidateSize();
+    const t1 = setTimeout(invalidate, 0);
+    const t2 = setTimeout(invalidate, 250);
+    const container = map.getContainer();
+    const ro = new ResizeObserver(() => invalidate());
+    ro.observe(container);
+    window.addEventListener("resize", invalidate);
+    return () => {
+      clearTimeout(t1);
+      clearTimeout(t2);
+      ro.disconnect();
+      window.removeEventListener("resize", invalidate);
+    };
+  }, [map]);
+  return null;
+}
+
 interface BusinessMapProps {
   businesses: BusinessMarker[];
   onSelectBusiness?: (id: number) => void;
@@ -92,6 +112,7 @@ export function BusinessMap({ businesses, onSelectBusiness }: BusinessMapProps) 
           url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
         />
         <MapController userLocation={userLocation} />
+        <MapResizeHandler />
         {mappable.map((b) => (
           <Marker
             key={b.id}

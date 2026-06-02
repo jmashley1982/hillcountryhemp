@@ -25,3 +25,14 @@ height and the map collapses to nothing.
 `min-h-*` + `flex-1` alone — verify there's a definite-height ancestor.
 A hardcoded `h-[calc(100dvh-64px)]` also works but breaks when extra elements
 (e.g. a top banner) are added above, since the subtracted constant goes stale.
+
+## Gray tiles / partial map (separate but related symptom)
+
+If only a small region renders and the rest is gray, Leaflet initialized before
+its container reached final size and never recalculated. Fix: call
+`map.invalidateSize()` after layout settles. Most robust is a child component
+using `useMap()` + a `ResizeObserver` on `map.getContainer()` (plus a couple of
+`setTimeout` invalidates on mount and a window resize listener). The
+ResizeObserver also covers the mobile map/list view toggle and the banner image
+loading and shifting layout. A mis-sized container also breaks marker
+hit-detection, so pin clicks register as map drags — fixing the size fixes that too.
