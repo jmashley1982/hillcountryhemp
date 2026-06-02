@@ -92,6 +92,12 @@ export function BusinessMap({ businesses, onSelectBusiness }: BusinessMapProps) 
   const handleLocate = () => {
     if (!navigator.geolocation) {
       setLocationError("Location not supported by this browser");
+      setTimeout(() => setLocationError(null), 5000);
+      return;
+    }
+    if (!window.isSecureContext) {
+      setLocationError("Location requires HTTPS — open the site via https://");
+      setTimeout(() => setLocationError(null), 6000);
       return;
     }
     setLocating(true);
@@ -104,15 +110,17 @@ export function BusinessMap({ businesses, onSelectBusiness }: BusinessMapProps) 
       (err) => {
         setLocating(false);
         if (err.code === err.PERMISSION_DENIED) {
-          setLocationError("Location permission denied");
+          // Sticky — user needs to act; don't auto-dismiss
+          setLocationError("Permission denied — enable Location for this site in your browser settings, then try again");
         } else if (err.code === err.TIMEOUT) {
-          setLocationError("Location timed out — try again");
+          setLocationError("Location timed out — move to an open area and try again");
+          setTimeout(() => setLocationError(null), 6000);
         } else {
-          setLocationError("Could not get location");
+          setLocationError("Could not get location — try again");
+          setTimeout(() => setLocationError(null), 5000);
         }
-        setTimeout(() => setLocationError(null), 4000);
       },
-      { enableHighAccuracy: false, timeout: 10000, maximumAge: 60000 },
+      { enableHighAccuracy: true, timeout: 20000, maximumAge: 120000 },
     );
   };
 
@@ -163,9 +171,13 @@ export function BusinessMap({ businesses, onSelectBusiness }: BusinessMapProps) 
           {locating ? "Locating..." : "My Location"}
         </Button>
         {locationError && (
-          <div className="bg-red-600 text-white text-xs font-bold px-3 py-1.5 rounded-lg shadow-lg max-w-[200px] text-center leading-tight">
+          <button
+            onClick={() => setLocationError(null)}
+            className="bg-red-600 text-white text-xs font-bold px-3 py-2 rounded-lg shadow-lg max-w-[220px] text-left leading-snug touch-manipulation"
+          >
             {locationError}
-          </div>
+            <span className="block text-red-200 text-[10px] mt-1">Tap to dismiss</span>
+          </button>
         )}
       </div>
 
