@@ -33,61 +33,62 @@ const MORE_CATEGORIES = [
 
 const DEFAULT_BRANDS = ["Hometown Hero", "Jelly/NYB", "Sherpa"];
 
-interface FilterSectionProps {
+const CHIP_ACTIVE = "bg-[#84C7D0] text-black border-[#84C7D0] shadow-[#84C7D0]/30";
+const CHIP_INACTIVE = "hover:bg-muted border-border text-muted-foreground hover:text-foreground";
+
+interface FilterGroupProps {
   label: string;
-  defaultItems: string[];
-  moreItems: string[];
+  items: string[];
+  extraItems: string[];
   selected: string | null;
   expanded: boolean;
   onToggleExpand: () => void;
   onSelect: (item: string) => void;
-  testIdPrefix?: string;
+  testIdPrefix: string;
 }
 
-function FilterSection({
+function FilterGroup({
   label,
-  defaultItems,
-  moreItems,
+  items,
+  extraItems,
   selected,
   expanded,
   onToggleExpand,
   onSelect,
   testIdPrefix,
-}: FilterSectionProps) {
-  const activeClass =
-    "bg-[#84C7D0] text-black border-[#84C7D0] shadow-[#84C7D0]/30";
-  const inactiveClass =
-    "hover:bg-muted border-border text-muted-foreground hover:text-foreground";
-
+}: FilterGroupProps) {
   const renderChip = (item: string) => (
     <button
       key={item}
       onClick={() => onSelect(item)}
-      className={`cursor-pointer font-bold border-2 rounded-full px-3 py-1 text-[11px] shadow-sm transition-all ${
-        selected === item ? activeClass : inactiveClass
+      className={`cursor-pointer font-bold border-2 rounded-full px-2.5 py-0.5 text-[10px] shadow-sm transition-all ${
+        selected === item ? CHIP_ACTIVE : CHIP_INACTIVE
       }`}
-      data-testid={testIdPrefix ? `${testIdPrefix}-${item.replace(/\s+/g, "-").replace(/\//g, "-").toLowerCase()}` : undefined}
+      data-testid={`${testIdPrefix}-${item.replace(/\s+/g, "-").replace(/\//g, "-").toLowerCase()}`}
     >
       {item}
     </button>
   );
 
   return (
-    <div className="border-b border-border pb-3 mb-3 last:border-b-0 last:mb-0 last:pb-0">
-      <button
-        className="flex w-full items-center justify-between py-1 mb-2 text-sm font-bold text-foreground/80 uppercase tracking-wide hover:text-foreground transition-colors"
-        onClick={onToggleExpand}
-        data-testid={testIdPrefix ? `${testIdPrefix}-toggle` : undefined}
-      >
-        <span>{label}</span>
-        <ChevronDown
-          className={`h-4 w-4 transition-transform duration-200 ${expanded ? "rotate-180" : ""}`}
-        />
-      </button>
-      <div className="flex flex-wrap gap-1.5">
-        {defaultItems.map(renderChip)}
-        {expanded && moreItems.map(renderChip)}
-      </div>
+    <div className="flex items-center gap-1.5 flex-wrap">
+      <span className="text-[10px] font-bold uppercase tracking-wider text-muted-foreground/60 shrink-0 pr-0.5">
+        {label}
+      </span>
+      {items.map(renderChip)}
+      {expanded && extraItems.map(renderChip)}
+      {extraItems.length > 0 && (
+        <button
+          onClick={onToggleExpand}
+          className="text-[10px] font-medium text-muted-foreground/50 hover:text-muted-foreground transition-colors flex items-center gap-0.5"
+          data-testid={`${testIdPrefix}-toggle`}
+        >
+          {expanded ? "Less" : `+${extraItems.length}`}
+          <ChevronDown
+            className={`h-2.5 w-2.5 transition-transform duration-200 ${expanded ? "rotate-180" : ""}`}
+          />
+        </button>
+      )}
     </div>
   );
 }
@@ -121,70 +122,71 @@ export default function Home() {
 
   return (
     <div className="flex-1 flex flex-col min-h-0 relative">
-      <div className="flex-1 flex flex-col md:flex-row overflow-hidden min-h-0">
-        {/* Sidebar */}
-        <div
-          className={`w-full flex-1 md:flex-none md:w-96 min-h-0 bg-card border-r border-border flex flex-col z-10 ${viewMode === "map" ? "hidden md:flex" : "flex"}`}
-        >
-          <div className="p-4 border-b border-border bg-card shadow-sm">
-            <h1 className="text-xl text-[#99CC66] mb-1 tracking-wide">
-              Find Hill Country Hemp
-            </h1>
-            <p className="text-xs text-muted-foreground font-medium mb-4 leading-relaxed">
-              Your guide to hemp dispensaries &amp; smoking accessories in Comal County and beyond.
-            </p>
-
-            <div className="relative mb-4">
-              <Search className="absolute left-3 top-3 h-4 w-4 text-muted-foreground" />
-              <Input
-                placeholder="Search shops or brands..."
-                className="pl-9 bg-background border-2 font-bold"
-                value={search}
-                onChange={(e) => setSearch(e.target.value)}
-                data-testid="input-search"
-              />
-            </div>
-
-            <FilterSection
-              label="City"
-              defaultItems={DEFAULT_CITIES}
-              moreItems={MORE_CITIES}
-              selected={selectedCity}
-              expanded={cityExpanded}
-              onToggleExpand={() => setCityExpanded((v) => !v)}
-              onSelect={(city) =>
-                setSelectedCity(selectedCity === city ? null : city)
-              }
-              testIdPrefix="filter-city"
-            />
-
-            <FilterSection
-              label="Category"
-              defaultItems={DEFAULT_CATEGORIES}
-              moreItems={MORE_CATEGORIES}
-              selected={selectedCat}
-              expanded={catExpanded}
-              onToggleExpand={() => setCatExpanded((v) => !v)}
-              onSelect={(cat) =>
-                setSelectedCat(selectedCat === cat ? null : cat)
-              }
-              testIdPrefix="filter-cat"
-            />
-
-            <FilterSection
-              label="Brand"
-              defaultItems={defaultBrandNames}
-              moreItems={moreBrandNames}
-              selected={selectedBrand}
-              expanded={brandExpanded}
-              onToggleExpand={() => setBrandExpanded((v) => !v)}
-              onSelect={(brand) =>
-                setSelectedBrand(selectedBrand === brand ? null : brand)
-              }
-              testIdPrefix="filter-brand"
+      {/* ── Horizontal filter bar ── */}
+      <div className="bg-card border-b border-border px-3 py-2 shadow-sm flex-none">
+        <div className="flex flex-wrap items-center gap-x-3 gap-y-2">
+          {/* Search */}
+          <div className="relative flex-none w-44">
+            <Search className="absolute left-2.5 top-2 h-3.5 w-3.5 text-muted-foreground" />
+            <Input
+              placeholder="Search stores or brands..."
+              className="pl-8 h-8 text-xs bg-background border-2 font-bold"
+              value={search}
+              onChange={(e) => setSearch(e.target.value)}
+              data-testid="input-search"
             />
           </div>
 
+          <div className="w-px h-5 bg-border/60 hidden sm:block self-center" />
+
+          {/* Brand */}
+          <FilterGroup
+            label="Brand"
+            items={defaultBrandNames}
+            extraItems={moreBrandNames}
+            selected={selectedBrand}
+            expanded={brandExpanded}
+            onToggleExpand={() => setBrandExpanded((v) => !v)}
+            onSelect={(brand) => setSelectedBrand(selectedBrand === brand ? null : brand)}
+            testIdPrefix="filter-brand"
+          />
+
+          <div className="w-px h-5 bg-border/60 hidden sm:block self-center" />
+
+          {/* Category */}
+          <FilterGroup
+            label="Category"
+            items={DEFAULT_CATEGORIES}
+            extraItems={MORE_CATEGORIES}
+            selected={selectedCat}
+            expanded={catExpanded}
+            onToggleExpand={() => setCatExpanded((v) => !v)}
+            onSelect={(cat) => setSelectedCat(selectedCat === cat ? null : cat)}
+            testIdPrefix="filter-cat"
+          />
+
+          <div className="w-px h-5 bg-border/60 hidden sm:block self-center" />
+
+          {/* City */}
+          <FilterGroup
+            label="City"
+            items={DEFAULT_CITIES}
+            extraItems={MORE_CITIES}
+            selected={selectedCity}
+            expanded={cityExpanded}
+            onToggleExpand={() => setCityExpanded((v) => !v)}
+            onSelect={(city) => setSelectedCity(selectedCity === city ? null : city)}
+            testIdPrefix="filter-city"
+          />
+        </div>
+      </div>
+
+      {/* ── Main area: list panel + map ── */}
+      <div className="flex-1 flex flex-col md:flex-row overflow-hidden min-h-0">
+        {/* Store list panel */}
+        <div
+          className={`w-full flex-1 md:flex-none md:w-80 min-h-0 bg-card border-r border-border flex flex-col z-10 ${viewMode === "map" ? "hidden md:flex" : "flex"}`}
+        >
           <div className="flex-1 overflow-y-auto p-4 space-y-3 bg-muted/10">
             {isLoading ? (
               <div className="animate-pulse space-y-4">
@@ -195,7 +197,7 @@ export default function Home() {
             ) : businesses.length === 0 ? (
               <div className="text-center p-8 text-muted-foreground font-bold">
                 <MapPin className="h-10 w-10 mx-auto mb-3 opacity-30" />
-                No shops found.
+                No stores found.
               </div>
             ) : (
               businesses.map((biz) => (
@@ -250,8 +252,7 @@ export default function Home() {
 
           <div className="p-3 border-t border-border bg-card flex items-center justify-between">
             <p className="text-xs text-muted-foreground font-bold">
-              {businesses.length} shop{businesses.length !== 1 ? "s" : ""}{" "}
-              found
+              {businesses.length} store{businesses.length !== 1 ? "s" : ""} found
             </p>
             <button
               className="text-xs text-muted-foreground/60 hover:text-muted-foreground transition-colors font-medium underline-offset-2 hover:underline"
@@ -263,7 +264,7 @@ export default function Home() {
           </div>
         </div>
 
-        {/* Map Area */}
+        {/* Map area */}
         <div
           className={`flex-1 relative ${viewMode === "list" ? "hidden md:block" : "block"}`}
         >
@@ -274,7 +275,7 @@ export default function Home() {
         </div>
       </div>
 
-      {/* Mobile view toggle — always reachable, even from the list */}
+      {/* Mobile view toggle */}
       <button
         className="md:hidden fixed bottom-6 right-6 z-[1500] bg-primary text-primary-foreground p-4 rounded-full shadow-xl border-4 border-black/10 transition-transform hover:scale-105"
         onClick={() => setViewMode(viewMode === "map" ? "list" : "map")}
@@ -287,7 +288,7 @@ export default function Home() {
         )}
       </button>
 
-      {/* Shop detail overlay */}
+      {/* Store detail overlay */}
       {selectedBizId != null && (
         <ShopOverlay
           businessId={selectedBizId}

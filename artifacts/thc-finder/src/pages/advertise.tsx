@@ -4,13 +4,13 @@ export default function Advertise() {
       <div className="text-center mb-16">
         <h1 className="text-5xl md:text-7xl text-primary mb-6">Get Noticed.</h1>
         <p className="text-xl md:text-2xl font-medium text-muted-foreground max-w-2xl mx-auto">
-          Put your brand or shop in front of thousands of Texas Hill Country adults searching for premium hemp products.
+          Put your brand or store in front of thousands of Texas Hill Country adults searching for premium hemp products.
         </p>
       </div>
 
       <div className="grid grid-cols-1 md:grid-cols-2 gap-8 mb-16">
         <div className="bg-card border-2 border-border p-8 rounded-xl shadow-sm hover:border-primary transition-colors">
-          <h2 className="text-2xl text-primary mb-4">Featured Shop</h2>
+          <h2 className="text-2xl text-primary mb-4">Featured Store</h2>
           <p className="font-medium text-muted-foreground mb-6">
             Stand out on the map with a gold star marker and pin your listing to the top of the search results in your area. Includes unlimited photos and coupon uploads.
           </p>
@@ -31,11 +31,11 @@ export default function Advertise() {
         <p className="text-xl font-medium mb-8 max-w-xl mx-auto opacity-90">
           Drop us a line to secure your placement. Inventory is limited to maintain maximum visibility for our partners.
         </p>
-        <a 
-          href="mailto:ads@hillcountryhempfinder.com" 
-          className="inline-block bg-secondary text-secondary-foreground px-8 py-4 rounded-lg font-bold text-lg uppercase tracking-wider hover:bg-secondary/90 transition-colors shadow-lg border-b-4 border-black/20"
+        <a
+          href="mailto:ads@hillcountryhempfinder.com"
+          className="inline-block bg-secondary text-secondary-foreground px-8 py-4 rounded-lg font-bold text-lg uppercase tracking-wider hover:bg-secondary/90 transition-colors shadow-lg border-b-4 border-black/20 max-w-full"
         >
-          Email ads@hillcountryhempfinder.com
+          <span className="break-all">Email ads@hillcountryhempfinder.com</span>
         </a>
       </div>
     </div>

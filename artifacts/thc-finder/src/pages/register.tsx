@@ -57,7 +57,7 @@ export default function Register() {
     <div className="flex-1 flex items-center justify-center p-4 bg-muted/30">
       <div className="w-full max-w-md bg-card p-8 rounded-xl border-2 border-border shadow-xl">
         <h1 className="text-3xl text-primary text-center mb-2">Claim Your Spot</h1>
-        <p className="text-muted-foreground text-center font-bold mb-8">List your shop on Hill Country Hemp Finder</p>
+        <p className="text-muted-foreground text-center font-bold mb-8">List your store on Hill Country Hemp Finder</p>
 
         <Form {...form}>
           <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-6">

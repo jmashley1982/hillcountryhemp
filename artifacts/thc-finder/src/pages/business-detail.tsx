@@ -29,11 +29,11 @@ export default function BusinessDetail() {
   const { data: biz, isLoading, error } = useGetBusiness(Number(params.id));
 
   if (isLoading) {
-    return <div className="p-12 text-center font-bold text-xl animate-pulse">Loading shop details...</div>;
+    return <div className="p-12 text-center font-bold text-xl animate-pulse">Loading store details...</div>;
   }
 
   if (error || !biz) {
-    return <div className="p-12 text-center font-bold text-xl text-destructive">Shop not found.</div>;
+    return <div className="p-12 text-center font-bold text-xl text-destructive">Store not found.</div>;
   }
 
   const lastUpdated = (biz as { last_updated?: string }).last_updated;
@@ -85,7 +85,7 @@ export default function BusinessDetail() {
               <div className="grid grid-cols-2 md:grid-cols-3 gap-4">
                 {biz.photos.map(photo => (
                   <div key={photo.id} className="aspect-square rounded-2xl overflow-hidden border-2 border-border shadow-[0_4px_20px_rgba(0,0,0,0.25)]">
-                    <img src={`/api/uploads/${photo.photo_path}`} alt="Shop photo" className="w-full h-full object-cover" />
+                    <img src={`/api/uploads/${photo.photo_path}`} alt="Store photo" className="w-full h-full object-cover" />
                   </div>
                 ))}
               </div>
@@ -120,7 +120,7 @@ export default function BusinessDetail() {
 
         <div className="space-y-6">
           <div className="bg-card border-2 border-border rounded-2xl p-6 shadow-[0_4px_20px_rgba(0,0,0,0.25)]">
-            <h3 className="text-xl text-[#99CC66] mb-6 pb-4 border-b-2 border-border font-heading">Shop Info</h3>
+            <h3 className="text-xl text-[#99CC66] mb-6 pb-4 border-b-2 border-border font-heading">Store Info</h3>
 
             <div className="space-y-4 font-medium">
               <div className="flex items-start gap-3">

@@ -113,11 +113,11 @@ export function ShopOverlay({ businessId, onClose }: ShopOverlayProps) {
 
         {isLoading ? (
           <div className="p-12 text-center font-bold text-lg animate-pulse text-muted-foreground">
-            Loading shop details...
+            Loading store details...
           </div>
         ) : error || !biz ? (
           <div className="p-12 text-center font-bold text-lg text-destructive">
-            Shop not found.
+            Store not found.
           </div>
         ) : (
           <div className="overflow-y-auto">
@@ -253,7 +253,7 @@ export function ShopOverlay({ businessId, onClose }: ShopOverlayProps) {
                       >
                         <img
                           src={`/api/uploads/${photo.photo_path}`}
-                          alt="Shop photo"
+                          alt="Store photo"
                           className="w-full h-full object-cover"
                         />
                       </div>

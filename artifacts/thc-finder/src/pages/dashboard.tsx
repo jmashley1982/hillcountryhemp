@@ -94,7 +94,7 @@ export default function Dashboard() {
             <Building2 className="h-12 w-12 mx-auto text-muted-foreground mb-4" />
             <h2 className="text-2xl text-[#99CC66] mb-2">No Listings Yet</h2>
             <p className="text-muted-foreground font-medium mb-6">
-              List your hemp shop to get discovered by customers in the Hill Country.
+              List your hemp store to get discovered by customers in the Hill Country.
             </p>
             <Link href="/dashboard/add">
               <Button className="font-bold bg-primary" data-testid="button-add-first-listing">

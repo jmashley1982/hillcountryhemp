@@ -767,7 +767,7 @@ export default function AddEditBusiness() {
                       {...field}
                       className="border-2 font-medium"
                       rows={4}
-                      placeholder="Tell customers what makes your shop special..."
+                      placeholder="Tell customers what makes your store special..."
                       data-testid="textarea-description"
                     />
                   </FormControl>
@@ -788,7 +788,7 @@ export default function AddEditBusiness() {
               />
               <label htmlFor="on_site_smoking_area" className="cursor-pointer">
                 <p className="font-bold uppercase text-xs tracking-wider text-foreground">On-Site Smoking Area</p>
-                <p className="text-xs text-muted-foreground mt-0.5">Check this if your shop has a designated area for customers to smoke on-premises.</p>
+                <p className="text-xs text-muted-foreground mt-0.5">Check this if your store has a designated area for customers to smoke on-premises.</p>
               </label>
             </div>
 
