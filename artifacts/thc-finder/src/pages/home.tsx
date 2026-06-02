@@ -7,8 +7,10 @@ import { BusinessMap } from "@/components/map";
 import { ShopOverlay } from "@/components/shop-overlay";
 import { SuggestBrandModal } from "@/components/suggest-brand-modal";
 
-const DEFAULT_CITIES = ["New Braunfels", "Seguin", "San Marcos"];
-const MORE_CITIES = [
+const ALL_CITIES = [
+  "New Braunfels",
+  "Seguin",
+  "San Marcos",
   "Kyle",
   "Buda",
   "Schertz",
@@ -20,8 +22,11 @@ const MORE_CITIES = [
   "Garden Ridge",
 ];
 
-const DEFAULT_CATEGORIES = ["Flower", "Pre-Rolls", "Drinks", "Edibles"];
-const MORE_CATEGORIES = [
+const ALL_CATEGORIES = [
+  "Flower",
+  "Pre-Rolls",
+  "Drinks",
+  "Edibles",
   "Concentrates",
   "Topicals",
   "CBD Products",
@@ -31,87 +36,53 @@ const MORE_CATEGORIES = [
   "Batteries/E-Devices",
 ];
 
-const DEFAULT_BRANDS = ["Hometown Hero", "Jelly/NYB", "Sherpa"];
+const selectClass =
+  "h-8 rounded-lg border-2 border-border bg-background text-xs font-bold text-foreground pl-2.5 pr-7 appearance-none cursor-pointer hover:border-[#84C7D0]/60 focus:outline-none focus:border-[#84C7D0] transition-colors";
 
-const CHIP_ACTIVE = "bg-[#84C7D0] text-black border-[#84C7D0] shadow-[#84C7D0]/30";
-const CHIP_INACTIVE = "hover:bg-muted border-border text-muted-foreground hover:text-foreground";
-
-interface FilterGroupProps {
-  label: string;
-  items: string[];
-  extraItems: string[];
-  selected: string | null;
-  expanded: boolean;
-  onToggleExpand: () => void;
-  onSelect: (item: string) => void;
-  testIdPrefix: string;
-}
-
-function FilterGroup({
-  label,
-  items,
-  extraItems,
-  selected,
-  expanded,
-  onToggleExpand,
-  onSelect,
-  testIdPrefix,
-}: FilterGroupProps) {
-  const renderChip = (item: string) => (
-    <button
-      key={item}
-      onClick={() => onSelect(item)}
-      className={`cursor-pointer font-bold border-2 rounded-full px-2.5 py-0.5 text-[10px] shadow-sm transition-all ${
-        selected === item ? CHIP_ACTIVE : CHIP_INACTIVE
-      }`}
-      data-testid={`${testIdPrefix}-${item.replace(/\s+/g, "-").replace(/\//g, "-").toLowerCase()}`}
-    >
-      {item}
-    </button>
-  );
-
+function FilterSelect({
+  value,
+  onChange,
+  placeholder,
+  options,
+  testId,
+}: {
+  value: string;
+  onChange: (v: string) => void;
+  placeholder: string;
+  options: string[];
+  testId?: string;
+}) {
   return (
-    <div className="flex items-center gap-1.5 flex-wrap">
-      <span className="text-[10px] font-bold uppercase tracking-wider text-muted-foreground/60 shrink-0 pr-0.5">
-        {label}
-      </span>
-      {items.map(renderChip)}
-      {expanded && extraItems.map(renderChip)}
-      {extraItems.length > 0 && (
-        <button
-          onClick={onToggleExpand}
-          className="text-[10px] font-medium text-muted-foreground/50 hover:text-muted-foreground transition-colors flex items-center gap-0.5"
-          data-testid={`${testIdPrefix}-toggle`}
-        >
-          {expanded ? "Less" : `+${extraItems.length}`}
-          <ChevronDown
-            className={`h-2.5 w-2.5 transition-transform duration-200 ${expanded ? "rotate-180" : ""}`}
-          />
-        </button>
-      )}
+    <div className="relative flex-1 min-w-0">
+      <select
+        value={value}
+        onChange={(e) => onChange(e.target.value)}
+        className={`${selectClass} w-full`}
+        data-testid={testId}
+      >
+        <option value="">{placeholder}</option>
+        {options.map((o) => (
+          <option key={o} value={o}>
+            {o}
+          </option>
+        ))}
+      </select>
+      <ChevronDown className="pointer-events-none absolute right-2 top-1/2 -translate-y-1/2 h-3.5 w-3.5 text-muted-foreground" />
     </div>
   );
 }
 
 export default function Home() {
   const [search, setSearch] = useState("");
-  const [selectedCat, setSelectedCat] = useState<string | null>(null);
-  const [selectedCity, setSelectedCity] = useState<string | null>(null);
-  const [selectedBrand, setSelectedBrand] = useState<string | null>(null);
-  const [cityExpanded, setCityExpanded] = useState(false);
-  const [catExpanded, setCatExpanded] = useState(false);
-  const [brandExpanded, setBrandExpanded] = useState(false);
+  const [selectedCat, setSelectedCat] = useState("");
+  const [selectedCity, setSelectedCity] = useState("");
+  const [selectedBrand, setSelectedBrand] = useState("");
   const [viewMode, setViewMode] = useState<"map" | "list">("map");
   const [highlightedId, setHighlightedId] = useState<number | null>(null);
   const [selectedBizId, setSelectedBizId] = useState<number | null>(null);
   const [suggestOpen, setSuggestOpen] = useState(false);
 
   const { data: allBrands = [] } = useGetBrands();
-
-  const defaultBrandNames = DEFAULT_BRANDS;
-  const moreBrandNames = allBrands
-    .map((b) => b.name)
-    .filter((name) => !defaultBrandNames.includes(name));
 
   const { data: businesses = [], isLoading } = useGetBusinesses({
     search: search || undefined,
@@ -120,50 +91,54 @@ export default function Home() {
     brand: selectedBrand || undefined,
   });
 
+  const hasFilters = selectedBrand || selectedCat || selectedCity;
+
   return (
     <div className="flex-1 flex flex-col min-h-0 relative">
-      {/* ── Horizontal filter bar: Brand / Category / City ── */}
-      <div className="bg-muted/30 border-b-2 border-border px-3 py-2 flex-none overflow-x-auto scrollbar-none">
-        <div className="flex items-center gap-x-4 flex-nowrap">
-          {/* Brand */}
-          <FilterGroup
-            label="Brand"
-            items={defaultBrandNames}
-            extraItems={moreBrandNames}
-            selected={selectedBrand}
-            expanded={brandExpanded}
-            onToggleExpand={() => setBrandExpanded((v) => !v)}
-            onSelect={(brand) => setSelectedBrand(selectedBrand === brand ? null : brand)}
-            testIdPrefix="filter-brand"
+      {/* ── Filter bar ── */}
+      <div className="bg-muted/30 border-b-2 border-border px-3 py-2 flex-none">
+        <div className="flex items-center gap-2">
+          <span className="text-[10px] font-black uppercase tracking-widest text-muted-foreground/50 shrink-0 pr-1">
+            Filter
+          </span>
+
+          <FilterSelect
+            value={selectedBrand}
+            onChange={setSelectedBrand}
+            placeholder="All Brands"
+            options={allBrands.map((b) => b.name)}
+            testId="select-brand"
           />
 
-          <div className="w-px h-5 bg-border/60 self-center shrink-0" />
-
-          {/* Category */}
-          <FilterGroup
-            label="Category"
-            items={DEFAULT_CATEGORIES}
-            extraItems={MORE_CATEGORIES}
-            selected={selectedCat}
-            expanded={catExpanded}
-            onToggleExpand={() => setCatExpanded((v) => !v)}
-            onSelect={(cat) => setSelectedCat(selectedCat === cat ? null : cat)}
-            testIdPrefix="filter-cat"
+          <FilterSelect
+            value={selectedCat}
+            onChange={setSelectedCat}
+            placeholder="All Categories"
+            options={ALL_CATEGORIES}
+            testId="select-category"
           />
 
-          <div className="w-px h-5 bg-border/60 self-center shrink-0" />
-
-          {/* City */}
-          <FilterGroup
-            label="City"
-            items={DEFAULT_CITIES}
-            extraItems={MORE_CITIES}
-            selected={selectedCity}
-            expanded={cityExpanded}
-            onToggleExpand={() => setCityExpanded((v) => !v)}
-            onSelect={(city) => setSelectedCity(selectedCity === city ? null : city)}
-            testIdPrefix="filter-city"
+          <FilterSelect
+            value={selectedCity}
+            onChange={setSelectedCity}
+            placeholder="All Cities"
+            options={ALL_CITIES}
+            testId="select-city"
           />
+
+          {hasFilters && (
+            <button
+              onClick={() => {
+                setSelectedBrand("");
+                setSelectedCat("");
+                setSelectedCity("");
+              }}
+              className="shrink-0 text-[10px] font-bold text-muted-foreground/60 hover:text-destructive transition-colors whitespace-nowrap"
+              data-testid="button-clear-filters"
+            >
+              Clear
+            </button>
+          )}
         </div>
       </div>
 
