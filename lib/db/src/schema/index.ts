@@ -18,9 +18,9 @@ export const usersTable = pgTable("users", {
 
 export const businessesTable = pgTable("businesses", {
   id: serial("id").primaryKey(),
-  ownerId: integer("owner_id")
-    .notNull()
-    .references(() => usersTable.id, { onDelete: "cascade" }),
+  ownerId: integer("owner_id").references(() => usersTable.id, {
+    onDelete: "cascade",
+  }),
   name: text("name").notNull(),
   address: text("address").notNull(),
   street: text("street"),
@@ -44,6 +44,18 @@ export const businessesTable = pgTable("businesses", {
   googleReviewsUrl: text("google_reviews_url"),
   createdAt: timestamp("created_at").defaultNow().notNull(),
   lastUpdated: timestamp("last_updated").defaultNow().notNull(),
+});
+
+export const claimsTable = pgTable("claims", {
+  id: serial("id").primaryKey(),
+  businessId: integer("business_id")
+    .notNull()
+    .references(() => businessesTable.id, { onDelete: "cascade" }),
+  userId: integer("user_id")
+    .notNull()
+    .references(() => usersTable.id, { onDelete: "cascade" }),
+  status: text("status").notNull().default("pending"),
+  createdAt: timestamp("created_at").defaultNow().notNull(),
 });
 
 export const businessCategoriesTable = pgTable(
@@ -143,3 +155,4 @@ export type BannerAd = typeof bannerAdTable.$inferSelect;
 export type B2BBannerAd = typeof b2bBannerAdTable.$inferSelect;
 export type PopupAd = typeof popupAdTable.$inferSelect;
 export type PasswordResetToken = typeof passwordResetTokensTable.$inferSelect;
+export type Claim = typeof claimsTable.$inferSelect;

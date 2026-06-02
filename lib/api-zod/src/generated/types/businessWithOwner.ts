@@ -7,7 +7,8 @@
 
 export interface BusinessWithOwner {
   id: number;
-  owner_id: number;
+  /** @nullable */
+  owner_id?: number | null;
   name: string;
   address: string;
   /** @nullable */
@@ -29,5 +30,6 @@ export interface BusinessWithOwner {
   rejection_reason?: string | null;
   is_featured: number;
   created_at: string;
-  owner_email: string;
+  /** @nullable */
+  owner_email: string | null;
 }

@@ -342,6 +342,36 @@ paths:
               schema:
                 $ref: "#/components/schemas/SuccessResponse"
 
+  /businesses/{id}/claim:
+    post:
+      operationId: claimBusiness
+      summary: Submit a claim request for an unclaimed business (requires login, business role)
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        "201":
+          description: Claim submitted
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/SuccessResponse"
+        "400":
+          description: Already claimed or duplicate pending claim
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+        "404":
+          description: Business not found
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+
   /admin/pending:
     get:
       operationId: getPendingBusinesses
@@ -369,6 +399,23 @@ paths:
                 type: array
                 items:
                   $ref: "#/components/schemas/BusinessWithOwner"
+
+    post:
+      operationId: adminCreateBusiness
+      summary: Admin creates an unclaimed business listing (pre-populates the map)
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/AdminBusinessInput"
+      responses:
+        "201":
+          description: Created
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Business"
 
   /admin/businesses/{id}/approve:
     put:
@@ -429,6 +476,50 @@ paths:
             application/json:
               schema:
                 $ref: "#/components/schemas/FeatureResult"
+
+  /admin/claims:
+    get:
+      operationId: getAdminClaims
+      summary: Get all pending claim requests (admin)
+      responses:
+        "200":
+          description: Pending claims
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/ClaimWithDetails"
+
+  /admin/claims/{id}:
+    patch:
+      operationId: resolveAdminClaim
+      summary: Approve or reject a claim request (admin)
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/ClaimStatusUpdate"
+      responses:
+        "200":
+          description: Claim resolved
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/SuccessResponse"
+        "404":
+          description: Claim not found
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
 
   /admin/banner:
     get:
@@ -730,12 +821,12 @@ components:
 
     Business:
       type: object
-      required: [id, owner_id, name, address, status, is_featured, created_at]
+      required: [id, name, address, status, is_featured, created_at]
       properties:
         id:
           type: integer
         owner_id:
-          type: integer
+          type: ["integer", "null"]
         name:
           type: string
         address:
@@ -779,12 +870,12 @@ components:
 
     BusinessDetail:
       type: object
-      required: [id, owner_id, name, address, status, is_featured, created_at, photos, coupons, brands, categories]
+      required: [id, name, address, status, is_featured, created_at, photos, coupons, brands, categories]
       properties:
         id:
           type: integer
         owner_id:
-          type: integer
+          type: ["integer", "null"]
         name:
           type: string
         address:
@@ -846,12 +937,12 @@ components:
 
     BusinessWithOwner:
       type: object
-      required: [id, owner_id, name, address, status, is_featured, created_at, owner_email]
+      required: [id, name, address, status, is_featured, created_at, owner_email]
       properties:
         id:
           type: integer
         owner_id:
-          type: integer
+          type: ["integer", "null"]
         name:
           type: string
         address:
@@ -879,7 +970,7 @@ components:
         created_at:
           type: string
         owner_email:
-          type: string
+          type: ["string", "null"]
 
     BusinessInput:
       type: object
@@ -921,6 +1012,47 @@ components:
           type: array
           items:
             type: integer
+
+    AdminBusinessInput:
+      type: object
+      required: [name]
+      properties:
+        name:
+          type: string
+        address:
+          type: string
+        street:
+          type: string
+        city:
+          type: string
+        state:
+          type: string
+        zip:
+          type: string
+        phone:
+          type: string
+        website:
+          type: string
+        hours_json:
+          type: string
+        description:
+          type: string
+        instagram:
+          type: string
+        facebook:
+          type: string
+        google_reviews_url:
+          type: string
+        categories:
+          type: array
+          items:
+            type: string
+        brand_ids:
+          type: array
+          items:
+            type: integer
+        on_site_smoking_area:
+          type: boolean
 
     BusinessUpdate:
       type: object
@@ -966,6 +1098,32 @@ components:
       type: object
       properties:
         reason:
+          type: string
+
+    ClaimWithDetails:
+      type: object
+      required: [id, business_id, business_name, user_id, user_email, status, created_at]
+      properties:
+        id:
+          type: integer
+        business_id:
+          type: integer
+        business_name:
+          type: string
+        user_id:
+          type: integer
+        user_email:
+          type: string
+        status:
+          type: string
+        created_at:
+          type: string
+
+    ClaimStatusUpdate:
+      type: object
+      required: [status]
+      properties:
+        status:
           type: string
 
     BannerAd:

@@ -105,7 +105,7 @@ export const GetBusinessesQueryParams = zod.object({
 
 export const GetBusinessesResponseItem = zod.object({
   "id": zod.number(),
-  "owner_id": zod.number(),
+  "owner_id": zod.number().nullish(),
   "name": zod.string(),
   "address": zod.string(),
   "lat": zod.number().nullish(),
@@ -161,7 +161,7 @@ export const CreateBusinessBody = zod.object({
  */
 export const GetOwnedBusinessesResponseItem = zod.object({
   "id": zod.number(),
-  "owner_id": zod.number(),
+  "owner_id": zod.number().nullish(),
   "name": zod.string(),
   "address": zod.string(),
   "lat": zod.number().nullish(),
@@ -213,7 +213,7 @@ export const GetBusinessParams = zod.object({
 
 export const GetBusinessResponse = zod.object({
   "id": zod.number(),
-  "owner_id": zod.number(),
+  "owner_id": zod.number().nullish(),
   "name": zod.string(),
   "address": zod.string(),
   "street": zod.string().nullish(),
@@ -327,11 +327,19 @@ export const DeleteCouponResponse = zod.object({
 
 
 /**
+ * @summary Submit a claim request for an unclaimed business (requires login, business role)
+ */
+export const ClaimBusinessParams = zod.object({
+  "id": zod.coerce.number()
+})
+
+
+/**
  * @summary Get pending business listings (admin)
  */
 export const GetPendingBusinessesResponseItem = zod.object({
   "id": zod.number(),
-  "owner_id": zod.number(),
+  "owner_id": zod.number().nullish(),
   "name": zod.string(),
   "address": zod.string(),
   "lat": zod.number().nullish(),
@@ -345,7 +353,7 @@ export const GetPendingBusinessesResponseItem = zod.object({
   "rejection_reason": zod.string().nullish(),
   "is_featured": zod.number(),
   "created_at": zod.string(),
-  "owner_email": zod.string()
+  "owner_email": zod.string().nullable()
 })
 export const GetPendingBusinessesResponse = zod.array(GetPendingBusinessesResponseItem)
 
@@ -355,7 +363,7 @@ export const GetPendingBusinessesResponse = zod.array(GetPendingBusinessesRespon
  */
 export const GetAllBusinessesResponseItem = zod.object({
   "id": zod.number(),
-  "owner_id": zod.number(),
+  "owner_id": zod.number().nullish(),
   "name": zod.string(),
   "address": zod.string(),
   "lat": zod.number().nullish(),
@@ -369,9 +377,32 @@ export const GetAllBusinessesResponseItem = zod.object({
   "rejection_reason": zod.string().nullish(),
   "is_featured": zod.number(),
   "created_at": zod.string(),
-  "owner_email": zod.string()
+  "owner_email": zod.string().nullable()
 })
 export const GetAllBusinessesResponse = zod.array(GetAllBusinessesResponseItem)
+
+
+/**
+ * @summary Admin creates an unclaimed business listing (pre-populates the map)
+ */
+export const AdminCreateBusinessBody = zod.object({
+  "name": zod.string(),
+  "address": zod.string().optional(),
+  "street": zod.string().optional(),
+  "city": zod.string().optional(),
+  "state": zod.string().optional(),
+  "zip": zod.string().optional(),
+  "phone": zod.string().optional(),
+  "website": zod.string().optional(),
+  "hours_json": zod.string().optional(),
+  "description": zod.string().optional(),
+  "instagram": zod.string().optional(),
+  "facebook": zod.string().optional(),
+  "google_reviews_url": zod.string().optional(),
+  "categories": zod.array(zod.string()).optional(),
+  "brand_ids": zod.array(zod.number()).optional(),
+  "on_site_smoking_area": zod.boolean().optional()
+})
 
 
 /**
@@ -411,6 +442,37 @@ export const ToggleFeatureBusinessParams = zod.object({
 
 export const ToggleFeatureBusinessResponse = zod.object({
   "is_featured": zod.number()
+})
+
+
+/**
+ * @summary Get all pending claim requests (admin)
+ */
+export const GetAdminClaimsResponseItem = zod.object({
+  "id": zod.number(),
+  "business_id": zod.number(),
+  "business_name": zod.string(),
+  "user_id": zod.number(),
+  "user_email": zod.string(),
+  "status": zod.string(),
+  "created_at": zod.string()
+})
+export const GetAdminClaimsResponse = zod.array(GetAdminClaimsResponseItem)
+
+
+/**
+ * @summary Approve or reject a claim request (admin)
+ */
+export const ResolveAdminClaimParams = zod.object({
+  "id": zod.coerce.number()
+})
+
+export const ResolveAdminClaimBody = zod.object({
+  "status": zod.string()
+})
+
+export const ResolveAdminClaimResponse = zod.object({
+  "success": zod.boolean()
 })
 
 

@@ -10,7 +10,8 @@ import type { Photo } from './photo';
 
 export interface BusinessDetail {
   id: number;
-  owner_id: number;
+  /** @nullable */
+  owner_id?: number | null;
   name: string;
   address: string;
   /** @nullable */

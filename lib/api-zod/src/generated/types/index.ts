@@ -5,6 +5,7 @@
  * OpenAPI spec version: 1.0.0
  */
 
+export * from './adminBusinessInput';
 export * from './authResult';
 export * from './bannerAd';
 export * from './brand';
@@ -17,6 +18,8 @@ export * from './businessStats';
 export * from './businessStatsCategoriesItem';
 export * from './businessUpdate';
 export * from './businessWithOwner';
+export * from './claimStatusUpdate';
+export * from './claimWithDetails';
 export * from './coupon';
 export * from './errorResponse';
 export * from './featureResult';

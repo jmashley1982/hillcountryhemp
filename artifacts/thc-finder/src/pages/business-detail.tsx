@@ -1,7 +1,11 @@
-import { useGetBusiness } from "@workspace/api-client-react";
+import { useGetBusiness, useClaimBusiness } from "@workspace/api-client-react";
 import { useParams, Link } from "wouter";
-import { MapPin, Phone, Globe, Clock, Star, ArrowLeft, RefreshCw, Wind, ExternalLink, Ticket } from "lucide-react";
+import { MapPin, Phone, Globe, Clock, Star, ArrowLeft, RefreshCw, Wind, ExternalLink, Ticket, Flag, Loader2 } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
+import { Button } from "@/components/ui/button";
+import { useQueryClient } from "@tanstack/react-query";
+import { useToast } from "@/hooks/use-toast";
+import { useState, useEffect } from "react";
 
 function formatDate(dateStr: string) {
   try {
@@ -27,6 +31,17 @@ type BrandWithLogo = { id: number; name: string; logo_path?: string | null };
 export default function BusinessDetail() {
   const params = useParams<{ id: string }>();
   const { data: biz, isLoading, error } = useGetBusiness(Number(params.id));
+  const { toast } = useToast();
+  const claimBusiness = useClaimBusiness();
+  const [currentUser, setCurrentUser] = useState<{ role?: string } | null>(null);
+  const [claimSubmitted, setClaimSubmitted] = useState(false);
+
+  useEffect(() => {
+    fetch("/api/auth/me")
+      .then((r) => (r.ok ? r.json() : null))
+      .then((u) => setCurrentUser(u))
+      .catch(() => setCurrentUser(null));
+  }, []);
 
   if (isLoading) {
     return <div className="p-12 text-center font-bold text-xl animate-pulse">Loading store details...</div>;
@@ -38,6 +53,10 @@ export default function BusinessDetail() {
 
   const lastUpdated = (biz as { last_updated?: string }).last_updated;
   const onSiteSmokingArea = (biz as { on_site_smoking_area?: number }).on_site_smoking_area;
+  const ownerId = (biz as { owner_id?: number | null }).owner_id;
+  const isUnclaimed = ownerId == null;
+  const canClaim = isUnclaimed && currentUser?.role === "business" && !claimSubmitted;
+
   const socialUrl = (handle: string | null | undefined, host: string) => {
     if (!handle) return null;
     if (/^https?:\/\//i.test(handle)) return handle;
@@ -53,6 +72,23 @@ export default function BusinessDetail() {
   );
   const googleReviewsUrl = (biz as { google_reviews_url?: string | null }).google_reviews_url;
 
+  const handleClaim = () => {
+    claimBusiness.mutate(
+      { id: Number(params.id) },
+      {
+        onSuccess: () => {
+          toast({ title: "Claim submitted! The admin will review your request." });
+          setClaimSubmitted(true);
+        },
+        onError: (err: unknown) => {
+          const msg = (err as { response?: { data?: { error?: string } } })?.response?.data?.error
+            ?? "Failed to submit claim";
+          toast({ title: msg, variant: "destructive" });
+        },
+      },
+    );
+  };
+
   return (
     <div className="container mx-auto px-4 py-8 max-w-5xl">
       <Link href="/" className="inline-flex items-center text-sm font-bold uppercase tracking-wider hover:text-[#99CC66] mb-6 transition-colors text-muted-foreground">
@@ -67,7 +103,13 @@ export default function BusinessDetail() {
                 {biz.name}
                 {biz.is_featured === 1 && <Star className="h-8 w-8 fill-[#99CC66] text-[#99CC66]" />}
               </h1>
-              <div className="flex flex-wrap gap-2 mt-4">
+              {isUnclaimed && (
+                <div className="inline-flex items-center gap-1.5 bg-orange-900/30 border border-orange-700/50 text-orange-300 text-xs font-bold uppercase tracking-wider px-3 py-1.5 rounded-full mb-3">
+                  <Flag className="h-3.5 w-3.5" />
+                  Claim This Business
+                </div>
+              )}
+              <div className="flex flex-wrap gap-2 mt-2">
                 {biz.categories?.map(cat => (
                   <Badge key={cat} className="bg-primary/20 text-[#99CC66] hover:bg-primary/30 font-bold border border-primary/40 rounded-full">{cat}</Badge>
                 ))}
@@ -203,6 +245,42 @@ export default function BusinessDetail() {
             </div>
           </div>
 
+          {isUnclaimed && (
+            <div className="bg-orange-950/30 border-2 border-orange-700/40 rounded-2xl p-5 space-y-3">
+              <div className="flex items-center gap-2">
+                <Flag className="h-5 w-5 text-orange-400 shrink-0" />
+                <h3 className="font-heading text-lg text-orange-300">Is this your business?</h3>
+              </div>
+              <p className="text-sm text-muted-foreground">
+                This listing hasn't been claimed yet. If you own this business, submit a claim and an admin will verify and link it to your account.
+              </p>
+              {currentUser?.role === "business" ? (
+                claimSubmitted ? (
+                  <div className="text-sm font-bold text-orange-300 flex items-center gap-2">
+                    <CheckCircle className="h-4 w-4" />
+                    Claim submitted — pending admin review
+                  </div>
+                ) : (
+                  <Button
+                    className="w-full font-bold bg-orange-600 hover:bg-orange-700 text-white"
+                    onClick={handleClaim}
+                    disabled={claimBusiness.isPending}
+                    data-testid="button-claim-business"
+                  >
+                    {claimBusiness.isPending
+                      ? <><Loader2 className="h-4 w-4 mr-2 animate-spin" /> Submitting...</>
+                      : <><Flag className="h-4 w-4 mr-2" /> Claim This Business</>
+                    }
+                  </Button>
+                )
+              ) : (
+                <p className="text-xs text-muted-foreground">
+                  <Link href="/login" className="text-[#99CC66] hover:underline font-bold">Log in</Link> with a business account to claim this listing.
+                </p>
+              )}
+            </div>
+          )}
+
           {biz.coupons && biz.coupons.length > 0 && (
             <div className="bg-[#99CC66]/10 border-2 border-[#99CC66]/40 rounded-2xl p-6">
               <h3 className="text-xl mb-4 text-[#99CC66] font-heading">Exclusive Deals</h3>
@@ -239,5 +317,14 @@ export default function BusinessDetail() {
         </div>
       </div>
     </div>
+  );
+}
+
+function CheckCircle({ className }: { className?: string }) {
+  return (
+    <svg className={className} xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+      <path d="M22 11.08V12a10 10 0 1 1-5.93-9.14" />
+      <polyline points="22 4 12 14.01 9 11.01" />
+    </svg>
   );
 }

@@ -1,6 +1,6 @@
 import { Router } from "express";
 import multer from "multer";
-import { eq, and, inArray } from "drizzle-orm";
+import { eq, and, isNull } from "drizzle-orm";
 import {
   db,
   usersTable,
@@ -10,6 +10,7 @@ import {
   couponsTable,
   brandsTable,
   businessBrandsTable,
+  claimsTable,
 } from "@workspace/db";
 import { requireLogin, requireBusiness } from "../middlewares/auth.js";
 import { uploadBufferToGCS, makeUploadFilename, deleteFromGCS } from "../lib/gcs.js";
@@ -68,7 +69,7 @@ async function geocode(
 
 async function enrichBusiness(b: {
   id: number;
-  ownerId: number;
+  ownerId: number | null;
   name: string;
   address: string;
   street: string | null;
@@ -804,6 +805,52 @@ router.delete(
     if (b?.logoPath) await deleteFromGCS(b.logoPath);
     await db.delete(businessesTable).where(eq(businessesTable.id, id));
     res.json({ success: true });
+  },
+);
+
+// Claim a business (logged-in business user only)
+router.post(
+  "/businesses/:id/claim",
+  requireLogin,
+  requireBusiness,
+  async (req, res): Promise<void> => {
+    const raw = Array.isArray(req.params.id) ? req.params.id[0] : req.params.id;
+    const id = parseInt(raw, 10);
+    if (isNaN(id)) { res.status(400).json({ error: "Invalid id" }); return; }
+
+    const [biz] = await db
+      .select()
+      .from(businessesTable)
+      .where(eq(businessesTable.id, id));
+
+    if (!biz) { res.status(404).json({ error: "Business not found" }); return; }
+    if (biz.ownerId !== null) {
+      res.status(400).json({ error: "This business has already been claimed" });
+      return;
+    }
+
+    const [existing] = await db
+      .select()
+      .from(claimsTable)
+      .where(
+        and(
+          eq(claimsTable.businessId, id),
+          eq(claimsTable.userId, req.session.userId!),
+          eq(claimsTable.status, "pending"),
+        ),
+      );
+    if (existing) {
+      res.status(400).json({ error: "You already have a pending claim for this business" });
+      return;
+    }
+
+    await db.insert(claimsTable).values({
+      businessId: id,
+      userId: req.session.userId!,
+      status: "pending",
+    });
+
+    res.status(201).json({ success: true });
   },
 );
 

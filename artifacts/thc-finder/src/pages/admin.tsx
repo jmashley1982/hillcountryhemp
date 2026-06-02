@@ -6,10 +6,13 @@ import {
   useGetAdminBrands,
   useGetAdminPopup,
   useGetBanner,
+  useGetAdminClaims,
   useApproveBusiness,
   useRejectBusiness,
   useToggleFeatureBusiness,
   useDeleteBusiness,
+  useAdminCreateBusiness,
+  useResolveAdminClaim,
   useCreateBrand,
   useDeleteBrand,
   useToggleFeatureBrand,
@@ -19,6 +22,7 @@ import {
   getGetAdminBrandsQueryKey,
   getGetBannerQueryKey,
   getGetAdminPopupQueryKey,
+  getGetAdminClaimsQueryKey,
 } from "@workspace/api-client-react";
 import { useLocation } from "wouter";
 import { useEffect } from "react";
@@ -28,6 +32,7 @@ import { z } from "zod";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
+import { Textarea } from "@/components/ui/textarea";
 import { B2BBannerAd } from "@/components/b2b-banner-ad";
 import {
   Form,
@@ -55,9 +60,11 @@ import {
   ChevronDown,
   ChevronUp,
   Briefcase,
+  MapPin,
+  Flag,
 } from "lucide-react";
 
-type Tab = "pending" | "all" | "brands" | "banner" | "popup" | "b2b";
+type Tab = "pending" | "all" | "brands" | "banner" | "popup" | "b2b" | "add-store" | "claims";
 
 function formatPhone(raw: string | null | undefined): string {
   if (!raw) return "";
@@ -70,6 +77,12 @@ const rejectSchema = z.object({ reason: z.string().optional() });
 type RejectForm = z.infer<typeof rejectSchema>;
 const brandSchema = z.object({ name: z.string().min(1, "Brand name required") });
 type BrandForm = z.infer<typeof brandSchema>;
+
+const ALL_CATEGORIES = [
+  "Flower", "Pre-Rolls", "Concentrates", "Edibles", "Drinks",
+  "Topicals", "CBD Products", "Bongs/Pipes", "Cones/Papers",
+  "Lighters/Torches", "Batteries/E-Devices",
+];
 
 function RejectDialog({
   businessId,
@@ -144,7 +157,8 @@ type BizRow = {
   id: number;
   name: string;
   address: string;
-  owner_email: string;
+  owner_id?: number | null;
+  owner_email?: string | null;
   status: string;
   is_featured: number;
   phone?: string | null;
@@ -244,6 +258,8 @@ function BusinessCard({
     rejected: "bg-red-900/40 text-red-300",
   };
 
+  const isUnclaimed = biz.owner_id == null;
+
   return (
     <div
       className="bg-card border-2 border-border rounded-2xl p-5 shadow-[0_4px_20px_rgba(0,0,0,0.25)]"
@@ -256,12 +272,20 @@ function BusinessCard({
             <span className={`text-xs font-bold px-2 py-0.5 rounded-full ${statusColors[biz.status] ?? "bg-muted text-foreground"}`}>
               {biz.status}
             </span>
+            {isUnclaimed && (
+              <span className="text-xs font-bold px-2 py-0.5 rounded-full bg-orange-900/40 text-orange-300 flex items-center gap-1">
+                <Flag className="h-3 w-3" /> Unclaimed
+              </span>
+            )}
             {biz.is_featured === 1 && (
               <span className="text-xs font-bold px-2 py-0.5 rounded-full bg-[#99CC66]/20 text-[#99CC66]">Featured</span>
             )}
           </div>
           <p className="text-sm text-muted-foreground font-medium">{biz.address}</p>
-          <p className="text-xs text-muted-foreground mt-0.5">Owner: {biz.owner_email}</p>
+          {isUnclaimed
+            ? <p className="text-xs text-orange-400/80 mt-0.5">No owner — awaiting claim</p>
+            : <p className="text-xs text-muted-foreground mt-0.5">Owner: {biz.owner_email}</p>
+          }
         </div>
 
         <div className="flex flex-wrap gap-2">
@@ -366,7 +390,9 @@ function AllBusinessesTab() {
   });
   const [search, setSearch] = useState("");
   const filtered = all.filter(
-    (b) => b.name.toLowerCase().includes(search.toLowerCase()) || b.owner_email.toLowerCase().includes(search.toLowerCase()),
+    (b) =>
+      b.name.toLowerCase().includes(search.toLowerCase()) ||
+      (b.owner_email ?? "").toLowerCase().includes(search.toLowerCase()),
   );
   if (isLoading) return <div className="p-8 text-center font-bold animate-pulse">Loading...</div>;
   return (
@@ -380,6 +406,284 @@ function AllBusinessesTab() {
       />
       <p className="text-sm font-bold text-muted-foreground">{filtered.length} listing{filtered.length !== 1 ? "s" : ""}</p>
       {filtered.map((b) => <BusinessCard key={b.id} biz={b as BizRow} showApprove={b.status === "pending"} />)}
+    </div>
+  );
+}
+
+const addStoreSchema = z.object({
+  name: z.string().min(1, "Name required"),
+  street: z.string().optional(),
+  city: z.string().optional(),
+  state: z.string().optional(),
+  zip: z.string().optional(),
+  phone: z.string().optional(),
+  website: z.string().optional(),
+  description: z.string().optional(),
+});
+type AddStoreForm = z.infer<typeof addStoreSchema>;
+
+function AddStoreTab() {
+  const { toast } = useToast();
+  const queryClient = useQueryClient();
+  const createBusiness = useAdminCreateBusiness();
+  const [selectedCategories, setSelectedCategories] = useState<string[]>([]);
+
+  const form = useForm<AddStoreForm>({
+    resolver: zodResolver(addStoreSchema),
+    defaultValues: { name: "", street: "", city: "", state: "TX", zip: "", phone: "", website: "", description: "" },
+  });
+
+  const toggleCategory = (cat: string) => {
+    setSelectedCategories((prev) =>
+      prev.includes(cat) ? prev.filter((c) => c !== cat) : [...prev, cat],
+    );
+  };
+
+  const onSubmit = (data: AddStoreForm) => {
+    createBusiness.mutate(
+      {
+        data: {
+          ...data,
+          categories: selectedCategories,
+        },
+      },
+      {
+        onSuccess: () => {
+          toast({ title: "Store added to map" });
+          queryClient.invalidateQueries({ queryKey: getGetAllBusinessesQueryKey() });
+          form.reset();
+          setSelectedCategories([]);
+        },
+        onError: () => toast({ title: "Failed to create store", variant: "destructive" }),
+      },
+    );
+  };
+
+  return (
+    <div className="max-w-2xl space-y-6">
+      <div className="bg-muted/30 border border-border rounded-xl px-4 py-3 text-sm text-muted-foreground">
+        Create a store listing without linking it to an account. It will appear on the public map with a
+        <span className="font-bold text-orange-300"> CLAIM THIS BUSINESS</span> badge until an owner claims it.
+      </div>
+
+      <Form {...form}>
+        <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-5">
+          <FormField
+            control={form.control}
+            name="name"
+            render={({ field }) => (
+              <FormItem>
+                <FormLabel className="font-bold uppercase text-xs tracking-wider">Business Name *</FormLabel>
+                <FormControl>
+                  <Input {...field} className="border-2" placeholder="Hill Country Hemp Co." data-testid="input-store-name" />
+                </FormControl>
+                <FormMessage />
+              </FormItem>
+            )}
+          />
+
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+            <FormField
+              control={form.control}
+              name="street"
+              render={({ field }) => (
+                <FormItem className="sm:col-span-2">
+                  <FormLabel className="font-bold uppercase text-xs tracking-wider">Street Address</FormLabel>
+                  <FormControl>
+                    <Input {...field} className="border-2" placeholder="123 Main St" />
+                  </FormControl>
+                </FormItem>
+              )}
+            />
+            <FormField
+              control={form.control}
+              name="city"
+              render={({ field }) => (
+                <FormItem>
+                  <FormLabel className="font-bold uppercase text-xs tracking-wider">City</FormLabel>
+                  <FormControl>
+                    <Input {...field} className="border-2" placeholder="Fredericksburg" />
+                  </FormControl>
+                </FormItem>
+              )}
+            />
+            <div className="grid grid-cols-2 gap-3">
+              <FormField
+                control={form.control}
+                name="state"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel className="font-bold uppercase text-xs tracking-wider">State</FormLabel>
+                    <FormControl>
+                      <Input {...field} className="border-2" placeholder="TX" maxLength={2} />
+                    </FormControl>
+                  </FormItem>
+                )}
+              />
+              <FormField
+                control={form.control}
+                name="zip"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel className="font-bold uppercase text-xs tracking-wider">ZIP</FormLabel>
+                    <FormControl>
+                      <Input {...field} className="border-2" placeholder="78624" maxLength={5} />
+                    </FormControl>
+                  </FormItem>
+                )}
+              />
+            </div>
+          </div>
+
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+            <FormField
+              control={form.control}
+              name="phone"
+              render={({ field }) => (
+                <FormItem>
+                  <FormLabel className="font-bold uppercase text-xs tracking-wider">Phone</FormLabel>
+                  <FormControl>
+                    <Input {...field} className="border-2" placeholder="(512) 555-0100" />
+                  </FormControl>
+                </FormItem>
+              )}
+            />
+            <FormField
+              control={form.control}
+              name="website"
+              render={({ field }) => (
+                <FormItem>
+                  <FormLabel className="font-bold uppercase text-xs tracking-wider">Website</FormLabel>
+                  <FormControl>
+                    <Input {...field} className="border-2" placeholder="https://..." />
+                  </FormControl>
+                </FormItem>
+              )}
+            />
+          </div>
+
+          <FormField
+            control={form.control}
+            name="description"
+            render={({ field }) => (
+              <FormItem>
+                <FormLabel className="font-bold uppercase text-xs tracking-wider">Description</FormLabel>
+                <FormControl>
+                  <Textarea {...field} className="border-2 resize-none" rows={3} placeholder="Brief description of the store..." />
+                </FormControl>
+              </FormItem>
+            )}
+          />
+
+          <div>
+            <p className="font-bold uppercase text-xs tracking-wider mb-2 text-foreground">Categories</p>
+            <div className="flex flex-wrap gap-2">
+              {ALL_CATEGORIES.map((cat) => (
+                <button
+                  key={cat}
+                  type="button"
+                  onClick={() => toggleCategory(cat)}
+                  className={`text-xs font-bold px-3 py-1.5 rounded-full border-2 transition-all ${
+                    selectedCategories.includes(cat)
+                      ? "bg-[#99CC66]/20 border-[#99CC66] text-[#99CC66]"
+                      : "border-border text-muted-foreground hover:border-[#99CC66]/50"
+                  }`}
+                >
+                  {cat}
+                </button>
+              ))}
+            </div>
+          </div>
+
+          <Button
+            type="submit"
+            className="font-bold bg-[#99CC66] hover:bg-[#82B54F] text-black w-full sm:w-auto"
+            disabled={createBusiness.isPending}
+            data-testid="button-add-store-submit"
+          >
+            {createBusiness.isPending ? <Loader2 className="h-4 w-4 mr-2 animate-spin" /> : <MapPin className="h-4 w-4 mr-2" />}
+            Add Store to Map
+          </Button>
+        </form>
+      </Form>
+    </div>
+  );
+}
+
+function ClaimsTab() {
+  const { toast } = useToast();
+  const queryClient = useQueryClient();
+  const { data: claims = [], isLoading } = useGetAdminClaims({
+    query: { queryKey: getGetAdminClaimsQueryKey() },
+  });
+  const resolve = useResolveAdminClaim();
+
+  const handleResolve = (id: number, status: "approved" | "rejected") => {
+    resolve.mutate(
+      { id, data: { status } },
+      {
+        onSuccess: () => {
+          toast({ title: status === "approved" ? "Claim approved — business linked to owner" : "Claim rejected" });
+          queryClient.invalidateQueries({ queryKey: getGetAdminClaimsQueryKey() });
+          queryClient.invalidateQueries({ queryKey: getGetAllBusinessesQueryKey() });
+        },
+        onError: () => toast({ title: "Failed to update claim", variant: "destructive" }),
+      },
+    );
+  };
+
+  if (isLoading) return <div className="p-8 text-center font-bold animate-pulse">Loading...</div>;
+
+  if (claims.length === 0) return (
+    <div className="p-8 text-center text-muted-foreground font-bold">No pending claim requests.</div>
+  );
+
+  return (
+    <div className="space-y-4">
+      <p className="text-sm font-bold text-muted-foreground">{claims.length} pending claim{claims.length !== 1 ? "s" : ""}</p>
+      {claims.map((claim) => (
+        <div
+          key={claim.id}
+          className="bg-card border-2 border-orange-800/40 rounded-2xl p-5 shadow-[0_4px_20px_rgba(0,0,0,0.25)]"
+          data-testid={`claim-card-${claim.id}`}
+        >
+          <div className="flex items-start justify-between gap-4 flex-wrap">
+            <div className="flex-1 min-w-0">
+              <div className="flex items-center gap-2 mb-1">
+                <Flag className="h-4 w-4 text-orange-400 shrink-0" />
+                <h3 className="font-heading text-lg text-[#99CC66]">{claim.business_name}</h3>
+              </div>
+              <p className="text-sm text-muted-foreground">
+                Claimed by: <span className="text-foreground font-bold">{claim.user_email}</span>
+              </p>
+              <p className="text-xs text-muted-foreground mt-0.5">
+                Submitted {new Date(claim.created_at).toLocaleDateString("en-US", { month: "short", day: "numeric", year: "numeric" })}
+              </p>
+            </div>
+            <div className="flex gap-2">
+              <Button
+                size="sm"
+                className="bg-green-700 hover:bg-green-800 text-white font-bold"
+                onClick={() => handleResolve(claim.id, "approved")}
+                disabled={resolve.isPending}
+                data-testid={`button-approve-claim-${claim.id}`}
+              >
+                <CheckCircle className="h-3.5 w-3.5 mr-1" /> Approve
+              </Button>
+              <Button
+                size="sm"
+                variant="destructive"
+                className="font-bold"
+                onClick={() => handleResolve(claim.id, "rejected")}
+                disabled={resolve.isPending}
+                data-testid={`button-reject-claim-${claim.id}`}
+              >
+                <XCircle className="h-3.5 w-3.5 mr-1" /> Reject
+              </Button>
+            </div>
+          </div>
+        </div>
+      ))}
     </div>
   );
 }
@@ -508,95 +812,95 @@ function BrandsTab() {
             </div>
           )}
 
-        <div className="space-y-2">
-          {approvedBrands.map((brand) => {
-            const brandWithLogo = brand as { id: number; name: string; is_featured: number; logo_path?: string | null };
-            return (
-              <div
-                key={brand.id}
-                className="flex items-center justify-between p-4 bg-card border-2 border-border rounded-2xl shadow-[0_4px_20px_rgba(0,0,0,0.25)]"
-                data-testid={`brand-row-${brand.id}`}
-              >
-                <div className="flex items-center gap-3">
-                  {brandWithLogo.logo_path ? (
-                    <img
-                      src={`/api/uploads/${brandWithLogo.logo_path}`}
-                      alt={brand.name}
-                      className="w-9 h-9 rounded-full object-cover ring-2 ring-[#99CC66]/40"
-                    />
-                  ) : (
-                    <div className="w-9 h-9 rounded-full bg-muted flex items-center justify-center border-2 border-dashed border-border">
-                      <Tag className="h-4 w-4 text-muted-foreground" />
-                    </div>
-                  )}
-                  <span className="font-bold text-lg">
-                    {brand.name}
-                    {brand.is_featured === 1 && (
-                      <Star className="inline h-4 w-4 ml-2 fill-[#99CC66] text-[#99CC66]" />
+          <div className="space-y-2">
+            {approvedBrands.map((brand) => {
+              const brandWithLogo = brand as { id: number; name: string; is_featured: number; logo_path?: string | null };
+              return (
+                <div
+                  key={brand.id}
+                  className="flex items-center justify-between p-4 bg-card border-2 border-border rounded-2xl shadow-[0_4px_20px_rgba(0,0,0,0.25)]"
+                  data-testid={`brand-row-${brand.id}`}
+                >
+                  <div className="flex items-center gap-3">
+                    {brandWithLogo.logo_path ? (
+                      <img
+                        src={`/api/uploads/${brandWithLogo.logo_path}`}
+                        alt={brand.name}
+                        className="w-9 h-9 rounded-full object-cover ring-2 ring-[#99CC66]/40"
+                      />
+                    ) : (
+                      <div className="w-9 h-9 rounded-full bg-muted flex items-center justify-center border-2 border-dashed border-border">
+                        <Tag className="h-4 w-4 text-muted-foreground" />
+                      </div>
                     )}
-                  </span>
+                    <span className="font-bold text-lg">
+                      {brand.name}
+                      {brand.is_featured === 1 && (
+                        <Star className="inline h-4 w-4 ml-2 fill-[#99CC66] text-[#99CC66]" />
+                      )}
+                    </span>
+                  </div>
+                  <div className="flex gap-2 items-center">
+                    <input
+                      ref={(el) => { logoRefs.current[brand.id] = el; }}
+                      type="file"
+                      accept="image/*"
+                      className="hidden"
+                      onChange={(e) => {
+                        const file = e.target.files?.[0];
+                        if (file) uploadLogo(brand.id, file);
+                      }}
+                    />
+                    <Button
+                      size="sm"
+                      variant="outline"
+                      className="font-bold border border-border text-xs text-muted-foreground hover:text-foreground"
+                      onClick={() => logoRefs.current[brand.id]?.click()}
+                      title="Upload logo"
+                    >
+                      <Upload className="h-3.5 w-3.5 mr-1" />
+                      Logo
+                      <span className="ml-1.5 text-[9px] text-muted-foreground hidden sm:inline">200×200 · 2MB</span>
+                    </Button>
+                    <Button
+                      size="sm"
+                      variant="outline"
+                      className={`font-bold border-2 ${brand.is_featured === 1 ? "border-[#99CC66]/60 text-[#99CC66]" : ""}`}
+                      onClick={() =>
+                        toggleFeature.mutate({ id: brand.id }, {
+                          onSuccess: () => {
+                            queryClient.invalidateQueries({ queryKey: getGetAdminBrandsQueryKey() });
+                            toast({ title: brand.is_featured === 1 ? "Unfeatured" : "Featured" });
+                          },
+                        })
+                      }
+                      data-testid={`button-feature-brand-${brand.id}`}
+                    >
+                      <Star className="h-3.5 w-3.5 mr-1" />
+                      {brand.is_featured === 1 ? "Unfeature" : "Feature"}
+                    </Button>
+                    <Button
+                      size="sm"
+                      variant="ghost"
+                      className="font-bold text-destructive hover:text-destructive"
+                      onClick={() => {
+                        if (!confirm(`Delete brand "${brand.name}"?`)) return;
+                        deleteBrand.mutate({ id: brand.id }, {
+                          onSuccess: () => {
+                            toast({ title: "Deleted" });
+                            queryClient.invalidateQueries({ queryKey: getGetAdminBrandsQueryKey() });
+                          },
+                        });
+                      }}
+                      data-testid={`button-delete-brand-${brand.id}`}
+                    >
+                      <Trash2 className="h-3.5 w-3.5" />
+                    </Button>
+                  </div>
                 </div>
-                <div className="flex gap-2 items-center">
-                  <input
-                    ref={(el) => { logoRefs.current[brand.id] = el; }}
-                    type="file"
-                    accept="image/*"
-                    className="hidden"
-                    onChange={(e) => {
-                      const file = e.target.files?.[0];
-                      if (file) uploadLogo(brand.id, file);
-                    }}
-                  />
-                  <Button
-                    size="sm"
-                    variant="outline"
-                    className="font-bold border border-border text-xs text-muted-foreground hover:text-foreground"
-                    onClick={() => logoRefs.current[brand.id]?.click()}
-                    title="Upload logo"
-                  >
-                    <Upload className="h-3.5 w-3.5 mr-1" />
-                    Logo
-                    <span className="ml-1.5 text-[9px] text-muted-foreground hidden sm:inline">200×200 · 2MB</span>
-                  </Button>
-                  <Button
-                    size="sm"
-                    variant="outline"
-                    className={`font-bold border-2 ${brand.is_featured === 1 ? "border-[#99CC66]/60 text-[#99CC66]" : ""}`}
-                    onClick={() =>
-                      toggleFeature.mutate({ id: brand.id }, {
-                        onSuccess: () => {
-                          queryClient.invalidateQueries({ queryKey: getGetAdminBrandsQueryKey() });
-                          toast({ title: brand.is_featured === 1 ? "Unfeatured" : "Featured" });
-                        },
-                      })
-                    }
-                    data-testid={`button-feature-brand-${brand.id}`}
-                  >
-                    <Star className="h-3.5 w-3.5 mr-1" />
-                    {brand.is_featured === 1 ? "Unfeature" : "Feature"}
-                  </Button>
-                  <Button
-                    size="sm"
-                    variant="ghost"
-                    className="font-bold text-destructive hover:text-destructive"
-                    onClick={() => {
-                      if (!confirm(`Delete brand "${brand.name}"?`)) return;
-                      deleteBrand.mutate({ id: brand.id }, {
-                        onSuccess: () => {
-                          toast({ title: "Deleted" });
-                          queryClient.invalidateQueries({ queryKey: getGetAdminBrandsQueryKey() });
-                        },
-                      });
-                    }}
-                    data-testid={`button-delete-brand-${brand.id}`}
-                  >
-                    <Trash2 className="h-3.5 w-3.5" />
-                  </Button>
-                </div>
-              </div>
-            );
-          })}
-        </div>
+              );
+            })}
+          </div>
         </>
       )}
     </div>
@@ -836,6 +1140,8 @@ function B2BBannerTab() {
 const TABS: { id: Tab; label: string; icon: React.ElementType }[] = [
   { id: "pending", label: "Pending", icon: Clock },
   { id: "all", label: "All Listings", icon: Building },
+  { id: "add-store", label: "Add Store", icon: MapPin },
+  { id: "claims", label: "Claims", icon: Flag },
   { id: "brands", label: "Brands", icon: Tag },
   { id: "banner", label: "Banner Ad", icon: Image },
   { id: "popup", label: "Popup Ad", icon: Megaphone },
@@ -846,6 +1152,9 @@ export default function Admin() {
   const [, setLocation] = useLocation();
   const { data: user, isLoading: userLoading } = useGetMe();
   const [activeTab, setActiveTab] = useState<Tab>("pending");
+  const { data: claims = [] } = useGetAdminClaims({
+    query: { queryKey: getGetAdminClaimsQueryKey() },
+  });
 
   useEffect(() => {
     if (!userLoading && (!user || user.role !== "admin")) {
@@ -862,7 +1171,6 @@ export default function Admin() {
         <p className="text-muted-foreground font-bold mt-1">{user?.email} — Super Admin</p>
       </div>
 
-      {/* Tabs */}
       <div className="flex flex-wrap gap-2 mb-8 border-b-2 border-border pb-4">
         {TABS.map(({ id, label, icon: Icon }) => (
           <button
@@ -877,6 +1185,11 @@ export default function Admin() {
           >
             <Icon className="h-4 w-4" />
             {label}
+            {id === "claims" && claims.length > 0 && (
+              <span className="ml-1 bg-orange-500 text-white text-[10px] font-bold px-1.5 py-0.5 rounded-full leading-none">
+                {claims.length}
+              </span>
+            )}
           </button>
         ))}
       </div>
@@ -884,6 +1197,8 @@ export default function Admin() {
       <div>
         {activeTab === "pending" && <PendingTab />}
         {activeTab === "all" && <AllBusinessesTab />}
+        {activeTab === "add-store" && <AddStoreTab />}
+        {activeTab === "claims" && <ClaimsTab />}
         {activeTab === "brands" && <BrandsTab />}
         {activeTab === "banner" && <BannerTab />}
         {activeTab === "popup" && <PopupTab />}

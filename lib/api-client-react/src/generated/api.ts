@@ -19,6 +19,7 @@ import type {
 } from '@tanstack/react-query';
 
 import type {
+  AdminBusinessInput,
   AuthResult,
   BannerAd,
   Brand,
@@ -30,6 +31,8 @@ import type {
   BusinessStats,
   BusinessUpdate,
   BusinessWithOwner,
+  ClaimStatusUpdate,
+  ClaimWithDetails,
   ErrorResponse,
   FeatureResult,
   ForgotPasswordInput,
@@ -1236,6 +1239,76 @@ export const useDeleteCoupon = <TError = ErrorType<unknown>,
       return useMutation(getDeleteCouponMutationOptions(options));
     }
 
+export const getClaimBusinessUrl = (id: number,) => {
+
+
+
+
+  return `/api/businesses/${id}/claim`
+}
+
+/**
+ * @summary Submit a claim request for an unclaimed business (requires login, business role)
+ */
+export const claimBusiness = async (id: number, options?: RequestInit): Promise<SuccessResponse> => {
+
+  return customFetch<SuccessResponse>(getClaimBusinessUrl(id),
+  {
+    ...options,
+    method: 'POST'
+
+
+  }
+);}
+
+
+
+
+export const getClaimBusinessMutationOptions = <TError = ErrorType<ErrorResponse>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof claimBusiness>>, TError,{id: number}, TContext>, request?: SecondParameter<typeof customFetch>}
+): UseMutationOptions<Awaited<ReturnType<typeof claimBusiness>>, TError,{id: number}, TContext> => {
+
+const mutationKey = ['claimBusiness'];
+const {mutation: mutationOptions, request: requestOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, request: undefined};
+
+
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof claimBusiness>>, {id: number}> = (props) => {
+          const {id} = props ?? {};
+
+          return  claimBusiness(id,requestOptions)
+        }
+
+
+
+
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type ClaimBusinessMutationResult = NonNullable<Awaited<ReturnType<typeof claimBusiness>>>
+
+    export type ClaimBusinessMutationError = ErrorType<ErrorResponse>
+
+    /**
+ * @summary Submit a claim request for an unclaimed business (requires login, business role)
+ */
+export const useClaimBusiness = <TError = ErrorType<ErrorResponse>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof claimBusiness>>, TError,{id: number}, TContext>, request?: SecondParameter<typeof customFetch>}
+ ): UseMutationResult<
+        Awaited<ReturnType<typeof claimBusiness>>,
+        TError,
+        {id: number},
+        TContext
+      > => {
+      return useMutation(getClaimBusinessMutationOptions(options));
+    }
+
 export const getGetPendingBusinessesUrl = () => {
 
 
@@ -1389,6 +1462,77 @@ export function useGetAllBusinesses<TData = Awaited<ReturnType<typeof getAllBusi
 
 
 
+
+export const getAdminCreateBusinessUrl = () => {
+
+
+
+
+  return `/api/admin/businesses`
+}
+
+/**
+ * @summary Admin creates an unclaimed business listing (pre-populates the map)
+ */
+export const adminCreateBusiness = async (adminBusinessInput: AdminBusinessInput, options?: RequestInit): Promise<Business> => {
+
+  return customFetch<Business>(getAdminCreateBusinessUrl(),
+  {
+    ...options,
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json', ...options?.headers },
+    body: JSON.stringify(
+      adminBusinessInput,)
+  }
+);}
+
+
+
+
+export const getAdminCreateBusinessMutationOptions = <TError = ErrorType<unknown>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof adminCreateBusiness>>, TError,{data: BodyType<AdminBusinessInput>}, TContext>, request?: SecondParameter<typeof customFetch>}
+): UseMutationOptions<Awaited<ReturnType<typeof adminCreateBusiness>>, TError,{data: BodyType<AdminBusinessInput>}, TContext> => {
+
+const mutationKey = ['adminCreateBusiness'];
+const {mutation: mutationOptions, request: requestOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, request: undefined};
+
+
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof adminCreateBusiness>>, {data: BodyType<AdminBusinessInput>}> = (props) => {
+          const {data} = props ?? {};
+
+          return  adminCreateBusiness(data,requestOptions)
+        }
+
+
+
+
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type AdminCreateBusinessMutationResult = NonNullable<Awaited<ReturnType<typeof adminCreateBusiness>>>
+    export type AdminCreateBusinessMutationBody = BodyType<AdminBusinessInput>
+    export type AdminCreateBusinessMutationError = ErrorType<unknown>
+
+    /**
+ * @summary Admin creates an unclaimed business listing (pre-populates the map)
+ */
+export const useAdminCreateBusiness = <TError = ErrorType<unknown>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof adminCreateBusiness>>, TError,{data: BodyType<AdminBusinessInput>}, TContext>, request?: SecondParameter<typeof customFetch>}
+ ): UseMutationResult<
+        Awaited<ReturnType<typeof adminCreateBusiness>>,
+        TError,
+        {data: BodyType<AdminBusinessInput>},
+        TContext
+      > => {
+      return useMutation(getAdminCreateBusinessMutationOptions(options));
+    }
 
 export const getApproveBusinessUrl = (id: number,) => {
 
@@ -1600,6 +1744,155 @@ export const useToggleFeatureBusiness = <TError = ErrorType<unknown>,
         TContext
       > => {
       return useMutation(getToggleFeatureBusinessMutationOptions(options));
+    }
+
+export const getGetAdminClaimsUrl = () => {
+
+
+
+
+  return `/api/admin/claims`
+}
+
+/**
+ * @summary Get all pending claim requests (admin)
+ */
+export const getAdminClaims = async ( options?: RequestInit): Promise<ClaimWithDetails[]> => {
+
+  return customFetch<ClaimWithDetails[]>(getGetAdminClaimsUrl(),
+  {
+    ...options,
+    method: 'GET'
+
+
+  }
+);}
+
+
+
+
+
+export const getGetAdminClaimsQueryKey = () => {
+    return [
+    `/api/admin/claims`
+    ] as const;
+    }
+
+
+export const getGetAdminClaimsQueryOptions = <TData = Awaited<ReturnType<typeof getAdminClaims>>, TError = ErrorType<unknown>>( options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof getAdminClaims>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+) => {
+
+const {query: queryOptions, request: requestOptions} = options ?? {};
+
+  const queryKey =  queryOptions?.queryKey ?? getGetAdminClaimsQueryKey();
+
+
+
+    const queryFn: QueryFunction<Awaited<ReturnType<typeof getAdminClaims>>> = ({ signal }) => getAdminClaims({ signal, ...requestOptions });
+
+
+
+
+
+   return  { queryKey, queryFn, ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof getAdminClaims>>, TError, TData> & { queryKey: QueryKey }
+}
+
+export type GetAdminClaimsQueryResult = NonNullable<Awaited<ReturnType<typeof getAdminClaims>>>
+export type GetAdminClaimsQueryError = ErrorType<unknown>
+
+
+/**
+ * @summary Get all pending claim requests (admin)
+ */
+
+export function useGetAdminClaims<TData = Awaited<ReturnType<typeof getAdminClaims>>, TError = ErrorType<unknown>>(
+  options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof getAdminClaims>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+
+ ):  UseQueryResult<TData, TError> & { queryKey: QueryKey } {
+
+  const queryOptions = getGetAdminClaimsQueryOptions(options)
+
+  const query = useQuery(queryOptions) as  UseQueryResult<TData, TError> & { queryKey: QueryKey };
+
+  return { ...query, queryKey: queryOptions.queryKey };
+}
+
+
+
+
+
+
+
+export const getResolveAdminClaimUrl = (id: number,) => {
+
+
+
+
+  return `/api/admin/claims/${id}`
+}
+
+/**
+ * @summary Approve or reject a claim request (admin)
+ */
+export const resolveAdminClaim = async (id: number,
+    claimStatusUpdate: ClaimStatusUpdate, options?: RequestInit): Promise<SuccessResponse> => {
+
+  return customFetch<SuccessResponse>(getResolveAdminClaimUrl(id),
+  {
+    ...options,
+    method: 'PATCH',
+    headers: { 'Content-Type': 'application/json', ...options?.headers },
+    body: JSON.stringify(
+      claimStatusUpdate,)
+  }
+);}
+
+
+
+
+export const getResolveAdminClaimMutationOptions = <TError = ErrorType<ErrorResponse>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof resolveAdminClaim>>, TError,{id: number;data: BodyType<ClaimStatusUpdate>}, TContext>, request?: SecondParameter<typeof customFetch>}
+): UseMutationOptions<Awaited<ReturnType<typeof resolveAdminClaim>>, TError,{id: number;data: BodyType<ClaimStatusUpdate>}, TContext> => {
+
+const mutationKey = ['resolveAdminClaim'];
+const {mutation: mutationOptions, request: requestOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, request: undefined};
+
+
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof resolveAdminClaim>>, {id: number;data: BodyType<ClaimStatusUpdate>}> = (props) => {
+          const {id,data} = props ?? {};
+
+          return  resolveAdminClaim(id,data,requestOptions)
+        }
+
+
+
+
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type ResolveAdminClaimMutationResult = NonNullable<Awaited<ReturnType<typeof resolveAdminClaim>>>
+    export type ResolveAdminClaimMutationBody = BodyType<ClaimStatusUpdate>
+    export type ResolveAdminClaimMutationError = ErrorType<ErrorResponse>
+
+    /**
+ * @summary Approve or reject a claim request (admin)
+ */
+export const useResolveAdminClaim = <TError = ErrorType<ErrorResponse>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof resolveAdminClaim>>, TError,{id: number;data: BodyType<ClaimStatusUpdate>}, TContext>, request?: SecondParameter<typeof customFetch>}
+ ): UseMutationResult<
+        Awaited<ReturnType<typeof resolveAdminClaim>>,
+        TError,
+        {id: number;data: BodyType<ClaimStatusUpdate>},
+        TContext
+      > => {
+      return useMutation(getResolveAdminClaimMutationOptions(options));
     }
 
 export const getGetBannerUrl = () => {

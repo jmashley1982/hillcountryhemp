@@ -83,7 +83,8 @@ export interface Coupon {
 
 export interface Business {
   id: number;
-  owner_id: number;
+  /** @nullable */
+  owner_id?: number | null;
   name: string;
   address: string;
   /** @nullable */
@@ -117,7 +118,8 @@ export interface Business {
 
 export interface BusinessDetail {
   id: number;
-  owner_id: number;
+  /** @nullable */
+  owner_id?: number | null;
   name: string;
   address: string;
   /** @nullable */
@@ -163,7 +165,8 @@ export interface BusinessDetail {
 
 export interface BusinessWithOwner {
   id: number;
-  owner_id: number;
+  /** @nullable */
+  owner_id?: number | null;
   name: string;
   address: string;
   /** @nullable */
@@ -185,7 +188,8 @@ export interface BusinessWithOwner {
   rejection_reason?: string | null;
   is_featured: number;
   created_at: string;
-  owner_email: string;
+  /** @nullable */
+  owner_email: string | null;
 }
 
 export interface BusinessInput {
@@ -205,6 +209,25 @@ export interface BusinessInput {
   google_reviews_url?: string;
   categories?: string[];
   brand_ids?: number[];
+}
+
+export interface AdminBusinessInput {
+  name: string;
+  address?: string;
+  street?: string;
+  city?: string;
+  state?: string;
+  zip?: string;
+  phone?: string;
+  website?: string;
+  hours_json?: string;
+  description?: string;
+  instagram?: string;
+  facebook?: string;
+  google_reviews_url?: string;
+  categories?: string[];
+  brand_ids?: number[];
+  on_site_smoking_area?: boolean;
 }
 
 export interface BusinessUpdate {
@@ -228,6 +251,20 @@ export interface BusinessUpdate {
 
 export interface RejectInput {
   reason?: string;
+}
+
+export interface ClaimWithDetails {
+  id: number;
+  business_id: number;
+  business_name: string;
+  user_id: number;
+  user_email: string;
+  status: string;
+  created_at: string;
+}
+
+export interface ClaimStatusUpdate {
+  status: string;
 }
 
 export interface BannerAd {

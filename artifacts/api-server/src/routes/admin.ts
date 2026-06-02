@@ -1,11 +1,14 @@
 import { Router } from "express";
 import multer from "multer";
-import { eq } from "drizzle-orm";
+import { eq, and, isNull } from "drizzle-orm";
 import { uploadBufferToGCS, makeUploadFilename } from "../lib/gcs.js";
 import {
   db,
   usersTable,
   businessesTable,
+  businessCategoriesTable,
+  businessBrandsTable,
+  claimsTable,
   bannerAdTable,
   b2bBannerAdTable,
   popupAdTable,
@@ -16,9 +19,61 @@ const upload = multer({ storage: multer.memoryStorage(), limits: { fileSize: 5 *
 
 const router = Router();
 
+// ─── Shared helpers ────────────────────────────────────────────────────────
+
+async function geocode(address: string): Promise<{ lat: number; lng: number } | null> {
+  try {
+    const url = `https://nominatim.openstreetmap.org/search?format=json&q=${encodeURIComponent(address)}`;
+    const resp = await fetch(url, { headers: { "User-Agent": "THCHempFinder/1.0" } });
+    const data = (await resp.json()) as Array<{ lat: string; lon: string }>;
+    if (data.length > 0) return { lat: parseFloat(data[0].lat), lng: parseFloat(data[0].lon) };
+  } catch { /* ignore */ }
+  return null;
+}
+
+function composeAddress(
+  street: string | undefined, city: string | undefined,
+  state: string | undefined, zip: string | undefined,
+  fallback: string,
+): string {
+  const parts: string[] = [];
+  if (street?.trim()) parts.push(street.trim());
+  const cityStateZip = [
+    city?.trim(),
+    [state?.trim(), zip?.trim()].filter(Boolean).join(" "),
+  ].filter(Boolean).join(", ");
+  if (cityStateZip) parts.push(cityStateZip);
+  return parts.length ? parts.join(", ") : fallback;
+}
+
+function composeHoursDisplay(hoursJson: string | null | undefined): string | null {
+  if (!hoursJson) return null;
+  let parsed: { day: string; closed: boolean; open: string; close: string }[];
+  try { parsed = JSON.parse(hoursJson) as typeof parsed; } catch { return null; }
+  if (!Array.isArray(parsed) || parsed.length === 0) return null;
+  const DAY_ORDER = ["Monday","Tuesday","Wednesday","Thursday","Friday","Saturday","Sunday"];
+  const lines = DAY_ORDER.map((day) => {
+    const entry = parsed.find((d) => d.day === day);
+    if (!entry) return null;
+    if (entry.closed) return `${day}: Closed`;
+    if (!entry.open || !entry.close) return null;
+    return `${day}: ${entry.open} – ${entry.close}`;
+  }).filter((l): l is string => l !== null);
+  return lines.length ? lines.join("\n") : null;
+}
+
+function normalizeHandle(value: string | undefined, host: string): string | null {
+  if (value === undefined) return null;
+  let v = value.trim();
+  if (!v) return "";
+  v = v.replace(/^@/, "");
+  v = v.replace(new RegExp(`^https?://(www\\.)?${host.replace(".", "\\.")}/`, "i"), "");
+  v = v.replace(/\/+$/, "");
+  return v;
+}
+
 // ─── Public GET endpoints ──────────────────────────────────────────────────
 
-// B2B banner (public read for business-facing pages)
 router.get("/admin/b2b-banner", async (_req, res): Promise<void> => {
   const [b2b] = await db
     .select()
@@ -31,7 +86,6 @@ router.get("/admin/b2b-banner", async (_req, res): Promise<void> => {
   );
 });
 
-// Banner ad (public read so it can display site-wide)
 router.get("/admin/banner", async (_req, res): Promise<void> => {
   const [banner] = await db
     .select()
@@ -44,7 +98,6 @@ router.get("/admin/banner", async (_req, res): Promise<void> => {
   );
 });
 
-// Popup ad (admin view — public read for config display)
 router.get("/admin/popup", async (_req, res): Promise<void> => {
   const [popup] = await db
     .select()
@@ -85,16 +138,14 @@ router.get(
         owner_email: usersTable.email,
       })
       .from(businessesTable)
-      .innerJoin(usersTable, eq(usersTable.id, businessesTable.ownerId))
+      .innerJoin(usersTable, eq(usersTable.id, businessesTable.ownerId!))
       .where(eq(businessesTable.status, "pending"))
       .orderBy(businessesTable.name);
-    res.json(
-      rows.map((r) => ({ ...r, created_at: r.created_at.toISOString() })),
-    );
+    res.json(rows.map((r) => ({ ...r, created_at: r.created_at.toISOString() })));
   },
 );
 
-// All businesses
+// All businesses (includes unclaimed — uses LEFT JOIN)
 router.get(
   "/admin/businesses",
   requireLogin,
@@ -120,11 +171,112 @@ router.get(
         owner_email: usersTable.email,
       })
       .from(businessesTable)
-      .innerJoin(usersTable, eq(usersTable.id, businessesTable.ownerId))
+      .leftJoin(usersTable, eq(usersTable.id, businessesTable.ownerId!))
       .orderBy(businessesTable.name);
-    res.json(
-      rows.map((r) => ({ ...r, created_at: r.created_at.toISOString() })),
-    );
+    res.json(rows.map((r) => ({ ...r, created_at: r.created_at.toISOString() })));
+  },
+);
+
+// Admin creates an unclaimed business listing
+router.post(
+  "/admin/businesses",
+  requireLogin,
+  requireAdmin,
+  async (req, res): Promise<void> => {
+    const {
+      name, address, street, city, state, zip, phone, website,
+      hours_json, description, instagram, facebook, google_reviews_url,
+      categories, brand_ids, on_site_smoking_area,
+    } = req.body as {
+      name: string;
+      address?: string;
+      street?: string;
+      city?: string;
+      state?: string;
+      zip?: string;
+      phone?: string;
+      website?: string;
+      hours_json?: string;
+      description?: string;
+      instagram?: string;
+      facebook?: string;
+      google_reviews_url?: string;
+      categories?: string[];
+      brand_ids?: number[];
+      on_site_smoking_area?: boolean;
+    };
+
+    const composedAddress = composeAddress(street, city, state, zip, address ?? "");
+    if (!name || !composedAddress) {
+      res.status(400).json({ error: "Name and address required" });
+      return;
+    }
+
+    const coords = await geocode(composedAddress);
+
+    const [business] = await db
+      .insert(businessesTable)
+      .values({
+        ownerId: null,
+        name,
+        address: composedAddress,
+        street: street ?? null,
+        city: city ?? null,
+        state: state ?? null,
+        zip: zip ?? null,
+        lat: coords?.lat ?? null,
+        lng: coords?.lng ?? null,
+        phone: phone ?? null,
+        website: website ?? null,
+        hours: composeHoursDisplay(hours_json),
+        hoursJson: hours_json ?? null,
+        description: description ?? null,
+        instagram: normalizeHandle(instagram, "instagram.com"),
+        facebook: normalizeHandle(facebook, "facebook.com"),
+        googleReviewsUrl: google_reviews_url ?? null,
+        onSiteSmokingArea: on_site_smoking_area ? 1 : 0,
+        status: "approved",
+      })
+      .returning();
+
+    if (categories?.length) {
+      await db.insert(businessCategoriesTable).values(
+        categories.map((cat) => ({ businessId: business.id, category: cat })),
+      );
+    }
+    if (brand_ids?.length) {
+      await db.insert(businessBrandsTable).values(
+        brand_ids.map((bid) => ({ businessId: business.id, brandId: bid })),
+      );
+    }
+
+    const cats = await db
+      .select({ category: businessCategoriesTable.category })
+      .from(businessCategoriesTable)
+      .where(eq(businessCategoriesTable.businessId, business.id));
+
+    res.status(201).json({
+      id: business.id,
+      owner_id: null,
+      name: business.name,
+      address: business.address,
+      street: business.street,
+      city: business.city,
+      state: business.state,
+      zip: business.zip,
+      lat: business.lat,
+      lng: business.lng,
+      phone: business.phone,
+      website: business.website,
+      hours: business.hours,
+      description: business.description,
+      logo_path: business.logoPath,
+      status: business.status,
+      is_featured: business.isFeatured,
+      created_at: business.createdAt.toISOString(),
+      categories: cats.map((c) => c.category),
+      brands: [],
+    });
   },
 );
 
@@ -134,9 +286,7 @@ router.put(
   requireLogin,
   requireAdmin,
   async (req, res): Promise<void> => {
-    const raw = Array.isArray(req.params.id)
-      ? req.params.id[0]
-      : req.params.id;
+    const raw = Array.isArray(req.params.id) ? req.params.id[0] : req.params.id;
     await db
       .update(businessesTable)
       .set({ status: "approved", rejectionReason: null })
@@ -151,9 +301,7 @@ router.put(
   requireLogin,
   requireAdmin,
   async (req, res): Promise<void> => {
-    const raw = Array.isArray(req.params.id)
-      ? req.params.id[0]
-      : req.params.id;
+    const raw = Array.isArray(req.params.id) ? req.params.id[0] : req.params.id;
     const { reason } = req.body as { reason?: string };
     await db
       .update(businessesTable)
@@ -169,14 +317,9 @@ router.delete(
   requireLogin,
   requireAdmin,
   async (req, res): Promise<void> => {
-    const raw = Array.isArray(req.params.id)
-      ? req.params.id[0]
-      : req.params.id;
+    const raw = Array.isArray(req.params.id) ? req.params.id[0] : req.params.id;
     const id = parseInt(raw, 10);
-    const [b] = await db
-      .select()
-      .from(businessesTable)
-      .where(eq(businessesTable.id, id));
+    const [b] = await db.select().from(businessesTable).where(eq(businessesTable.id, id));
     if (b?.logoPath) {
       const { deleteFromGCS: _del } = await import("../lib/gcs.js");
       await _del(b.logoPath);
@@ -192,26 +335,83 @@ router.put(
   requireLogin,
   requireAdmin,
   async (req, res): Promise<void> => {
-    const raw = Array.isArray(req.params.id)
-      ? req.params.id[0]
-      : req.params.id;
+    const raw = Array.isArray(req.params.id) ? req.params.id[0] : req.params.id;
     const id = parseInt(raw, 10);
-    const [b] = await db
-      .select()
-      .from(businessesTable)
-      .where(eq(businessesTable.id, id));
-    if (!b) {
-      res.status(404).json({ error: "Business not found" });
-      return;
-    }
+    const [b] = await db.select().from(businessesTable).where(eq(businessesTable.id, id));
+    if (!b) { res.status(404).json({ error: "Business not found" }); return; }
     const newStatus = b.isFeatured ? 0 : 1;
-    await db
-      .update(businessesTable)
-      .set({ isFeatured: newStatus })
-      .where(eq(businessesTable.id, id));
+    await db.update(businessesTable).set({ isFeatured: newStatus }).where(eq(businessesTable.id, id));
     res.json({ is_featured: newStatus });
   },
 );
+
+// ─── Claim management ──────────────────────────────────────────────────────
+
+// Get all pending claims
+router.get(
+  "/admin/claims",
+  requireLogin,
+  requireAdmin,
+  async (_req, res): Promise<void> => {
+    const rows = await db
+      .select({
+        id: claimsTable.id,
+        business_id: claimsTable.businessId,
+        business_name: businessesTable.name,
+        user_id: claimsTable.userId,
+        user_email: usersTable.email,
+        status: claimsTable.status,
+        created_at: claimsTable.createdAt,
+      })
+      .from(claimsTable)
+      .innerJoin(businessesTable, eq(businessesTable.id, claimsTable.businessId))
+      .innerJoin(usersTable, eq(usersTable.id, claimsTable.userId))
+      .where(eq(claimsTable.status, "pending"))
+      .orderBy(claimsTable.createdAt);
+    res.json(rows.map((r) => ({ ...r, created_at: r.created_at.toISOString() })));
+  },
+);
+
+// Approve or reject a claim
+router.patch(
+  "/admin/claims/:id",
+  requireLogin,
+  requireAdmin,
+  async (req, res): Promise<void> => {
+    const raw = Array.isArray(req.params.id) ? req.params.id[0] : req.params.id;
+    const claimId = parseInt(raw, 10);
+    const { status } = req.body as { status: string };
+
+    const [claim] = await db.select().from(claimsTable).where(eq(claimsTable.id, claimId));
+    if (!claim) { res.status(404).json({ error: "Claim not found" }); return; }
+
+    if (status === "approved") {
+      await db
+        .update(businessesTable)
+        .set({ ownerId: claim.userId })
+        .where(eq(businessesTable.id, claim.businessId));
+
+      await db
+        .update(claimsTable)
+        .set({ status: "rejected" })
+        .where(and(eq(claimsTable.businessId, claim.businessId), eq(claimsTable.status, "pending")));
+
+      await db
+        .update(claimsTable)
+        .set({ status: "approved" })
+        .where(eq(claimsTable.id, claimId));
+    } else if (status === "rejected") {
+      await db.update(claimsTable).set({ status: "rejected" }).where(eq(claimsTable.id, claimId));
+    } else {
+      res.status(400).json({ error: "Invalid status" });
+      return;
+    }
+
+    res.json({ success: true });
+  },
+);
+
+// ─── Banner / Popup / B2B ad writes ────────────────────────────────────────
 
 // Update banner (admin write) — accepts desktop (banner) and/or mobile (banner_mobile)
 router.put(
@@ -239,7 +439,6 @@ router.put(
       await uploadBufferToGCS(name, f.buffer, f.mimetype);
       updates.mobileImagePath = name;
     }
-
     if (existing) {
       await db.update(bannerAdTable).set(updates).where(eq(bannerAdTable.id, 1));
     } else {
@@ -277,7 +476,6 @@ router.put(
       await uploadBufferToGCS(name, f.buffer, f.mimetype);
       updates.mobileImagePath = name;
     }
-
     if (existing) {
       await db.update(popupAdTable).set(updates).where(eq(popupAdTable.id, 1));
     } else {
@@ -313,7 +511,6 @@ router.put(
       await uploadBufferToGCS(name, f.buffer, f.mimetype);
       updates.mobileImagePath = name;
     }
-
     if (existing) {
       await db.update(b2bBannerAdTable).set(updates).where(eq(b2bBannerAdTable.id, 1));
     } else {

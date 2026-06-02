@@ -8,7 +8,8 @@ import type { Brand } from './brand';
 
 export interface Business {
   id: number;
-  owner_id: number;
+  /** @nullable */
+  owner_id?: number | null;
   name: string;
   address: string;
   /** @nullable */

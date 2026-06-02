@@ -12,6 +12,7 @@ import {
   RefreshCw,
   ExternalLink,
   Ticket,
+  Flag,
 } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 
@@ -138,6 +139,12 @@ export function ShopOverlay({ businessId, onClose }: ShopOverlayProps) {
                       <Star className="h-6 w-6 fill-[#99CC66] text-[#99CC66] shrink-0" />
                     )}
                   </h2>
+                  {(biz as { owner_id?: number | null }).owner_id == null && (
+                    <div className="inline-flex items-center gap-1 bg-orange-900/30 border border-orange-700/50 text-orange-300 text-[11px] font-bold uppercase tracking-wider px-2.5 py-1 rounded-full mt-2 mb-1">
+                      <Flag className="h-3 w-3 shrink-0" />
+                      Claim This Business
+                    </div>
+                  )}
                   {biz.categories && biz.categories.length > 0 && (
                     <div className="flex flex-wrap gap-1.5 mt-3">
                       {biz.categories.map((cat) => (
