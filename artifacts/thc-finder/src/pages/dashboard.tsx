@@ -47,44 +47,9 @@ export default function Dashboard() {
   return (
     <div className="min-h-screen bg-background">
       <div className="container mx-auto px-4 py-8 max-w-4xl">
-        {/* CTA card */}
-        <div className="mb-6 bg-gradient-to-r from-primary/80 to-[#1a2226] border border-[#99CC66]/30 rounded-2xl p-5 flex items-start gap-4 shadow-[0_4px_20px_rgba(0,0,0,0.4)]">
-          <Sparkles className="h-6 w-6 text-[#99CC66] shrink-0 mt-0.5" />
-          <div>
-            <p className="font-bold text-white text-sm">Keep your page fresh!</p>
-            <p className="text-white/70 text-sm mt-0.5">Add a new coupon or update your photos to attract more customers.</p>
-          </div>
-          {businesses.length > 0 && businesses[0].status === "approved" && (
-            <Link href={`/dashboard/edit/${businesses[0].id}`} className="ml-auto shrink-0">
-              <Button size="sm" className="bg-[#99CC66] hover:bg-[#82B54F] text-black font-bold">
-                <ImagePlus className="h-3.5 w-3.5 mr-1.5" /> Update
-              </Button>
-            </Link>
-          )}
-        </div>
-
-        <div className="flex items-start justify-between gap-3 mb-8 min-w-0">
-          <div className="min-w-0">
-            <h1 className="text-4xl text-[#99CC66]">My Listings</h1>
-            <p className="text-muted-foreground font-bold mt-1 truncate">{user?.email}</p>
-          </div>
-          <div className="flex flex-col items-end gap-2 shrink-0">
-            <Link href="/dashboard/add">
-              <Button
-                className="bg-primary hover:bg-primary/90 font-bold border-b-4 border-black/20"
-                data-testid="button-add-listing"
-              >
-                <Plus className="h-4 w-4 mr-2" /> Add Listing
-              </Button>
-            </Link>
-            <button
-              className="text-[11px] text-muted-foreground/40 hover:text-muted-foreground/70 transition-colors font-medium underline-offset-2 hover:underline"
-              onClick={() => setSuggestOpen(true)}
-              data-testid="button-suggest-brand-dashboard"
-            >
-              Suggest a brand
-            </button>
-          </div>
+        <div className="mb-8">
+          <h1 className="text-4xl text-[#99CC66]">My Listings</h1>
+          <p className="text-muted-foreground font-bold mt-1 truncate">{user?.email}</p>
         </div>
 
         {businesses.length === 0 ? (
@@ -192,6 +157,44 @@ export default function Dashboard() {
                 </div>
               );
             })}
+          </div>
+        )}
+
+        {/* Add listing + suggest a brand */}
+        <div className="mt-8 flex flex-col sm:flex-row items-stretch sm:items-center gap-3">
+          <Link href="/dashboard/add" className="flex-1 sm:flex-none">
+            <Button
+              className="w-full sm:w-auto bg-primary hover:bg-primary/90 font-bold border-b-4 border-black/20"
+              data-testid="button-add-listing"
+            >
+              <Plus className="h-4 w-4 mr-2" /> Add Listing
+            </Button>
+          </Link>
+          <button
+            className="text-sm text-muted-foreground/50 hover:text-muted-foreground/80 transition-colors font-medium underline-offset-2 hover:underline"
+            onClick={() => setSuggestOpen(true)}
+            data-testid="button-suggest-brand-dashboard"
+          >
+            Suggest a brand
+          </button>
+        </div>
+
+        {/* Keep your page fresh CTA */}
+        {businesses.length > 0 && businesses[0].status === "approved" && (
+          <div className="mt-6 bg-gradient-to-r from-primary/80 to-[#1a2226] border border-[#99CC66]/30 rounded-2xl p-4 flex flex-col sm:flex-row sm:items-center gap-3 shadow-[0_4px_20px_rgba(0,0,0,0.4)]">
+            <Sparkles className="h-5 w-5 text-[#99CC66] shrink-0 hidden sm:block" />
+            <div className="flex-1 min-w-0">
+              <p className="font-bold text-white text-sm flex items-center gap-2">
+                <Sparkles className="h-4 w-4 text-[#99CC66] sm:hidden" />
+                Keep your page fresh!
+              </p>
+              <p className="text-white/70 text-xs mt-0.5">Add a coupon or update photos to attract more customers.</p>
+            </div>
+            <Link href={`/dashboard/edit/${businesses[0].id}`} className="shrink-0">
+              <Button size="sm" className="bg-[#99CC66] hover:bg-[#82B54F] text-black font-bold w-full sm:w-auto">
+                <ImagePlus className="h-3.5 w-3.5 mr-1.5" /> Update
+              </Button>
+            </Link>
           </div>
         )}
       </div>
