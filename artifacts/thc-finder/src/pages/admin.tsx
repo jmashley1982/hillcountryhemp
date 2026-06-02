@@ -3,7 +3,7 @@ import {
   useGetMe,
   useGetPendingBusinesses,
   useGetAllBusinesses,
-  useGetBrands,
+  useGetAdminBrands,
   useGetAdminPopup,
   useGetBanner,
   useApproveBusiness,
@@ -13,9 +13,10 @@ import {
   useCreateBrand,
   useDeleteBrand,
   useToggleFeatureBrand,
+  useApproveBrand,
   getGetPendingBusinessesQueryKey,
   getGetAllBusinessesQueryKey,
-  getGetBrandsQueryKey,
+  getGetAdminBrandsQueryKey,
   getGetBannerQueryKey,
   getGetAdminPopupQueryKey,
 } from "@workspace/api-client-react";
@@ -386,10 +387,11 @@ function AllBusinessesTab() {
 function BrandsTab() {
   const { toast } = useToast();
   const queryClient = useQueryClient();
-  const { data: brands = [], isLoading } = useGetBrands({ query: { queryKey: getGetBrandsQueryKey() } });
+  const { data: brands = [], isLoading } = useGetAdminBrands({ query: { queryKey: getGetAdminBrandsQueryKey() } });
   const createBrand = useCreateBrand();
   const deleteBrand = useDeleteBrand();
   const toggleFeature = useToggleFeatureBrand();
+  const approveBrand = useApproveBrand();
   const logoRefs = useRef<Record<number, HTMLInputElement | null>>({});
 
   const form = useForm<BrandForm>({
@@ -403,7 +405,7 @@ function BrandsTab() {
       {
         onSuccess: () => {
           toast({ title: "Brand added" });
-          queryClient.invalidateQueries({ queryKey: getGetBrandsQueryKey() });
+          queryClient.invalidateQueries({ queryKey: getGetAdminBrandsQueryKey() });
           form.reset();
         },
         onError: () => toast({ title: "Brand already exists", variant: "destructive" }),
@@ -418,11 +420,14 @@ function BrandsTab() {
       const res = await fetch(`/api/brands/${brandId}/logo`, { method: "PUT", body: fd });
       if (!res.ok) throw new Error("Upload failed");
       toast({ title: "Logo uploaded" });
-      queryClient.invalidateQueries({ queryKey: getGetBrandsQueryKey() });
+      queryClient.invalidateQueries({ queryKey: getGetAdminBrandsQueryKey() });
     } catch {
       toast({ title: "Upload failed", variant: "destructive" });
     }
   };
+
+  const pendingBrands = brands.filter((b) => b.status === "pending");
+  const approvedBrands = brands.filter((b) => b.status !== "pending");
 
   return (
     <div className="space-y-6">
@@ -450,8 +455,61 @@ function BrandsTab() {
       {isLoading ? (
         <div className="animate-pulse font-bold">Loading brands...</div>
       ) : (
+        <>
+          {pendingBrands.length > 0 && (
+            <div className="space-y-2">
+              <h3 className="font-bold uppercase text-xs tracking-wider text-yellow-400 flex items-center gap-1.5">
+                <Clock className="h-3.5 w-3.5" />
+                Suggested — Pending Approval ({pendingBrands.length})
+              </h3>
+              {pendingBrands.map((brand) => (
+                <div
+                  key={brand.id}
+                  className="flex items-center justify-between p-3 bg-yellow-950/30 border-2 border-yellow-800/40 rounded-2xl"
+                  data-testid={`pending-brand-row-${brand.id}`}
+                >
+                  <span className="font-bold text-sm text-yellow-200">{brand.name}</span>
+                  <div className="flex gap-2">
+                    <Button
+                      size="sm"
+                      className="font-bold bg-[#99CC66] hover:bg-[#82B54F] text-black h-7 text-xs"
+                      onClick={() =>
+                        approveBrand.mutate({ id: brand.id }, {
+                          onSuccess: () => {
+                            toast({ title: `"${brand.name}" approved` });
+                            queryClient.invalidateQueries({ queryKey: getGetAdminBrandsQueryKey() });
+                          },
+                        })
+                      }
+                      data-testid={`button-approve-brand-${brand.id}`}
+                    >
+                      <CheckCircle className="h-3.5 w-3.5 mr-1" /> Approve
+                    </Button>
+                    <Button
+                      size="sm"
+                      variant="ghost"
+                      className="font-bold text-destructive hover:text-destructive h-7 text-xs"
+                      onClick={() => {
+                        if (!confirm(`Reject and delete suggestion "${brand.name}"?`)) return;
+                        deleteBrand.mutate({ id: brand.id }, {
+                          onSuccess: () => {
+                            toast({ title: "Suggestion removed" });
+                            queryClient.invalidateQueries({ queryKey: getGetAdminBrandsQueryKey() });
+                          },
+                        });
+                      }}
+                      data-testid={`button-reject-brand-${brand.id}`}
+                    >
+                      <Trash2 className="h-3.5 w-3.5" />
+                    </Button>
+                  </div>
+                </div>
+              ))}
+            </div>
+          )}
+
         <div className="space-y-2">
-          {brands.map((brand) => {
+          {approvedBrands.map((brand) => {
             const brandWithLogo = brand as { id: number; name: string; is_featured: number; logo_path?: string | null };
             return (
               <div
@@ -507,7 +565,7 @@ function BrandsTab() {
                     onClick={() =>
                       toggleFeature.mutate({ id: brand.id }, {
                         onSuccess: () => {
-                          queryClient.invalidateQueries({ queryKey: getGetBrandsQueryKey() });
+                          queryClient.invalidateQueries({ queryKey: getGetAdminBrandsQueryKey() });
                           toast({ title: brand.is_featured === 1 ? "Unfeatured" : "Featured" });
                         },
                       })
@@ -526,7 +584,7 @@ function BrandsTab() {
                       deleteBrand.mutate({ id: brand.id }, {
                         onSuccess: () => {
                           toast({ title: "Deleted" });
-                          queryClient.invalidateQueries({ queryKey: getGetBrandsQueryKey() });
+                          queryClient.invalidateQueries({ queryKey: getGetAdminBrandsQueryKey() });
                         },
                       });
                     }}
@@ -539,6 +597,7 @@ function BrandsTab() {
             );
           })}
         </div>
+        </>
       )}
     </div>
   );

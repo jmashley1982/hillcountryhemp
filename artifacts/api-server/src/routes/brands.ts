@@ -1,28 +1,15 @@
 import { Router } from "express";
 import multer from "multer";
-import path from "path";
-import { fileURLToPath } from "url";
-import fs from "fs";
-import { eq } from "drizzle-orm";
+import { eq, and } from "drizzle-orm";
 import { db, brandsTable } from "@workspace/db";
 import { requireLogin, requireAdmin } from "../middlewares/auth.js";
+import { uploadBufferToGCS, makeUploadFilename, deleteFromGCS } from "../lib/gcs.js";
 
-const __filename = fileURLToPath(import.meta.url);
-const __dirname = path.dirname(__filename);
-const uploadsDir = path.join(__dirname, "..", "..", "uploads");
-
-const storage = multer.diskStorage({
-  destination: uploadsDir,
-  filename: (_req, file, cb) => {
-    const unique = Date.now() + "-" + Math.round(Math.random() * 1e9);
-    cb(null, "brand-" + unique + path.extname(file.originalname));
-  },
-});
-const upload = multer({ storage, limits: { fileSize: 2 * 1024 * 1024 } });
+const upload = multer({ storage: multer.memoryStorage(), limits: { fileSize: 2 * 1024 * 1024 } });
 
 const router = Router();
 
-// Public: list all brands
+// Public: list approved brands
 router.get("/brands", async (_req, res): Promise<void> => {
   const brands = await db
     .select({
@@ -30,11 +17,61 @@ router.get("/brands", async (_req, res): Promise<void> => {
       name: brandsTable.name,
       is_featured: brandsTable.isFeatured,
       logo_path: brandsTable.logoPath,
+      status: brandsTable.status,
     })
     .from(brandsTable)
+    .where(eq(brandsTable.status, "approved"))
     .orderBy(brandsTable.name);
   res.json(brands);
 });
+
+// Public: suggest a brand (creates pending brand)
+router.post("/brands/suggest", async (req, res): Promise<void> => {
+  const { name } = req.body as { name?: string };
+  if (!name?.trim()) {
+    res.status(400).json({ error: "Brand name required" });
+    return;
+  }
+  try {
+    await db.insert(brandsTable).values({ name: name.trim(), status: "pending" });
+    res.status(201).json({ success: true });
+  } catch {
+    res.status(400).json({ error: "A brand with that name already exists" });
+  }
+});
+
+// Admin: list all brands including pending
+router.get("/admin/brands", requireLogin, requireAdmin, async (_req, res): Promise<void> => {
+  const brands = await db
+    .select({
+      id: brandsTable.id,
+      name: brandsTable.name,
+      is_featured: brandsTable.isFeatured,
+      logo_path: brandsTable.logoPath,
+      status: brandsTable.status,
+    })
+    .from(brandsTable)
+    .orderBy(brandsTable.status, brandsTable.name);
+  res.json(brands);
+});
+
+// Admin: approve a pending brand
+router.put(
+  "/admin/brands/:id/approve",
+  requireLogin,
+  requireAdmin,
+  async (req, res): Promise<void> => {
+    const raw = Array.isArray(req.params.id) ? req.params.id[0] : req.params.id;
+    const id = parseInt(raw, 10);
+    const [brand] = await db.select().from(brandsTable).where(eq(brandsTable.id, id));
+    if (!brand) {
+      res.status(404).json({ error: "Brand not found" });
+      return;
+    }
+    await db.update(brandsTable).set({ status: "approved" }).where(eq(brandsTable.id, id));
+    res.json({ success: true });
+  },
+);
 
 // Admin: add brand (with optional logo)
 router.post(
@@ -48,11 +85,13 @@ router.post(
       res.status(400).json({ error: "Brand name required" });
       return;
     }
+    let logoPath: string | null = null;
+    if (req.file) {
+      logoPath = makeUploadFilename("brand", req.file.originalname);
+      await uploadBufferToGCS(logoPath, req.file.buffer, req.file.mimetype);
+    }
     try {
-      await db.insert(brandsTable).values({
-        name,
-        logoPath: req.file?.filename ?? null,
-      });
+      await db.insert(brandsTable).values({ name, logoPath, status: "approved" });
       res.status(201).json({ success: true });
     } catch {
       res.status(400).json({ error: "Brand already exists" });
@@ -78,12 +117,11 @@ router.put(
       res.status(404).json({ error: "Brand not found" });
       return;
     }
-    if (brand.logoPath) {
-      const old = path.join(uploadsDir, brand.logoPath);
-      if (fs.existsSync(old)) fs.unlinkSync(old);
-    }
-    await db.update(brandsTable).set({ logoPath: req.file.filename }).where(eq(brandsTable.id, id));
-    res.json({ logo_path: req.file.filename });
+    if (brand.logoPath) await deleteFromGCS(brand.logoPath);
+    const filename = makeUploadFilename("brand", req.file.originalname);
+    await uploadBufferToGCS(filename, req.file.buffer, req.file.mimetype);
+    await db.update(brandsTable).set({ logoPath: filename }).where(eq(brandsTable.id, id));
+    res.json({ logo_path: filename });
   },
 );
 
@@ -96,10 +134,7 @@ router.delete(
     const raw = Array.isArray(req.params.id) ? req.params.id[0] : req.params.id;
     const id = parseInt(raw, 10);
     const [brand] = await db.select().from(brandsTable).where(eq(brandsTable.id, id));
-    if (brand?.logoPath) {
-      const p = path.join(uploadsDir, brand.logoPath);
-      if (fs.existsSync(p)) fs.unlinkSync(p);
-    }
+    if (brand?.logoPath) await deleteFromGCS(brand.logoPath);
     await db.delete(brandsTable).where(eq(brandsTable.id, id));
     res.json({ success: true });
   },

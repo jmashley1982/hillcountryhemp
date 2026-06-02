@@ -9,6 +9,7 @@ export * from './authResult';
 export * from './bannerAd';
 export * from './brand';
 export * from './brandInput';
+export * from './brandSuggestInput';
 export * from './business';
 export * from './businessDetail';
 export * from './businessInput';

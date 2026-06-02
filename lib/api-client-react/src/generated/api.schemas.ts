@@ -46,9 +46,14 @@ export interface Brand {
   id: number;
   name: string;
   is_featured: number;
+  status: string;
 }
 
 export interface BrandInput {
+  name: string;
+}
+
+export interface BrandSuggestInput {
   name: string;
 }
 

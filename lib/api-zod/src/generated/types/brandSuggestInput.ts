@@ -5,9 +5,6 @@
  * OpenAPI spec version: 1.0.0
  */
 
-export interface Brand {
-  id: number;
+export interface BrandSuggestInput {
   name: string;
-  is_featured: number;
-  status: string;
 }

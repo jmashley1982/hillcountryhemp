@@ -1,9 +1,10 @@
 import { useGetMe, useGetOwnedBusinesses, getGetOwnedBusinessesQueryKey } from "@workspace/api-client-react";
 import { useLocation, Link } from "wouter";
-import { useEffect } from "react";
+import { useEffect, useState } from "react";
 import { Button } from "@/components/ui/button";
-import { Plus, Edit, Clock, CheckCircle, XCircle, Building2, Sparkles, ImagePlus } from "lucide-react";
+import { Plus, Edit, Clock, CheckCircle, XCircle, Building2, Sparkles, ImagePlus, Lightbulb } from "lucide-react";
 import { B2BBannerAd } from "@/components/b2b-banner-ad";
+import { SuggestBrandModal } from "@/components/suggest-brand-modal";
 
 const statusConfig = {
   pending: { label: "Pending Review", icon: Clock, color: "bg-yellow-900/40 text-yellow-300 border-yellow-700" },
@@ -21,6 +22,7 @@ function formatDate(dateStr: string) {
 
 export default function Dashboard() {
   const [, setLocation] = useLocation();
+  const [suggestOpen, setSuggestOpen] = useState(false);
   const { data: user, isLoading: userLoading } = useGetMe();
   const { data: businesses = [], isLoading } = useGetOwnedBusinesses({
     query: { queryKey: getGetOwnedBusinessesQueryKey() },
@@ -68,14 +70,24 @@ export default function Dashboard() {
             <h1 className="text-4xl text-[#99CC66]">My Listings</h1>
             <p className="text-muted-foreground font-bold mt-1">{user?.email}</p>
           </div>
-          <Link href="/dashboard/add">
-            <Button
-              className="bg-primary hover:bg-primary/90 font-bold border-b-4 border-black/20"
-              data-testid="button-add-listing"
+          <div className="flex items-center gap-3">
+            <button
+              className="text-xs text-muted-foreground/60 hover:text-muted-foreground transition-colors font-medium underline-offset-2 hover:underline flex items-center gap-1"
+              onClick={() => setSuggestOpen(true)}
+              data-testid="button-suggest-brand-dashboard"
             >
-              <Plus className="h-4 w-4 mr-2" /> Add Listing
-            </Button>
-          </Link>
+              <Lightbulb className="h-3.5 w-3.5" />
+              Suggest a brand
+            </button>
+            <Link href="/dashboard/add">
+              <Button
+                className="bg-primary hover:bg-primary/90 font-bold border-b-4 border-black/20"
+                data-testid="button-add-listing"
+              >
+                <Plus className="h-4 w-4 mr-2" /> Add Listing
+              </Button>
+            </Link>
+          </div>
         </div>
 
         {businesses.length === 0 ? (
@@ -186,6 +198,7 @@ export default function Dashboard() {
           </div>
         )}
       </div>
+      <SuggestBrandModal open={suggestOpen} onClose={() => setSuggestOpen(false)} />
     </div>
   );
 }

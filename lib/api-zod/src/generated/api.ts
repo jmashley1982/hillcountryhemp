@@ -100,7 +100,8 @@ export const GetBusinessesResponseItem = zod.object({
   "brands": zod.array(zod.object({
   "id": zod.number(),
   "name": zod.string(),
-  "is_featured": zod.number()
+  "is_featured": zod.number(),
+  "status": zod.string()
 })).optional()
 })
 export const GetBusinessesResponse = zod.array(GetBusinessesResponseItem)
@@ -155,7 +156,8 @@ export const GetOwnedBusinessesResponseItem = zod.object({
   "brands": zod.array(zod.object({
   "id": zod.number(),
   "name": zod.string(),
-  "is_featured": zod.number()
+  "is_featured": zod.number(),
+  "status": zod.string()
 })).optional()
 })
 export const GetOwnedBusinessesResponse = zod.array(GetOwnedBusinessesResponseItem)
@@ -223,7 +225,8 @@ export const GetBusinessResponse = zod.object({
   "brands": zod.array(zod.object({
   "id": zod.number(),
   "name": zod.string(),
-  "is_featured": zod.number()
+  "is_featured": zod.number(),
+  "status": zod.string()
 }))
 })
 
@@ -407,12 +410,13 @@ export const GetAdminPopupResponse = zod.object({
 
 
 /**
- * @summary List all brands
+ * @summary List approved brands (public)
  */
 export const GetBrandsResponseItem = zod.object({
   "id": zod.number(),
   "name": zod.string(),
-  "is_featured": zod.number()
+  "is_featured": zod.number(),
+  "status": zod.string()
 })
 export const GetBrandsResponse = zod.array(GetBrandsResponseItem)
 
@@ -421,6 +425,14 @@ export const GetBrandsResponse = zod.array(GetBrandsResponseItem)
  * @summary Add a brand (admin)
  */
 export const CreateBrandBody = zod.object({
+  "name": zod.string()
+})
+
+
+/**
+ * @summary Suggest a new brand (public — creates pending brand for admin review)
+ */
+export const SuggestBrandBody = zod.object({
   "name": zod.string()
 })
 
@@ -446,6 +458,30 @@ export const ToggleFeatureBrandParams = zod.object({
 
 export const ToggleFeatureBrandResponse = zod.object({
   "is_featured": zod.number()
+})
+
+
+/**
+ * @summary List all brands including pending (admin)
+ */
+export const GetAdminBrandsResponseItem = zod.object({
+  "id": zod.number(),
+  "name": zod.string(),
+  "is_featured": zod.number(),
+  "status": zod.string()
+})
+export const GetAdminBrandsResponse = zod.array(GetAdminBrandsResponseItem)
+
+
+/**
+ * @summary Approve a pending brand (admin)
+ */
+export const ApproveBrandParams = zod.object({
+  "id": zod.coerce.number()
+})
+
+export const ApproveBrandResponse = zod.object({
+  "success": zod.boolean()
 })
 
 

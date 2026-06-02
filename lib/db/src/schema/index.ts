@@ -80,6 +80,7 @@ export const brandsTable = pgTable("brands", {
   name: text("name").unique().notNull(),
   isFeatured: integer("is_featured").notNull().default(0),
   logoPath: text("logo_path"),
+  status: text("status").notNull().default("approved"),
 });
 
 export const businessBrandsTable = pgTable(

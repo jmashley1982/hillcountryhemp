@@ -6,6 +6,7 @@ import { Search, Map as MapIcon, List, Star, MapPin } from "lucide-react";
 import { Link } from "wouter";
 import { BusinessMap } from "@/components/map";
 import { ShopOverlay } from "@/components/shop-overlay";
+import { SuggestBrandModal } from "@/components/suggest-brand-modal";
 
 const ALL_CATEGORIES = [
   "Flower",
@@ -27,6 +28,7 @@ export default function Home() {
   const [viewMode, setViewMode] = useState<"map" | "list">("map");
   const [highlightedId, setHighlightedId] = useState<number | null>(null);
   const [selectedBizId, setSelectedBizId] = useState<number | null>(null);
+  const [suggestOpen, setSuggestOpen] = useState(false);
 
   const { data: businesses = [], isLoading } = useGetBusinesses({
     search: search || undefined,
@@ -143,11 +145,18 @@ export default function Home() {
             )}
           </div>
 
-          <div className="p-3 border-t border-border bg-card text-center">
+          <div className="p-3 border-t border-border bg-card flex items-center justify-between">
             <p className="text-xs text-muted-foreground font-bold">
               {businesses.length} shop{businesses.length !== 1 ? "s" : ""}{" "}
               found
             </p>
+            <button
+              className="text-xs text-muted-foreground/60 hover:text-muted-foreground transition-colors font-medium underline-offset-2 hover:underline"
+              onClick={() => setSuggestOpen(true)}
+              data-testid="button-suggest-brand-home"
+            >
+              Suggest a brand
+            </button>
           </div>
         </div>
 
@@ -182,6 +191,8 @@ export default function Home() {
           onClose={() => setSelectedBizId(null)}
         />
       )}
+
+      <SuggestBrandModal open={suggestOpen} onClose={() => setSuggestOpen(false)} />
     </div>
   );
 }

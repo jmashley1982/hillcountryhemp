@@ -411,7 +411,7 @@ paths:
   /brands:
     get:
       operationId: getBrands
-      summary: List all brands
+      summary: List approved brands (public)
       responses:
         "200":
           description: Brands
@@ -438,6 +438,30 @@ paths:
             application/json:
               schema:
                 $ref: "#/components/schemas/SuccessResponse"
+
+  /brands/suggest:
+    post:
+      operationId: suggestBrand
+      summary: Suggest a new brand (public — creates pending brand for admin review)
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/BrandSuggestInput"
+      responses:
+        "201":
+          description: Suggestion submitted
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/SuccessResponse"
+        "400":
+          description: Validation error
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
 
   /brands/{id}:
     delete:
@@ -474,6 +498,38 @@ paths:
             application/json:
               schema:
                 $ref: "#/components/schemas/FeatureResult"
+
+  /admin/brands:
+    get:
+      operationId: getAdminBrands
+      summary: List all brands including pending (admin)
+      responses:
+        "200":
+          description: All brands
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/Brand"
+
+  /admin/brands/{id}/approve:
+    put:
+      operationId: approveBrand
+      summary: Approve a pending brand (admin)
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        "200":
+          description: Approved
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/SuccessResponse"
 
   /popup:
     get:
@@ -559,7 +615,7 @@ components:
 
     Brand:
       type: object
-      required: [id, name, is_featured]
+      required: [id, name, is_featured, status]
       properties:
         id:
           type: integer
@@ -567,8 +623,17 @@ components:
           type: string
         is_featured:
           type: integer
+        status:
+          type: string
 
     BrandInput:
+      type: object
+      required: [name]
+      properties:
+        name:
+          type: string
+
+    BrandSuggestInput:
       type: object
       required: [name]
       properties:

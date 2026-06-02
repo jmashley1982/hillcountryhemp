@@ -23,6 +23,7 @@ import type {
   BannerAd,
   Brand,
   BrandInput,
+  BrandSuggestInput,
   Business,
   BusinessDetail,
   BusinessInput,
@@ -1620,7 +1621,7 @@ export const getGetBrandsUrl = () => {
 }
 
 /**
- * @summary List all brands
+ * @summary List approved brands (public)
  */
 export const getBrands = async ( options?: RequestInit): Promise<Brand[]> => {
 
@@ -1667,7 +1668,7 @@ export type GetBrandsQueryError = ErrorType<unknown>
 
 
 /**
- * @summary List all brands
+ * @summary List approved brands (public)
  */
 
 export function useGetBrands<TData = Awaited<ReturnType<typeof getBrands>>, TError = ErrorType<unknown>>(
@@ -1757,6 +1758,77 @@ export const useCreateBrand = <TError = ErrorType<unknown>,
         TContext
       > => {
       return useMutation(getCreateBrandMutationOptions(options));
+    }
+
+export const getSuggestBrandUrl = () => {
+
+
+
+
+  return `/api/brands/suggest`
+}
+
+/**
+ * @summary Suggest a new brand (public — creates pending brand for admin review)
+ */
+export const suggestBrand = async (brandSuggestInput: BrandSuggestInput, options?: RequestInit): Promise<SuccessResponse> => {
+
+  return customFetch<SuccessResponse>(getSuggestBrandUrl(),
+  {
+    ...options,
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json', ...options?.headers },
+    body: JSON.stringify(
+      brandSuggestInput,)
+  }
+);}
+
+
+
+
+export const getSuggestBrandMutationOptions = <TError = ErrorType<ErrorResponse>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof suggestBrand>>, TError,{data: BodyType<BrandSuggestInput>}, TContext>, request?: SecondParameter<typeof customFetch>}
+): UseMutationOptions<Awaited<ReturnType<typeof suggestBrand>>, TError,{data: BodyType<BrandSuggestInput>}, TContext> => {
+
+const mutationKey = ['suggestBrand'];
+const {mutation: mutationOptions, request: requestOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, request: undefined};
+
+
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof suggestBrand>>, {data: BodyType<BrandSuggestInput>}> = (props) => {
+          const {data} = props ?? {};
+
+          return  suggestBrand(data,requestOptions)
+        }
+
+
+
+
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type SuggestBrandMutationResult = NonNullable<Awaited<ReturnType<typeof suggestBrand>>>
+    export type SuggestBrandMutationBody = BodyType<BrandSuggestInput>
+    export type SuggestBrandMutationError = ErrorType<ErrorResponse>
+
+    /**
+ * @summary Suggest a new brand (public — creates pending brand for admin review)
+ */
+export const useSuggestBrand = <TError = ErrorType<ErrorResponse>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof suggestBrand>>, TError,{data: BodyType<BrandSuggestInput>}, TContext>, request?: SecondParameter<typeof customFetch>}
+ ): UseMutationResult<
+        Awaited<ReturnType<typeof suggestBrand>>,
+        TError,
+        {data: BodyType<BrandSuggestInput>},
+        TContext
+      > => {
+      return useMutation(getSuggestBrandMutationOptions(options));
     }
 
 export const getDeleteBrandUrl = (id: number,) => {
@@ -1897,6 +1969,153 @@ export const useToggleFeatureBrand = <TError = ErrorType<unknown>,
         TContext
       > => {
       return useMutation(getToggleFeatureBrandMutationOptions(options));
+    }
+
+export const getGetAdminBrandsUrl = () => {
+
+
+
+
+  return `/api/admin/brands`
+}
+
+/**
+ * @summary List all brands including pending (admin)
+ */
+export const getAdminBrands = async ( options?: RequestInit): Promise<Brand[]> => {
+
+  return customFetch<Brand[]>(getGetAdminBrandsUrl(),
+  {
+    ...options,
+    method: 'GET'
+
+
+  }
+);}
+
+
+
+
+
+export const getGetAdminBrandsQueryKey = () => {
+    return [
+    `/api/admin/brands`
+    ] as const;
+    }
+
+
+export const getGetAdminBrandsQueryOptions = <TData = Awaited<ReturnType<typeof getAdminBrands>>, TError = ErrorType<unknown>>( options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof getAdminBrands>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+) => {
+
+const {query: queryOptions, request: requestOptions} = options ?? {};
+
+  const queryKey =  queryOptions?.queryKey ?? getGetAdminBrandsQueryKey();
+
+
+
+    const queryFn: QueryFunction<Awaited<ReturnType<typeof getAdminBrands>>> = ({ signal }) => getAdminBrands({ signal, ...requestOptions });
+
+
+
+
+
+   return  { queryKey, queryFn, ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof getAdminBrands>>, TError, TData> & { queryKey: QueryKey }
+}
+
+export type GetAdminBrandsQueryResult = NonNullable<Awaited<ReturnType<typeof getAdminBrands>>>
+export type GetAdminBrandsQueryError = ErrorType<unknown>
+
+
+/**
+ * @summary List all brands including pending (admin)
+ */
+
+export function useGetAdminBrands<TData = Awaited<ReturnType<typeof getAdminBrands>>, TError = ErrorType<unknown>>(
+  options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof getAdminBrands>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+
+ ):  UseQueryResult<TData, TError> & { queryKey: QueryKey } {
+
+  const queryOptions = getGetAdminBrandsQueryOptions(options)
+
+  const query = useQuery(queryOptions) as  UseQueryResult<TData, TError> & { queryKey: QueryKey };
+
+  return { ...query, queryKey: queryOptions.queryKey };
+}
+
+
+
+
+
+
+
+export const getApproveBrandUrl = (id: number,) => {
+
+
+
+
+  return `/api/admin/brands/${id}/approve`
+}
+
+/**
+ * @summary Approve a pending brand (admin)
+ */
+export const approveBrand = async (id: number, options?: RequestInit): Promise<SuccessResponse> => {
+
+  return customFetch<SuccessResponse>(getApproveBrandUrl(id),
+  {
+    ...options,
+    method: 'PUT'
+
+
+  }
+);}
+
+
+
+
+export const getApproveBrandMutationOptions = <TError = ErrorType<unknown>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof approveBrand>>, TError,{id: number}, TContext>, request?: SecondParameter<typeof customFetch>}
+): UseMutationOptions<Awaited<ReturnType<typeof approveBrand>>, TError,{id: number}, TContext> => {
+
+const mutationKey = ['approveBrand'];
+const {mutation: mutationOptions, request: requestOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, request: undefined};
+
+
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof approveBrand>>, {id: number}> = (props) => {
+          const {id} = props ?? {};
+
+          return  approveBrand(id,requestOptions)
+        }
+
+
+
+
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type ApproveBrandMutationResult = NonNullable<Awaited<ReturnType<typeof approveBrand>>>
+
+    export type ApproveBrandMutationError = ErrorType<unknown>
+
+    /**
+ * @summary Approve a pending brand (admin)
+ */
+export const useApproveBrand = <TError = ErrorType<unknown>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof approveBrand>>, TError,{id: number}, TContext>, request?: SecondParameter<typeof customFetch>}
+ ): UseMutationResult<
+        Awaited<ReturnType<typeof approveBrand>>,
+        TError,
+        {id: number},
+        TContext
+      > => {
+      return useMutation(getApproveBrandMutationOptions(options));
     }
 
 export const getGetPopupUrl = () => {
