@@ -65,19 +65,12 @@ export default function Dashboard() {
           )}
         </div>
 
-        <div className="flex items-center justify-between mb-8">
-          <div>
+        <div className="flex items-start justify-between gap-3 mb-8 min-w-0">
+          <div className="min-w-0">
             <h1 className="text-4xl text-[#99CC66]">My Listings</h1>
-            <p className="text-muted-foreground font-bold mt-1">{user?.email}</p>
+            <p className="text-muted-foreground font-bold mt-1 truncate">{user?.email}</p>
           </div>
-          <div className="flex items-center gap-3">
-            <button
-              className="text-[11px] text-muted-foreground/40 hover:text-muted-foreground/70 transition-colors font-medium underline-offset-2 hover:underline"
-              onClick={() => setSuggestOpen(true)}
-              data-testid="button-suggest-brand-dashboard"
-            >
-              Suggest a brand
-            </button>
+          <div className="flex flex-col items-end gap-2 shrink-0">
             <Link href="/dashboard/add">
               <Button
                 className="bg-primary hover:bg-primary/90 font-bold border-b-4 border-black/20"
@@ -86,6 +79,13 @@ export default function Dashboard() {
                 <Plus className="h-4 w-4 mr-2" /> Add Listing
               </Button>
             </Link>
+            <button
+              className="text-[11px] text-muted-foreground/40 hover:text-muted-foreground/70 transition-colors font-medium underline-offset-2 hover:underline"
+              onClick={() => setSuggestOpen(true)}
+              data-testid="button-suggest-brand-dashboard"
+            >
+              Suggest a brand
+            </button>
           </div>
         </div>
 
