@@ -420,6 +420,7 @@ export const ToggleFeatureBusinessResponse = zod.object({
 export const GetBannerResponse = zod.object({
   "id": zod.number(),
   "image_path": zod.string().nullish(),
+  "mobile_image_path": zod.string().nullish(),
   "link_url": zod.string().nullish()
 })
 
@@ -430,6 +431,7 @@ export const GetBannerResponse = zod.object({
 export const GetAdminPopupResponse = zod.object({
   "id": zod.number(),
   "image_path": zod.string().nullish(),
+  "mobile_image_path": zod.string().nullish(),
   "link_url": zod.string().nullish(),
   "is_active": zod.number()
 })
@@ -517,6 +519,7 @@ export const ApproveBrandResponse = zod.object({
 export const GetPopupResponse = zod.object({
   "id": zod.number(),
   "image_path": zod.string().nullish(),
+  "mobile_image_path": zod.string().nullish(),
   "link_url": zod.string().nullish(),
   "is_active": zod.number()
 })

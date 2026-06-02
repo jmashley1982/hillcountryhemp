@@ -10,5 +10,7 @@ export interface BannerAd {
   /** @nullable */
   image_path?: string | null;
   /** @nullable */
+  mobile_image_path?: string | null;
+  /** @nullable */
   link_url?: string | null;
 }

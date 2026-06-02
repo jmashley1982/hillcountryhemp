@@ -22,8 +22,8 @@ export function Layout({ children }: { children: React.ReactNode }) {
 
   return (
     <div className="h-full flex flex-col bg-background relative overflow-hidden">
-      {/* Top banner — above everything */}
-      {banner?.image_path && (
+      {/* Top banner — above everything; desktop image on md+, mobile image on <md */}
+      {(banner?.image_path || banner?.mobile_image_path) && (
         <a
           href={banner.link_url || "#"}
           className="block w-full bg-black"
@@ -31,11 +31,16 @@ export function Layout({ children }: { children: React.ReactNode }) {
           rel="noopener noreferrer"
           data-testid="banner-ad"
         >
-          <img
-            src={`/api/uploads/${banner.image_path}`}
-            alt="Advertisement"
-            className="w-full h-auto block opacity-90 hover:opacity-100 transition-opacity"
-          />
+          <picture>
+            {banner.mobile_image_path && (
+              <source media="(max-width: 767px)" srcSet={`/api/uploads/${banner.mobile_image_path}`} />
+            )}
+            <img
+              src={`/api/uploads/${banner.image_path ?? banner.mobile_image_path!}`}
+              alt="Advertisement"
+              className="w-full h-auto block opacity-90 hover:opacity-100 transition-opacity"
+            />
+          </picture>
         </a>
       )}
 

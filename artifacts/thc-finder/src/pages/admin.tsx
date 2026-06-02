@@ -604,52 +604,55 @@ function BrandsTab() {
 }
 
 function AdUploader({
-  label,
   endpoint,
-  field,
-  currentImage,
+  desktopField,
+  mobileField,
+  currentDesktopImage,
+  currentMobileImage,
   currentLink,
-  hint,
+  currentActive,
   showActiveToggle,
   onSuccess,
 }: {
-  label: string;
   endpoint: string;
-  field: string;
-  currentImage?: string | null;
+  desktopField: string;
+  mobileField: string;
+  currentDesktopImage?: string | null;
+  currentMobileImage?: string | null;
   currentLink?: string | null;
-  hint?: string;
+  currentActive?: number;
   showActiveToggle?: boolean;
   onSuccess: () => void;
 }) {
   const { toast } = useToast();
-  const [uploading, setUploading] = useState(false);
+  const [uploading, setUploading] = useState<"desktop" | "mobile" | "link" | null>(null);
   const [link, setLink] = useState(currentLink ?? "");
-  const [isActive, setIsActive] = useState(false);
-  const fileRef = useRef<HTMLInputElement>(null);
+  const [isActive, setIsActive] = useState(currentActive === 1);
+  const desktopRef = useRef<HTMLInputElement>(null);
+  const mobileRef = useRef<HTMLInputElement>(null);
 
-  const upload = async (e: React.ChangeEvent<HTMLInputElement>) => {
-    const file = e.target.files?.[0];
-    if (!file) return;
-    setUploading(true);
+  useEffect(() => { setLink(currentLink ?? ""); }, [currentLink]);
+  useEffect(() => { setIsActive(currentActive === 1); }, [currentActive]);
+
+  const uploadImage = async (field: string, file: File, slot: "desktop" | "mobile") => {
+    setUploading(slot);
     try {
       const fd = new FormData();
       fd.append(field, file);
-      fd.append("link_url", link);
       if (showActiveToggle) fd.append("is_active", String(isActive));
       const res = await fetch(endpoint, { method: "PUT", body: fd });
       if (!res.ok) throw new Error("Upload failed");
-      toast({ title: "Updated successfully" });
+      toast({ title: `${slot === "desktop" ? "Desktop" : "Mobile"} image updated` });
       onSuccess();
     } catch {
       toast({ title: "Upload failed", variant: "destructive" });
     } finally {
-      setUploading(false);
+      setUploading(null);
     }
   };
 
   const saveLink = async () => {
-    setUploading(true);
+    setUploading("link");
     try {
       const fd = new FormData();
       fd.append("link_url", link);
@@ -658,32 +661,99 @@ function AdUploader({
       toast({ title: "Saved" });
       onSuccess();
     } finally {
-      setUploading(false);
+      setUploading(null);
     }
   };
 
+  const busy = uploading !== null;
+
   return (
-    <div className="space-y-4">
-      {currentImage && (
-        <div className="border-2 border-border rounded-2xl overflow-hidden max-w-lg">
-          <img src={`/api/uploads/${currentImage}`} alt={label} className="w-full h-auto" />
+    <div className="space-y-6">
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+        {/* Desktop slot */}
+        <div className="space-y-3">
+          <div className="flex items-center justify-between">
+            <h3 className="font-bold text-sm uppercase tracking-wider">Desktop</h3>
+            <span className="text-[11px] font-bold bg-muted text-muted-foreground px-2 py-0.5 rounded">8:1</span>
+          </div>
+          {currentDesktopImage ? (
+            <div className="border-2 border-border rounded-xl overflow-hidden">
+              <img src={`/api/uploads/${currentDesktopImage}`} alt="Desktop ad" className="w-full h-auto block" />
+            </div>
+          ) : (
+            <div className="border-2 border-dashed border-yellow-600/50 rounded-xl bg-yellow-950/20 flex items-center justify-center py-8">
+              <div className="text-center space-y-1">
+                <p className="text-yellow-400 font-bold text-xs uppercase tracking-wider">Missing</p>
+                <p className="text-yellow-500/60 text-[10px]">Upload an 8:1 aspect ratio image</p>
+              </div>
+            </div>
+          )}
+          <input
+            ref={desktopRef}
+            type="file"
+            accept="image/*"
+            className="hidden"
+            onChange={(e) => { const f = e.target.files?.[0]; if (f) uploadImage(desktopField, f, "desktop"); }}
+          />
+          <Button
+            className="w-full font-bold"
+            onClick={() => desktopRef.current?.click()}
+            disabled={busy}
+            data-testid={`button-upload-${desktopField}`}
+          >
+            {uploading === "desktop" ? <Loader2 className="h-4 w-4 mr-2 animate-spin" /> : <Upload className="h-4 w-4 mr-2" />}
+            {currentDesktopImage ? "Replace Desktop" : "Upload Desktop"}
+          </Button>
         </div>
-      )}
-      {hint && (
-        <p className="text-xs text-muted-foreground bg-muted/40 border border-border rounded-lg px-3 py-2">
-          {hint}
-        </p>
-      )}
-      <div className="flex flex-col sm:flex-row gap-3">
+
+        {/* Mobile slot */}
+        <div className="space-y-3">
+          <div className="flex items-center justify-between">
+            <h3 className="font-bold text-sm uppercase tracking-wider">Mobile</h3>
+            <span className="text-[11px] font-bold bg-muted text-muted-foreground px-2 py-0.5 rounded">21:9</span>
+          </div>
+          {currentMobileImage ? (
+            <div className="border-2 border-border rounded-xl overflow-hidden">
+              <img src={`/api/uploads/${currentMobileImage}`} alt="Mobile ad" className="w-full h-auto block" />
+            </div>
+          ) : (
+            <div className="border-2 border-dashed border-yellow-600/50 rounded-xl bg-yellow-950/20 flex items-center justify-center py-8">
+              <div className="text-center space-y-1">
+                <p className="text-yellow-400 font-bold text-xs uppercase tracking-wider">Missing</p>
+                <p className="text-yellow-500/60 text-[10px]">Upload a 21:9 aspect ratio image</p>
+              </div>
+            </div>
+          )}
+          <input
+            ref={mobileRef}
+            type="file"
+            accept="image/*"
+            className="hidden"
+            onChange={(e) => { const f = e.target.files?.[0]; if (f) uploadImage(mobileField, f, "mobile"); }}
+          />
+          <Button
+            className="w-full font-bold"
+            onClick={() => mobileRef.current?.click()}
+            disabled={busy}
+            data-testid={`button-upload-${mobileField}`}
+          >
+            {uploading === "mobile" ? <Loader2 className="h-4 w-4 mr-2 animate-spin" /> : <Upload className="h-4 w-4 mr-2" />}
+            {currentMobileImage ? "Replace Mobile" : "Upload Mobile"}
+          </Button>
+        </div>
+      </div>
+
+      {/* Link URL + save controls */}
+      <div className="flex flex-col sm:flex-row gap-3 pt-4 border-t border-border">
         <Input
           value={link}
           onChange={(e) => setLink(e.target.value)}
           className="border-2 flex-1"
           placeholder="https://link-url.com"
-          data-testid={`input-${field}-link`}
+          data-testid={`input-${desktopField}-link`}
         />
         {showActiveToggle && (
-          <label className="flex items-center gap-2 font-bold text-sm cursor-pointer">
+          <label className="flex items-center gap-2 font-bold text-sm cursor-pointer shrink-0">
             <input
               type="checkbox"
               checked={isActive}
@@ -696,22 +766,13 @@ function AdUploader({
         )}
         <Button
           variant="outline"
-          className="border-2 font-bold"
+          className="border-2 font-bold shrink-0"
           onClick={saveLink}
-          disabled={uploading}
-          data-testid={`button-save-${field}-link`}
+          disabled={busy}
+          data-testid={`button-save-${desktopField}-link`}
         >
+          {uploading === "link" ? <Loader2 className="h-4 w-4 mr-2 animate-spin" /> : null}
           Save Link
-        </Button>
-        <input ref={fileRef} type="file" accept="image/*" className="hidden" onChange={upload} />
-        <Button
-          className="font-bold bg-primary hover:bg-primary/90"
-          onClick={() => fileRef.current?.click()}
-          disabled={uploading}
-          data-testid={`button-upload-${field}`}
-        >
-          {uploading ? <Loader2 className="h-4 w-4 mr-2 animate-spin" /> : <Upload className="h-4 w-4 mr-2" />}
-          {currentImage ? "Replace Image" : "Upload Image"}
         </Button>
       </div>
     </div>
@@ -724,12 +785,12 @@ function BannerTab() {
   if (isLoading) return <div className="animate-pulse font-bold p-4">Loading...</div>;
   return (
     <AdUploader
-      label="Banner Ad"
       endpoint="/api/admin/banner"
-      field="banner"
-      currentImage={banner?.image_path ?? null}
+      desktopField="banner"
+      mobileField="banner_mobile"
+      currentDesktopImage={banner?.image_path ?? null}
+      currentMobileImage={banner?.mobile_image_path ?? null}
       currentLink={banner?.link_url ?? null}
-      hint="Recommended size: 728×90 pixels (horizontal banner). Max file size: 5 MB."
       onSuccess={() => queryClient.invalidateQueries({ queryKey: getGetBannerQueryKey() })}
     />
   );
@@ -741,12 +802,13 @@ function PopupTab() {
   if (isLoading) return <div className="animate-pulse font-bold p-4">Loading...</div>;
   return (
     <AdUploader
-      label="Popup Ad"
       endpoint="/api/admin/popup"
-      field="image"
-      currentImage={popup?.image_path ?? null}
+      desktopField="image"
+      mobileField="image_mobile"
+      currentDesktopImage={popup?.image_path ?? null}
+      currentMobileImage={popup?.mobile_image_path ?? null}
       currentLink={popup?.link_url ?? null}
-      hint="Recommended size: 600×800 pixels (portrait) or 800×600 (landscape). Max file size: 5 MB."
+      currentActive={popup?.is_active}
       showActiveToggle
       onSuccess={() => queryClient.invalidateQueries({ queryKey: getGetAdminPopupQueryKey() })}
     />

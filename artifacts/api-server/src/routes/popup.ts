@@ -17,6 +17,7 @@ router.get("/popup", async (_req, res): Promise<void> => {
   res.json({
     id: popup.id,
     image_path: popup.imagePath,
+    mobile_image_path: popup.mobileImagePath,
     link_url: popup.linkUrl,
     is_active: popup.isActive,
   });

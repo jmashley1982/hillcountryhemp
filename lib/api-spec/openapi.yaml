@@ -976,6 +976,8 @@ components:
           type: integer
         image_path:
           type: ["string", "null"]
+        mobile_image_path:
+          type: ["string", "null"]
         link_url:
           type: ["string", "null"]
 
@@ -986,6 +988,8 @@ components:
         id:
           type: integer
         image_path:
+          type: ["string", "null"]
+        mobile_image_path:
           type: ["string", "null"]
         link_url:
           type: ["string", "null"]

@@ -15,9 +15,20 @@ export function PopupAd() {
   const [location] = useLocation();
   const { data: popup } = useGetPopup();
   const [show, setShow] = useState(false);
+  const [isMobile, setIsMobile] = useState(
+    () => typeof window !== "undefined" && window.matchMedia("(max-width: 767px)").matches,
+  );
 
   useEffect(() => {
-    if (!popup || popup.is_active !== 1 || !popup.image_path) return;
+    const mql = window.matchMedia("(max-width: 767px)");
+    const handler = (e: MediaQueryListEvent) => setIsMobile(e.matches);
+    mql.addEventListener("change", handler);
+    return () => mql.removeEventListener("change", handler);
+  }, []);
+
+  useEffect(() => {
+    const hasImage = popup?.image_path || popup?.mobile_image_path;
+    if (!popup || popup.is_active !== 1 || !hasImage) return;
     if (!isCustomerRoute(location)) return;
     const seen = sessionStorage.getItem("thc-popup-seen");
     if (!seen) {
@@ -36,7 +47,12 @@ export function PopupAd() {
     setShow(false);
   };
 
-  if (!show || !popup?.image_path) return null;
+  const hasImage = popup?.image_path || popup?.mobile_image_path;
+  if (!show || !hasImage) return null;
+
+  const activePath = isMobile && popup.mobile_image_path
+    ? popup.mobile_image_path
+    : (popup.image_path ?? popup.mobile_image_path!);
 
   const imgClass = "w-full max-h-[82vh] object-contain rounded-xl shadow-2xl border-4 border-white block";
 
@@ -67,14 +83,14 @@ export function PopupAd() {
             onClick={handleClose}
           >
             <img
-              src={`/api/uploads/${popup.image_path}`}
+              src={`/api/uploads/${activePath}`}
               alt="Special Offer"
               className={imgClass}
             />
           </a>
         ) : (
           <img
-            src={`/api/uploads/${popup.image_path}`}
+            src={`/api/uploads/${activePath}`}
             alt="Special Offer"
             className={imgClass}
           />

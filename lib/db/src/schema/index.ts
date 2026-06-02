@@ -99,18 +99,21 @@ export const businessBrandsTable = pgTable(
 export const bannerAdTable = pgTable("banner_ad", {
   id: integer("id").primaryKey().default(1),
   imagePath: text("image_path"),
+  mobileImagePath: text("mobile_image_path"),
   linkUrl: text("link_url"),
 });
 
 export const b2bBannerAdTable = pgTable("b2b_banner_ad", {
   id: integer("id").primaryKey().default(1),
   imagePath: text("image_path"),
+  mobileImagePath: text("mobile_image_path"),
   linkUrl: text("link_url"),
 });
 
 export const popupAdTable = pgTable("popup_ad", {
   id: integer("id").primaryKey().default(1),
   imagePath: text("image_path"),
+  mobileImagePath: text("mobile_image_path"),
   linkUrl: text("link_url"),
   isActive: integer("is_active").notNull().default(0),
 });

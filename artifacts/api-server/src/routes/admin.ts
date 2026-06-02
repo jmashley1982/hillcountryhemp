@@ -26,7 +26,7 @@ router.get("/admin/b2b-banner", async (_req, res): Promise<void> => {
     .where(eq(b2bBannerAdTable.id, 1));
   res.json(
     b2b
-      ? { id: b2b.id, image_path: b2b.imagePath, link_url: b2b.linkUrl }
+      ? { id: b2b.id, image_path: b2b.imagePath, mobile_image_path: b2b.mobileImagePath, link_url: b2b.linkUrl }
       : { id: 1, image_path: null, link_url: null },
   );
 });
@@ -39,7 +39,7 @@ router.get("/admin/banner", async (_req, res): Promise<void> => {
     .where(eq(bannerAdTable.id, 1));
   res.json(
     banner
-      ? { id: banner.id, image_path: banner.imagePath, link_url: banner.linkUrl }
+      ? { id: banner.id, image_path: banner.imagePath, mobile_image_path: banner.mobileImagePath, link_url: banner.linkUrl }
       : { id: 1, image_path: null, link_url: null },
   );
 });
@@ -52,7 +52,7 @@ router.get("/admin/popup", async (_req, res): Promise<void> => {
     .where(eq(popupAdTable.id, 1));
   res.json(
     popup
-      ? { id: popup.id, image_path: popup.imagePath, link_url: popup.linkUrl, is_active: popup.isActive }
+      ? { id: popup.id, image_path: popup.imagePath, mobile_image_path: popup.mobileImagePath, link_url: popup.linkUrl, is_active: popup.isActive }
       : { id: 1, image_path: null, link_url: null, is_active: 0 },
   );
 });
@@ -213,115 +213,111 @@ router.put(
   },
 );
 
-// Update banner (admin write)
+// Update banner (admin write) — accepts desktop (banner) and/or mobile (banner_mobile)
 router.put(
   "/admin/banner",
   requireLogin,
   requireAdmin,
-  upload.single("banner"),
+  upload.fields([{ name: "banner", maxCount: 1 }, { name: "banner_mobile", maxCount: 1 }]),
   async (req, res): Promise<void> => {
     const { link_url } = req.body as { link_url?: string };
-    const [existing] = await db
-      .select()
-      .from(bannerAdTable)
-      .where(eq(bannerAdTable.id, 1));
+    const files = req.files as { [f: string]: Express.Multer.File[] } | undefined;
+    const [existing] = await db.select().from(bannerAdTable).where(eq(bannerAdTable.id, 1));
 
-    let newFilename: string | undefined;
-    if (req.file) {
-      newFilename = makeUploadFilename("ad", req.file.originalname);
-      await uploadBufferToGCS(newFilename, req.file.buffer, req.file.mimetype);
+    const updates: Partial<typeof bannerAdTable.$inferInsert> = {
+      linkUrl: link_url ?? existing?.linkUrl,
+    };
+    if (files?.["banner"]?.[0]) {
+      const f = files["banner"][0];
+      const name = makeUploadFilename("ad", f.originalname);
+      await uploadBufferToGCS(name, f.buffer, f.mimetype);
+      updates.imagePath = name;
+    }
+    if (files?.["banner_mobile"]?.[0]) {
+      const f = files["banner_mobile"][0];
+      const name = makeUploadFilename("ad-mobile", f.originalname);
+      await uploadBufferToGCS(name, f.buffer, f.mimetype);
+      updates.mobileImagePath = name;
     }
 
     if (existing) {
-      const updates: Partial<typeof bannerAdTable.$inferInsert> = {
-        linkUrl: link_url ?? existing.linkUrl,
-      };
-      if (newFilename) updates.imagePath = newFilename;
       await db.update(bannerAdTable).set(updates).where(eq(bannerAdTable.id, 1));
     } else {
-      await db.insert(bannerAdTable).values({
-        id: 1,
-        imagePath: newFilename ?? null,
-        linkUrl: link_url ?? null,
-      });
+      await db.insert(bannerAdTable).values({ id: 1, imagePath: null, mobileImagePath: null, linkUrl: link_url ?? null, ...updates });
     }
     res.json({ success: true });
   },
 );
 
-// Update popup (admin write)
+// Update popup (admin write) — accepts desktop (image) and/or mobile (image_mobile)
 router.put(
   "/admin/popup",
   requireLogin,
   requireAdmin,
-  upload.single("image"),
+  upload.fields([{ name: "image", maxCount: 1 }, { name: "image_mobile", maxCount: 1 }]),
   async (req, res): Promise<void> => {
-    const { link_url, is_active } = req.body as {
-      link_url?: string;
-      is_active?: string;
-    };
+    const { link_url, is_active } = req.body as { link_url?: string; is_active?: string };
     const active = is_active === "true" ? 1 : 0;
-    const [existing] = await db
-      .select()
-      .from(popupAdTable)
-      .where(eq(popupAdTable.id, 1));
+    const files = req.files as { [f: string]: Express.Multer.File[] } | undefined;
+    const [existing] = await db.select().from(popupAdTable).where(eq(popupAdTable.id, 1));
 
-    let newFilename: string | undefined;
-    if (req.file) {
-      newFilename = makeUploadFilename("popup", req.file.originalname);
-      await uploadBufferToGCS(newFilename, req.file.buffer, req.file.mimetype);
+    const updates: Partial<typeof popupAdTable.$inferInsert> = {
+      linkUrl: link_url ?? existing?.linkUrl,
+      isActive: active,
+    };
+    if (files?.["image"]?.[0]) {
+      const f = files["image"][0];
+      const name = makeUploadFilename("popup", f.originalname);
+      await uploadBufferToGCS(name, f.buffer, f.mimetype);
+      updates.imagePath = name;
+    }
+    if (files?.["image_mobile"]?.[0]) {
+      const f = files["image_mobile"][0];
+      const name = makeUploadFilename("popup-mobile", f.originalname);
+      await uploadBufferToGCS(name, f.buffer, f.mimetype);
+      updates.mobileImagePath = name;
     }
 
     if (existing) {
-      const updates: Partial<typeof popupAdTable.$inferInsert> = {
-        linkUrl: link_url ?? existing.linkUrl,
-        isActive: active,
-      };
-      if (newFilename) updates.imagePath = newFilename;
       await db.update(popupAdTable).set(updates).where(eq(popupAdTable.id, 1));
     } else {
-      await db.insert(popupAdTable).values({
-        id: 1,
-        imagePath: newFilename ?? null,
-        linkUrl: link_url ?? null,
-        isActive: active,
-      });
+      await db.insert(popupAdTable).values({ id: 1, imagePath: null, mobileImagePath: null, linkUrl: link_url ?? null, isActive: active, ...updates });
     }
     res.json({ success: true });
   },
 );
 
-// Update B2B banner (admin write)
+// Update B2B banner (admin write) — accepts desktop (banner) and/or mobile (banner_mobile)
 router.put(
   "/admin/b2b-banner",
   requireLogin,
   requireAdmin,
-  upload.single("banner"),
+  upload.fields([{ name: "banner", maxCount: 1 }, { name: "banner_mobile", maxCount: 1 }]),
   async (req, res): Promise<void> => {
     const { link_url } = req.body as { link_url?: string };
-    const [existing] = await db
-      .select()
-      .from(b2bBannerAdTable)
-      .where(eq(b2bBannerAdTable.id, 1));
+    const files = req.files as { [f: string]: Express.Multer.File[] } | undefined;
+    const [existing] = await db.select().from(b2bBannerAdTable).where(eq(b2bBannerAdTable.id, 1));
 
-    let newFilename: string | undefined;
-    if (req.file) {
-      newFilename = makeUploadFilename("ad", req.file.originalname);
-      await uploadBufferToGCS(newFilename, req.file.buffer, req.file.mimetype);
+    const updates: Partial<typeof b2bBannerAdTable.$inferInsert> = {
+      linkUrl: link_url ?? existing?.linkUrl,
+    };
+    if (files?.["banner"]?.[0]) {
+      const f = files["banner"][0];
+      const name = makeUploadFilename("ad", f.originalname);
+      await uploadBufferToGCS(name, f.buffer, f.mimetype);
+      updates.imagePath = name;
+    }
+    if (files?.["banner_mobile"]?.[0]) {
+      const f = files["banner_mobile"][0];
+      const name = makeUploadFilename("ad-mobile", f.originalname);
+      await uploadBufferToGCS(name, f.buffer, f.mimetype);
+      updates.mobileImagePath = name;
     }
 
     if (existing) {
-      const updates: Partial<typeof b2bBannerAdTable.$inferInsert> = {
-        linkUrl: link_url ?? existing.linkUrl,
-      };
-      if (newFilename) updates.imagePath = newFilename;
       await db.update(b2bBannerAdTable).set(updates).where(eq(b2bBannerAdTable.id, 1));
     } else {
-      await db.insert(b2bBannerAdTable).values({
-        id: 1,
-        imagePath: newFilename ?? null,
-        linkUrl: link_url ?? null,
-      });
+      await db.insert(b2bBannerAdTable).values({ id: 1, imagePath: null, mobileImagePath: null, linkUrl: link_url ?? null, ...updates });
     }
     res.json({ success: true });
   },
