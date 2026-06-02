@@ -29,7 +29,23 @@ const storage = multer.diskStorage({
     cb(null, file.fieldname + "-" + unique + path.extname(file.originalname));
   },
 });
-const upload = multer({ storage, limits: { fileSize: 5 * 1024 * 1024 } });
+const upload = multer({
+  storage,
+  limits: { fileSize: 5 * 1024 * 1024 },
+  fileFilter: (_req, file, cb) => {
+    if (file.mimetype.startsWith("image/")) cb(null, true);
+    else cb(new Error("Only image files are allowed"));
+  },
+});
+const uploadCoupon = multer({
+  storage,
+  limits: { fileSize: 5 * 1024 * 1024 },
+  fileFilter: (_req, file, cb) => {
+    if (file.mimetype.startsWith("image/") || file.mimetype === "application/pdf")
+      cb(null, true);
+    else cb(new Error("Only image or PDF files are allowed"));
+  },
+});
 
 function haversineKm(
   lat1: number,
@@ -70,11 +86,16 @@ async function enrichBusiness(b: {
   ownerId: number;
   name: string;
   address: string;
+  street: string | null;
+  city: string | null;
+  state: string | null;
+  zip: string | null;
   lat: number | null;
   lng: number | null;
   phone: string | null;
   website: string | null;
   hours: string | null;
+  hoursJson: string | null;
   description: string | null;
   logoPath: string | null;
   status: string;
@@ -110,11 +131,16 @@ async function enrichBusiness(b: {
     owner_id: b.ownerId,
     name: b.name,
     address: b.address,
+    street: b.street,
+    city: b.city,
+    state: b.state,
+    zip: b.zip,
     lat: b.lat,
     lng: b.lng,
     phone: b.phone,
     website: b.website,
     hours: b.hours,
+    hours_json: b.hoursJson,
     description: b.description,
     logo_path: b.logoPath,
     status: b.status,
@@ -129,6 +155,74 @@ async function enrichBusiness(b: {
     categories: cats.map((c) => c.category),
     brands: brandRows,
   };
+}
+
+type DayHours = {
+  day: string;
+  closed: boolean;
+  open: string;
+  close: string;
+};
+
+const DAY_ORDER = [
+  "Monday",
+  "Tuesday",
+  "Wednesday",
+  "Thursday",
+  "Friday",
+  "Saturday",
+  "Sunday",
+];
+
+function composeHoursDisplay(hoursJson: string | null | undefined): string | null {
+  if (!hoursJson) return null;
+  let parsed: DayHours[];
+  try {
+    parsed = JSON.parse(hoursJson) as DayHours[];
+  } catch {
+    return null;
+  }
+  if (!Array.isArray(parsed) || parsed.length === 0) return null;
+  const lines = DAY_ORDER.map((day) => {
+    const entry = parsed.find((d) => d.day === day);
+    if (!entry) return null;
+    if (entry.closed) return `${day}: Closed`;
+    if (!entry.open || !entry.close) return null;
+    return `${day}: ${entry.open} – ${entry.close}`;
+  }).filter((l): l is string => l !== null);
+  return lines.length ? lines.join("\n") : null;
+}
+
+function composeAddress(
+  street: string | undefined,
+  city: string | undefined,
+  state: string | undefined,
+  zip: string | undefined,
+  fallback: string,
+): string {
+  const parts: string[] = [];
+  if (street?.trim()) parts.push(street.trim());
+  const cityStateZip = [
+    city?.trim(),
+    [state?.trim(), zip?.trim()].filter(Boolean).join(" "),
+  ]
+    .filter(Boolean)
+    .join(", ");
+  if (cityStateZip) parts.push(cityStateZip);
+  return parts.length ? parts.join(", ") : fallback;
+}
+
+function normalizeHandle(value: string | undefined, host: string): string | null {
+  if (value === undefined) return null;
+  let v = value.trim();
+  if (!v) return "";
+  v = v.replace(/^@/, "");
+  v = v.replace(
+    new RegExp(`^https?://(www\\.)?${host.replace(".", "\\.")}/`, "i"),
+    "",
+  );
+  v = v.replace(/\/+$/, "");
+  return v;
 }
 
 const router = Router();
@@ -299,13 +393,17 @@ router.post(
   requireLogin,
   requireBusiness,
   async (req, res): Promise<void> => {
-    const { name, address, phone, website, hours, description, instagram, facebook, google_reviews_url, categories, brand_ids, on_site_smoking_area } =
+    const { name, address, street, city, state, zip, phone, website, hours_json, description, instagram, facebook, google_reviews_url, categories, brand_ids, on_site_smoking_area } =
       req.body as {
         name: string;
-        address: string;
+        address?: string;
+        street?: string;
+        city?: string;
+        state?: string;
+        zip?: string;
         phone?: string;
         website?: string;
-        hours?: string;
+        hours_json?: string;
         description?: string;
         instagram?: string;
         facebook?: string;
@@ -314,25 +412,31 @@ router.post(
         brand_ids?: number[];
         on_site_smoking_area?: boolean;
       };
-    if (!name || !address) {
+    const composedAddress = composeAddress(street, city, state, zip, address ?? "");
+    if (!name || !composedAddress) {
       res.status(400).json({ error: "Name and address required" });
       return;
     }
-    const coords = await geocode(address);
+    const coords = await geocode(composedAddress);
     const [business] = await db
       .insert(businessesTable)
       .values({
         ownerId: req.session.userId!,
         name,
-        address,
+        address: composedAddress,
+        street: street ?? null,
+        city: city ?? null,
+        state: state ?? null,
+        zip: zip ?? null,
         lat: coords?.lat ?? null,
         lng: coords?.lng ?? null,
         phone: phone ?? null,
         website: website ?? null,
-        hours: hours ?? null,
+        hours: composeHoursDisplay(hours_json),
+        hoursJson: hours_json ?? null,
         description: description ?? null,
-        instagram: instagram ?? null,
-        facebook: facebook ?? null,
+        instagram: normalizeHandle(instagram, "instagram.com"),
+        facebook: normalizeHandle(facebook, "facebook.com"),
         googleReviewsUrl: google_reviews_url ?? null,
         onSiteSmokingArea: on_site_smoking_area ? 1 : 0,
       })
@@ -377,13 +481,16 @@ router.put(
       return;
     }
 
-    const { name, address, phone, website, hours, description, instagram, facebook, google_reviews_url, categories, brand_ids, on_site_smoking_area } =
+    const { name, street, city, state, zip, phone, website, hours_json, description, instagram, facebook, google_reviews_url, categories, brand_ids, on_site_smoking_area } =
       req.body as {
         name?: string;
-        address?: string;
+        street?: string;
+        city?: string;
+        state?: string;
+        zip?: string;
         phone?: string;
         website?: string;
-        hours?: string;
+        hours_json?: string;
         description?: string;
         instagram?: string;
         facebook?: string;
@@ -393,10 +500,27 @@ router.put(
         on_site_smoking_area?: boolean;
       };
 
+    const newStreet = street !== undefined ? street : b.street ?? undefined;
+    const newCity = city !== undefined ? city : b.city ?? undefined;
+    const newState = state !== undefined ? state : b.state ?? undefined;
+    const newZip = zip !== undefined ? zip : b.zip ?? undefined;
+    // Only recompose the address when a complete structured address is
+    // available. This prevents partial updates (or legacy rows with missing
+    // structured fields) from degrading a valid full address into a fragment.
+    const hasCompleteAddress = !!(
+      newStreet?.trim() &&
+      newCity?.trim() &&
+      newState?.trim() &&
+      newZip?.trim()
+    );
+    const composedAddress = hasCompleteAddress
+      ? composeAddress(newStreet, newCity, newState, newZip, b.address)
+      : b.address;
+
     let newLat = b.lat;
     let newLng = b.lng;
-    if (address && address !== b.address) {
-      const coords = await geocode(address);
+    if (hasCompleteAddress && composedAddress !== b.address) {
+      const coords = await geocode(composedAddress);
       if (coords) {
         newLat = coords.lat;
         newLng = coords.lng;
@@ -405,15 +529,20 @@ router.put(
 
     const updates: Partial<typeof businessesTable.$inferInsert> = {
       name: name ?? b.name,
-      address: address ?? b.address,
+      address: composedAddress,
+      street: newStreet ?? null,
+      city: newCity ?? null,
+      state: newState ?? null,
+      zip: newZip ?? null,
       lat: newLat,
       lng: newLng,
       phone: phone !== undefined ? phone : b.phone,
       website: website !== undefined ? website : b.website,
-      hours: hours !== undefined ? hours : b.hours,
+      hours: hours_json !== undefined ? composeHoursDisplay(hours_json) : b.hours,
+      hoursJson: hours_json !== undefined ? hours_json : b.hoursJson,
       description: description !== undefined ? description : b.description,
-      instagram: instagram !== undefined ? instagram : b.instagram,
-      facebook: facebook !== undefined ? facebook : b.facebook,
+      instagram: instagram !== undefined ? normalizeHandle(instagram, "instagram.com") : b.instagram,
+      facebook: facebook !== undefined ? normalizeHandle(facebook, "facebook.com") : b.facebook,
       googleReviewsUrl: google_reviews_url !== undefined ? google_reviews_url : b.googleReviewsUrl,
       onSiteSmokingArea: on_site_smoking_area !== undefined ? (on_site_smoking_area ? 1 : 0) : b.onSiteSmokingArea,
       lastUpdated: new Date(),
@@ -583,7 +712,7 @@ router.post(
   "/businesses/:id/coupons",
   requireLogin,
   requireBusiness,
-  upload.single("coupon"),
+  uploadCoupon.single("coupon"),
   async (req, res): Promise<void> => {
     const raw = Array.isArray(req.params.id)
       ? req.params.id[0]

@@ -107,6 +107,14 @@ export interface BusinessDetail {
   name: string;
   address: string;
   /** @nullable */
+  street?: string | null;
+  /** @nullable */
+  city?: string | null;
+  /** @nullable */
+  state?: string | null;
+  /** @nullable */
+  zip?: string | null;
+  /** @nullable */
   lat?: number | null;
   /** @nullable */
   lng?: number | null;
@@ -116,6 +124,8 @@ export interface BusinessDetail {
   website?: string | null;
   /** @nullable */
   hours?: string | null;
+  /** @nullable */
+  hours_json?: string | null;
   /** @nullable */
   description?: string | null;
   /** @nullable */
@@ -166,10 +176,15 @@ export interface BusinessWithOwner {
 
 export interface BusinessInput {
   name: string;
-  address: string;
+  address?: string;
+  street?: string;
+  city?: string;
+  state?: string;
+  zip?: string;
   phone?: string;
   website?: string;
   hours?: string;
+  hours_json?: string;
   description?: string;
   instagram?: string;
   facebook?: string;
@@ -181,9 +196,14 @@ export interface BusinessInput {
 export interface BusinessUpdate {
   name?: string;
   address?: string;
+  street?: string;
+  city?: string;
+  state?: string;
+  zip?: string;
   phone?: string;
   website?: string;
   hours?: string;
+  hours_json?: string;
   description?: string;
   instagram?: string;
   facebook?: string;

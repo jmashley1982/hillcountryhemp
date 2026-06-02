@@ -7,10 +7,15 @@
 
 export interface BusinessInput {
   name: string;
-  address: string;
+  address?: string;
+  street?: string;
+  city?: string;
+  state?: string;
+  zip?: string;
   phone?: string;
   website?: string;
   hours?: string;
+  hours_json?: string;
   description?: string;
   instagram?: string;
   facebook?: string;

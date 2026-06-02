@@ -57,6 +57,13 @@ import {
 
 type Tab = "pending" | "all" | "brands" | "banner" | "popup" | "b2b";
 
+function formatPhone(raw: string | null | undefined): string {
+  if (!raw) return "";
+  const digits = raw.replace(/\D/g, "");
+  if (digits.length !== 10) return raw;
+  return `(${digits.slice(0, 3)}) ${digits.slice(3, 6)}-${digits.slice(6)}`;
+}
+
 const rejectSchema = z.object({ reason: z.string().optional() });
 type RejectForm = z.infer<typeof rejectSchema>;
 const brandSchema = z.object({ name: z.string().min(1, "Brand name required") });
@@ -161,7 +168,7 @@ function FullDetails({ biz }: { biz: BizRow }) {
         {biz.phone && (
           <div>
             <p className="text-[10px] uppercase font-bold text-muted-foreground tracking-wider mb-0.5">Phone</p>
-            <p>{biz.phone}</p>
+            <p>{formatPhone(biz.phone)}</p>
           </div>
         )}
         {biz.website && (

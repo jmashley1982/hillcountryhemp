@@ -662,6 +662,14 @@ components:
           type: string
         address:
           type: string
+        street:
+          type: ["string", "null"]
+        city:
+          type: ["string", "null"]
+        state:
+          type: ["string", "null"]
+        zip:
+          type: ["string", "null"]
         lat:
           type: ["number", "null"]
         lng:
@@ -671,6 +679,8 @@ components:
         website:
           type: ["string", "null"]
         hours:
+          type: ["string", "null"]
+        hours_json:
           type: ["string", "null"]
         description:
           type: ["string", "null"]
@@ -746,17 +756,27 @@ components:
 
     BusinessInput:
       type: object
-      required: [name, address]
+      required: [name]
       properties:
         name:
           type: string
         address:
+          type: string
+        street:
+          type: string
+        city:
+          type: string
+        state:
+          type: string
+        zip:
           type: string
         phone:
           type: string
         website:
           type: string
         hours:
+          type: string
+        hours_json:
           type: string
         description:
           type: string
@@ -782,11 +802,21 @@ components:
           type: string
         address:
           type: string
+        street:
+          type: string
+        city:
+          type: string
+        state:
+          type: string
+        zip:
+          type: string
         phone:
           type: string
         website:
           type: string
         hours:
+          type: string
+        hours_json:
           type: string
         description:
           type: string

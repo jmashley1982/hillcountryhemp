@@ -11,6 +11,7 @@ import {
   Wind,
   RefreshCw,
   ExternalLink,
+  Ticket,
 } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 
@@ -69,8 +70,19 @@ export function ShopOverlay({ businessId, onClose }: ShopOverlayProps) {
 
   const lastUpdated = (biz as { last_updated?: string } | undefined)?.last_updated;
   const onSiteSmokingArea = (biz as { on_site_smoking_area?: number } | undefined)?.on_site_smoking_area;
-  const instagram = (biz as { instagram?: string | null } | undefined)?.instagram;
-  const facebook = (biz as { facebook?: string | null } | undefined)?.facebook;
+  const socialUrl = (handle: string | null | undefined, host: string) => {
+    if (!handle) return null;
+    if (/^https?:\/\//i.test(handle)) return handle;
+    return `https://${host}/${handle.replace(/^@/, "")}`;
+  };
+  const instagram = socialUrl(
+    (biz as { instagram?: string | null } | undefined)?.instagram,
+    "instagram.com",
+  );
+  const facebook = socialUrl(
+    (biz as { facebook?: string | null } | undefined)?.facebook,
+    "facebook.com",
+  );
   const googleReviewsUrl = (biz as { google_reviews_url?: string | null } | undefined)?.google_reviews_url;
 
   return (
@@ -286,23 +298,43 @@ export function ShopOverlay({ businessId, onClose }: ShopOverlayProps) {
                   <h3 className="text-lg text-[#99CC66] font-heading">
                     Exclusive Deals
                   </h3>
-                  {biz.coupons.map((coupon) => (
-                    <div
-                      key={coupon.id}
-                      className="bg-card rounded-xl overflow-hidden border-2 border-dashed border-[#99CC66]/40 relative"
-                    >
-                      <img
-                        src={`/api/uploads/${coupon.image_path}`}
-                        alt={coupon.title || "Coupon"}
-                        className="w-full h-auto"
-                      />
-                      {coupon.title && (
-                        <div className="absolute bottom-0 inset-x-0 bg-black/80 text-white p-2 text-center font-bold text-sm">
-                          {coupon.title}
+                  {biz.coupons.map((coupon) =>
+                    coupon.image_path.toLowerCase().endsWith(".pdf") ? (
+                      <a
+                        key={coupon.id}
+                        href={`/api/uploads/${coupon.image_path}`}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="flex items-center gap-3 bg-card rounded-xl border-2 border-dashed border-[#99CC66]/40 p-4 hover:border-[#99CC66] transition-colors"
+                      >
+                        <Ticket className="h-7 w-7 text-[#FE4A49] shrink-0" />
+                        <div className="min-w-0">
+                          <p className="font-bold text-sm truncate">
+                            {coupon.title || "PDF Coupon"}
+                          </p>
+                          <p className="text-xs text-muted-foreground">
+                            Tap to view PDF
+                          </p>
                         </div>
-                      )}
-                    </div>
-                  ))}
+                      </a>
+                    ) : (
+                      <div
+                        key={coupon.id}
+                        className="bg-card rounded-xl overflow-hidden border-2 border-dashed border-[#99CC66]/40 relative"
+                      >
+                        <img
+                          src={`/api/uploads/${coupon.image_path}`}
+                          alt={coupon.title || "Coupon"}
+                          className="w-full h-auto"
+                        />
+                        {coupon.title && (
+                          <div className="absolute bottom-0 inset-x-0 bg-black/80 text-white p-2 text-center font-bold text-sm">
+                            {coupon.title}
+                          </div>
+                        )}
+                      </div>
+                    ),
+                  )}
                 </div>
               )}
 

@@ -1,6 +1,6 @@
 import { useGetBusiness } from "@workspace/api-client-react";
 import { useParams, Link } from "wouter";
-import { MapPin, Phone, Globe, Clock, Star, ArrowLeft, RefreshCw, Wind, ExternalLink } from "lucide-react";
+import { MapPin, Phone, Globe, Clock, Star, ArrowLeft, RefreshCw, Wind, ExternalLink, Ticket } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 
 function formatDate(dateStr: string) {
@@ -38,8 +38,19 @@ export default function BusinessDetail() {
 
   const lastUpdated = (biz as { last_updated?: string }).last_updated;
   const onSiteSmokingArea = (biz as { on_site_smoking_area?: number }).on_site_smoking_area;
-  const instagram = (biz as { instagram?: string | null }).instagram;
-  const facebook = (biz as { facebook?: string | null }).facebook;
+  const socialUrl = (handle: string | null | undefined, host: string) => {
+    if (!handle) return null;
+    if (/^https?:\/\//i.test(handle)) return handle;
+    return `https://${host}/${handle.replace(/^@/, "")}`;
+  };
+  const instagram = socialUrl(
+    (biz as { instagram?: string | null }).instagram,
+    "instagram.com",
+  );
+  const facebook = socialUrl(
+    (biz as { facebook?: string | null }).facebook,
+    "facebook.com",
+  );
   const googleReviewsUrl = (biz as { google_reviews_url?: string | null }).google_reviews_url;
 
   return (
@@ -197,6 +208,21 @@ export default function BusinessDetail() {
               <h3 className="text-xl mb-4 text-[#99CC66] font-heading">Exclusive Deals</h3>
               <div className="space-y-4">
                 {biz.coupons.map(coupon => (
+                  coupon.image_path.toLowerCase().endsWith('.pdf') ? (
+                    <a
+                      key={coupon.id}
+                      href={`/api/uploads/${coupon.image_path}`}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="flex items-center gap-3 bg-card rounded-xl border-2 border-dashed border-[#99CC66]/40 p-4 hover:border-[#99CC66] transition-colors"
+                    >
+                      <Ticket className="h-7 w-7 text-[#FE4A49] shrink-0" />
+                      <div className="min-w-0">
+                        <p className="font-bold text-sm truncate">{coupon.title || 'PDF Coupon'}</p>
+                        <p className="text-xs text-muted-foreground">Tap to view PDF</p>
+                      </div>
+                    </a>
+                  ) : (
                   <div key={coupon.id} className="bg-card rounded-xl overflow-hidden border-2 border-dashed border-[#99CC66]/40 relative group cursor-pointer hover:border-[#99CC66] transition-colors">
                     <img src={`/api/uploads/${coupon.image_path}`} alt={coupon.title || 'Coupon'} className="w-full h-auto" />
                     {coupon.title && (
@@ -205,6 +231,7 @@ export default function BusinessDetail() {
                       </div>
                     )}
                   </div>
+                  )
                 ))}
               </div>
             </div>

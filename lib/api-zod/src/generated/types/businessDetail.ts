@@ -14,6 +14,14 @@ export interface BusinessDetail {
   name: string;
   address: string;
   /** @nullable */
+  street?: string | null;
+  /** @nullable */
+  city?: string | null;
+  /** @nullable */
+  state?: string | null;
+  /** @nullable */
+  zip?: string | null;
+  /** @nullable */
   lat?: number | null;
   /** @nullable */
   lng?: number | null;
@@ -23,6 +31,8 @@ export interface BusinessDetail {
   website?: string | null;
   /** @nullable */
   hours?: string | null;
+  /** @nullable */
+  hours_json?: string | null;
   /** @nullable */
   description?: string | null;
   /** @nullable */

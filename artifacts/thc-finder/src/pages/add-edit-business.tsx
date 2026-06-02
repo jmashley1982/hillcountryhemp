@@ -52,16 +52,92 @@ const ALL_CATEGORIES = [
   "Batteries/E-Devices",
 ];
 
+const DAYS = [
+  "Monday",
+  "Tuesday",
+  "Wednesday",
+  "Thursday",
+  "Friday",
+  "Saturday",
+  "Sunday",
+] as const;
+
+type DayHours = { day: string; closed: boolean; open: string; close: string };
+
+const TIME_OPTIONS: string[] = (() => {
+  const out: string[] = [];
+  for (let h = 0; h < 24; h++) {
+    for (const m of [0, 30]) {
+      const period = h < 12 ? "AM" : "PM";
+      const hour12 = h % 12 === 0 ? 12 : h % 12;
+      out.push(`${hour12}:${m === 0 ? "00" : "30"} ${period}`);
+    }
+  }
+  return out;
+})();
+
+function defaultHours(): DayHours[] {
+  return DAYS.map((d) => ({
+    day: d,
+    closed: d === "Sunday",
+    open: "9:00 AM",
+    close: "7:00 PM",
+  }));
+}
+
+function parseHoursJson(raw: string | null | undefined): DayHours[] {
+  if (!raw) return defaultHours();
+  try {
+    const parsed = JSON.parse(raw) as DayHours[];
+    if (!Array.isArray(parsed) || parsed.length === 0) return defaultHours();
+    return DAYS.map((d) => {
+      const entry = parsed.find((p) => p.day === d);
+      return entry
+        ? {
+            day: d,
+            closed: !!entry.closed,
+            open: entry.open || "9:00 AM",
+            close: entry.close || "7:00 PM",
+          }
+        : { day: d, closed: false, open: "9:00 AM", close: "7:00 PM" };
+    });
+  } catch {
+    return defaultHours();
+  }
+}
+
+function formatPhoneInput(value: string): string {
+  const digits = value.replace(/\D/g, "").slice(0, 10);
+  if (digits.length === 0) return "";
+  if (digits.length < 4) return `(${digits}`;
+  if (digits.length < 7) return `(${digits.slice(0, 3)}) ${digits.slice(3)}`;
+  return `(${digits.slice(0, 3)}) ${digits.slice(3, 6)}-${digits.slice(6)}`;
+}
+
 const schema = z.object({
   name: z.string().min(2, "Name must be at least 2 characters"),
-  address: z.string().min(5, "Full address required"),
-  phone: z.string().optional(),
+  street: z.string().min(3, "Street address required"),
+  city: z.string().min(2, "City required"),
+  state: z
+    .string()
+    .regex(/^[A-Za-z]{2}$/, "Use the 2-letter state code (e.g. TX)"),
+  zip: z.string().regex(/^\d{5}$/, "Enter a 5-digit ZIP code"),
+  phone: z
+    .string()
+    .optional()
+    .refine(
+      (v) => !v || v.replace(/\D/g, "").length === 10,
+      "Enter a 10-digit phone number",
+    ),
   website: z.string().url("Must be a valid URL").or(z.literal("")).optional(),
-  hours: z.string().optional(),
   description: z.string().optional(),
-  instagram: z.string().url("Must be a valid URL").or(z.literal("")).optional(),
-  facebook: z.string().url("Must be a valid URL").or(z.literal("")).optional(),
-  google_reviews_url: z.string().url("Must be a valid URL").or(z.literal("")).optional(),
+  instagram: z.string().optional(),
+  facebook: z.string().optional(),
+  google_reviews_url: z
+    .string()
+    .url("Must be a valid URL")
+    .or(z.literal(""))
+    .optional(),
   categories: z.array(z.string()).optional(),
   brand_ids: z.array(z.number()).optional(),
   on_site_smoking_area: z.boolean().optional(),
@@ -102,10 +178,12 @@ export default function AddEditBusiness() {
     resolver: zodResolver(schema),
     defaultValues: {
       name: "",
-      address: "",
+      street: "",
+      city: "",
+      state: "TX",
+      zip: "",
       phone: "",
       website: "",
-      hours: "",
       description: "",
       instagram: "",
       facebook: "",
@@ -116,19 +194,42 @@ export default function AddEditBusiness() {
     },
   });
 
+  const [hoursState, setHoursState] = useState<DayHours[]>(defaultHours());
+  const [legacyHoursWarning, setLegacyHoursWarning] = useState(false);
+
+  const updateDayHours = (
+    day: string,
+    patch: Partial<Omit<DayHours, "day">>,
+  ) => {
+    setHoursState((prev) =>
+      prev.map((d) => (d.day === day ? { ...d, ...patch } : d)),
+    );
+  };
+
   useEffect(() => {
     if (!userLoading && !user) setLocation("/login");
   }, [user, userLoading, setLocation]);
 
   useEffect(() => {
     if (existing) {
-      const ext = existing as typeof existing & { instagram?: string | null; facebook?: string | null; google_reviews_url?: string | null };
+      const ext = existing as typeof existing & {
+        instagram?: string | null;
+        facebook?: string | null;
+        google_reviews_url?: string | null;
+        street?: string | null;
+        city?: string | null;
+        state?: string | null;
+        zip?: string | null;
+        hours_json?: string | null;
+      };
       form.reset({
         name: existing.name,
-        address: existing.address,
-        phone: existing.phone ?? "",
+        street: ext.street ?? (ext.street == null ? existing.address : ""),
+        city: ext.city ?? "",
+        state: ext.state ?? "TX",
+        zip: ext.zip ?? "",
+        phone: existing.phone ? formatPhoneInput(existing.phone) : "",
         website: existing.website ?? "",
-        hours: existing.hours ?? "",
         description: existing.description ?? "",
         instagram: ext.instagram ?? "",
         facebook: ext.facebook ?? "",
@@ -137,6 +238,8 @@ export default function AddEditBusiness() {
         brand_ids: existing.brands?.map((b) => b.id) ?? [],
         on_site_smoking_area: !!(existing as { on_site_smoking_area?: number }).on_site_smoking_area,
       });
+      setHoursState(parseHoursJson(ext.hours_json));
+      setLegacyHoursWarning(!ext.hours_json && !!existing.hours);
     }
   }, [existing, form]);
 
@@ -164,9 +267,10 @@ export default function AddEditBusiness() {
   };
 
   const onSubmit = (data: FormData) => {
+    const payload = { ...data, hours_json: JSON.stringify(hoursState) };
     if (isEdit && businessId) {
       updateBusiness.mutate(
-        { id: businessId, data },
+        { id: businessId, data: payload },
         {
           onSuccess: () => {
             toast({ title: "Listing updated", description: "Changes saved." });
@@ -185,7 +289,7 @@ export default function AddEditBusiness() {
       );
     } else {
       createBusiness.mutate(
-        { data },
+        { data: payload },
         {
           onSuccess: () => {
             toast({
@@ -343,26 +447,110 @@ export default function AddEditBusiness() {
               )}
             />
 
-            <FormField
-              control={form.control}
-              name="address"
-              render={({ field }) => (
-                <FormItem>
-                  <FormLabel className="font-bold uppercase text-xs tracking-wider">
-                    Address *
-                  </FormLabel>
-                  <FormControl>
-                    <Input
-                      {...field}
-                      className="border-2 font-medium"
-                      placeholder="123 Main St, Fredericksburg, TX 78624"
-                      data-testid="input-address"
-                    />
-                  </FormControl>
-                  <FormMessage />
-                </FormItem>
-              )}
-            />
+            <div className="space-y-4 p-4 bg-card border-2 border-border rounded-2xl shadow-[0_4px_20px_rgba(0,0,0,0.15)]">
+              <p className="font-bold uppercase text-xs tracking-wider">
+                Address *
+              </p>
+              <FormField
+                control={form.control}
+                name="street"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel className="font-bold uppercase text-xs tracking-wider text-muted-foreground">
+                      Street Address
+                    </FormLabel>
+                    <FormControl>
+                      <Input
+                        {...field}
+                        className="border-2 font-medium"
+                        placeholder="123 Main St"
+                        data-testid="input-street"
+                      />
+                    </FormControl>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+              <div className="grid grid-cols-1 sm:grid-cols-6 gap-4">
+                <div className="sm:col-span-3">
+                  <FormField
+                    control={form.control}
+                    name="city"
+                    render={({ field }) => (
+                      <FormItem>
+                        <FormLabel className="font-bold uppercase text-xs tracking-wider text-muted-foreground">
+                          City
+                        </FormLabel>
+                        <FormControl>
+                          <Input
+                            {...field}
+                            className="border-2 font-medium"
+                            placeholder="Fredericksburg"
+                            data-testid="input-city"
+                          />
+                        </FormControl>
+                        <FormMessage />
+                      </FormItem>
+                    )}
+                  />
+                </div>
+                <div className="sm:col-span-1">
+                  <FormField
+                    control={form.control}
+                    name="state"
+                    render={({ field }) => (
+                      <FormItem>
+                        <FormLabel className="font-bold uppercase text-xs tracking-wider text-muted-foreground">
+                          State
+                        </FormLabel>
+                        <FormControl>
+                          <Input
+                            {...field}
+                            maxLength={2}
+                            className="border-2 font-medium uppercase"
+                            placeholder="TX"
+                            data-testid="input-state"
+                            onChange={(e) =>
+                              field.onChange(e.target.value.toUpperCase())
+                            }
+                          />
+                        </FormControl>
+                        <FormMessage />
+                      </FormItem>
+                    )}
+                  />
+                </div>
+                <div className="sm:col-span-2">
+                  <FormField
+                    control={form.control}
+                    name="zip"
+                    render={({ field }) => (
+                      <FormItem>
+                        <FormLabel className="font-bold uppercase text-xs tracking-wider text-muted-foreground">
+                          ZIP
+                        </FormLabel>
+                        <FormControl>
+                          <Input
+                            {...field}
+                            inputMode="numeric"
+                            maxLength={5}
+                            className="border-2 font-medium"
+                            placeholder="78624"
+                            data-testid="input-zip"
+                            onChange={(e) =>
+                              field.onChange(
+                                e.target.value.replace(/\D/g, "").slice(0, 5),
+                              )
+                            }
+                          />
+                        </FormControl>
+                        <FormMessage />
+                      </FormItem>
+                    )}
+                  />
+                </div>
+              </div>
+            </div>
 
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-6">
               <FormField
@@ -376,9 +564,13 @@ export default function AddEditBusiness() {
                     <FormControl>
                       <Input
                         {...field}
+                        inputMode="tel"
                         className="border-2 font-medium"
                         placeholder="(830) 555-0100"
                         data-testid="input-phone"
+                        onChange={(e) =>
+                          field.onChange(formatPhoneInput(e.target.value))
+                        }
                       />
                     </FormControl>
                     <FormMessage />
@@ -408,27 +600,84 @@ export default function AddEditBusiness() {
               />
             </div>
 
-            <FormField
-              control={form.control}
-              name="hours"
-              render={({ field }) => (
-                <FormItem>
-                  <FormLabel className="font-bold uppercase text-xs tracking-wider">
-                    Hours
-                  </FormLabel>
-                  <FormControl>
-                    <Textarea
-                      {...field}
-                      className="border-2 font-medium"
-                      rows={3}
-                      placeholder={`Mon–Fri: 9am–7pm\nSat: 10am–6pm\nSun: Closed`}
-                      data-testid="textarea-hours"
-                    />
-                  </FormControl>
-                  <FormMessage />
-                </FormItem>
+            {/* Hours */}
+            <div className="space-y-3 p-4 bg-card border-2 border-border rounded-2xl shadow-[0_4px_20px_rgba(0,0,0,0.15)]">
+              <p className="font-bold uppercase text-xs tracking-wider">
+                Business Hours
+              </p>
+              {legacyHoursWarning && (
+                <p
+                  className="text-xs font-medium text-[#FE4A49] bg-[#FE4A49]/10 border border-[#FE4A49]/30 rounded-lg px-3 py-2"
+                  data-testid="text-legacy-hours-warning"
+                >
+                  Please review and set your hours for each day below before
+                  saving — your previous hours need to be re-entered in this new
+                  format.
+                </p>
               )}
-            />
+              <div className="space-y-2">
+                {hoursState.map((d) => (
+                  <div
+                    key={d.day}
+                    className="grid grid-cols-12 items-center gap-2"
+                    data-testid={`hours-row-${d.day.toLowerCase()}`}
+                  >
+                    <span className="col-span-4 sm:col-span-3 text-sm font-bold">
+                      {d.day}
+                    </span>
+                    {d.closed ? (
+                      <span className="col-span-5 sm:col-span-6 text-sm font-medium text-muted-foreground">
+                        Closed
+                      </span>
+                    ) : (
+                      <div className="col-span-5 sm:col-span-6 flex items-center gap-1.5">
+                        <select
+                          value={d.open}
+                          onChange={(e) =>
+                            updateDayHours(d.day, { open: e.target.value })
+                          }
+                          className="flex-1 min-w-0 border-2 border-border rounded-lg bg-background px-2 py-1.5 text-xs font-medium"
+                          data-testid={`select-open-${d.day.toLowerCase()}`}
+                        >
+                          {TIME_OPTIONS.map((t) => (
+                            <option key={t} value={t}>
+                              {t}
+                            </option>
+                          ))}
+                        </select>
+                        <span className="text-xs text-muted-foreground">to</span>
+                        <select
+                          value={d.close}
+                          onChange={(e) =>
+                            updateDayHours(d.day, { close: e.target.value })
+                          }
+                          className="flex-1 min-w-0 border-2 border-border rounded-lg bg-background px-2 py-1.5 text-xs font-medium"
+                          data-testid={`select-close-${d.day.toLowerCase()}`}
+                        >
+                          {TIME_OPTIONS.map((t) => (
+                            <option key={t} value={t}>
+                              {t}
+                            </option>
+                          ))}
+                        </select>
+                      </div>
+                    )}
+                    <label className="col-span-3 flex items-center justify-end gap-1.5 text-xs font-bold uppercase tracking-wider cursor-pointer">
+                      <input
+                        type="checkbox"
+                        checked={d.closed}
+                        onChange={(e) =>
+                          updateDayHours(d.day, { closed: e.target.checked })
+                        }
+                        className="w-4 h-4 rounded accent-[#FE4A49] cursor-pointer"
+                        data-testid={`checkbox-closed-${d.day.toLowerCase()}`}
+                      />
+                      Closed
+                    </label>
+                  </div>
+                ))}
+              </div>
+            </div>
 
             {/* Social Links */}
             <div className="space-y-4 p-4 bg-card border-2 border-border rounded-2xl shadow-[0_4px_20px_rgba(0,0,0,0.15)]">
@@ -439,15 +688,20 @@ export default function AddEditBusiness() {
                 render={({ field }) => (
                   <FormItem>
                     <FormLabel className="font-bold uppercase text-xs tracking-wider text-muted-foreground">
-                      Instagram URL
+                      Instagram
                     </FormLabel>
                     <FormControl>
-                      <Input
-                        {...field}
-                        className="border-2 font-medium"
-                        placeholder="https://instagram.com/yourshop"
-                        data-testid="input-instagram"
-                      />
+                      <div className="flex items-center border-2 border-border rounded-md overflow-hidden focus-within:ring-2 focus-within:ring-ring">
+                        <span className="px-3 py-2 text-sm font-medium text-muted-foreground bg-muted/50 whitespace-nowrap">
+                          instagram.com/
+                        </span>
+                        <input
+                          {...field}
+                          className="flex-1 min-w-0 px-3 py-2 text-sm font-medium bg-transparent outline-none"
+                          placeholder="yourshop"
+                          data-testid="input-instagram"
+                        />
+                      </div>
                     </FormControl>
                     <FormMessage />
                   </FormItem>
@@ -459,15 +713,20 @@ export default function AddEditBusiness() {
                 render={({ field }) => (
                   <FormItem>
                     <FormLabel className="font-bold uppercase text-xs tracking-wider text-muted-foreground">
-                      Facebook URL
+                      Facebook
                     </FormLabel>
                     <FormControl>
-                      <Input
-                        {...field}
-                        className="border-2 font-medium"
-                        placeholder="https://facebook.com/yourshop"
-                        data-testid="input-facebook"
-                      />
+                      <div className="flex items-center border-2 border-border rounded-md overflow-hidden focus-within:ring-2 focus-within:ring-ring">
+                        <span className="px-3 py-2 text-sm font-medium text-muted-foreground bg-muted/50 whitespace-nowrap">
+                          facebook.com/
+                        </span>
+                        <input
+                          {...field}
+                          className="flex-1 min-w-0 px-3 py-2 text-sm font-medium bg-transparent outline-none"
+                          placeholder="yourshop"
+                          data-testid="input-facebook"
+                        />
+                      </div>
                     </FormControl>
                     <FormMessage />
                   </FormItem>
@@ -744,11 +1003,28 @@ export default function AddEditBusiness() {
                       className="relative group rounded-lg overflow-hidden border-2 border-dashed border-[#99CC66]/50"
                       data-testid={`coupon-${coupon.id}`}
                     >
-                      <img
-                        src={`/api/uploads/${coupon.image_path}`}
-                        alt={coupon.title ?? "Coupon"}
-                        className="w-full h-auto"
-                      />
+                      {coupon.image_path.toLowerCase().endsWith(".pdf") ? (
+                        <a
+                          href={`/api/uploads/${coupon.image_path}`}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          className="flex flex-col items-center justify-center gap-2 p-6 bg-muted/40 text-center min-h-[120px]"
+                        >
+                          <Ticket className="h-8 w-8 text-[#FE4A49]" />
+                          <span className="text-xs font-bold uppercase tracking-wider">
+                            {coupon.title ?? "PDF Coupon"}
+                          </span>
+                          <span className="text-[10px] font-medium text-muted-foreground">
+                            View PDF
+                          </span>
+                        </a>
+                      ) : (
+                        <img
+                          src={`/api/uploads/${coupon.image_path}`}
+                          alt={coupon.title ?? "Coupon"}
+                          className="w-full h-auto"
+                        />
+                      )}
                       <button
                         onClick={() =>
                           deleteCoupon.mutate(
@@ -777,7 +1053,7 @@ export default function AddEditBusiness() {
                   <input
                     ref={couponInputRef}
                     type="file"
-                    accept="image/*"
+                    accept="image/*,application/pdf"
                     className="hidden"
                     onChange={handleCouponUpload}
                   />
