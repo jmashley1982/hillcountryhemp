@@ -4,6 +4,7 @@ import { useGetMe, useLogout, useGetBanner, useGetB2bBanner } from "@workspace/a
 import { LogOut, LayoutDashboard, Menu, X } from "lucide-react";
 import { Button } from "./ui/button";
 import logoUrl from "@assets/magnific_a-logo-for-an-app-called-_TeJK7kKVNR_1780364254574.png";
+import overlayIconsUrl from "@assets/overlay-icons_1780465889713.png";
 
 const DASHBOARD_ROUTES = ["/dashboard", "/add-business", "/admin"];
 
@@ -85,15 +86,25 @@ export function Layout({ children }: { children: React.ReactNode }) {
       )}
 
       {/* Navbar — iron-grey brand gradient */}
-      <header className="sticky top-0 z-50 w-full border-b border-border shadow-lg"
+      <header className="sticky top-0 z-50 w-full border-b border-border shadow-lg relative overflow-hidden"
         style={{ background: "linear-gradient(135deg, #1a2226 0%, #2c3a40 45%, #0a1012 100%)" }}
       >
-        <div className="container mx-auto flex h-16 items-center justify-between px-4">
+        <div
+          aria-hidden="true"
+          className="absolute inset-0 pointer-events-none z-0"
+          style={{
+            backgroundImage: `url(${overlayIconsUrl})`,
+            backgroundRepeat: "repeat",
+            backgroundSize: "auto",
+            opacity: 0.09,
+          }}
+        />
+        <div className="container mx-auto flex h-16 items-center justify-between px-4 relative z-10">
           <Link href="/" className="flex items-center group shrink-0">
             <img
               src={logoUrl}
               alt="Texas Hill Country Hemp Finder"
-              className="h-[51px] w-auto group-hover:opacity-90 transition-opacity"
+              className="h-[56px] w-auto group-hover:opacity-90 transition-opacity"
             />
           </Link>
 
