@@ -29,7 +29,7 @@ router.get("/brands", async (_req, res): Promise<void> => {
     })
     .from(brandsTable)
     .where(eq(brandsTable.status, "approved"))
-    .orderBy(brandsTable.name);
+    .orderBy(sql`lower(${brandsTable.name})`);
   res.json(brands);
 });
 
@@ -59,7 +59,7 @@ router.get("/admin/brands", requireLogin, requireAdmin, async (_req, res): Promi
       status: brandsTable.status,
     })
     .from(brandsTable)
-    .orderBy(brandsTable.status, brandsTable.name);
+    .orderBy(brandsTable.status, sql`lower(${brandsTable.name})`);
   res.json(brands);
 });
 
