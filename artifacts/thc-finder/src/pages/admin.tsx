@@ -18,6 +18,7 @@ import {
   useDeleteBrand,
   useToggleFeatureBrand,
   useApproveBrand,
+  useRenameBrand,
   getGetPendingBusinessesQueryKey,
   getGetAllBusinessesQueryKey,
   getGetAdminBrandsQueryKey,
@@ -66,6 +67,9 @@ import {
   Monitor,
   Smartphone,
   Settings,
+  Pencil,
+  Check,
+  X as XIcon,
 } from "lucide-react";
 
 type Tab = "pending" | "all" | "brands" | "add-store" | "claims" | "map-banner-d" | "map-banner-m" | "map-popup-d" | "map-popup-m" | "dash-banner-d" | "dash-banner-m";
@@ -704,7 +708,27 @@ function BrandsTab() {
   const deleteBrand = useDeleteBrand();
   const toggleFeature = useToggleFeatureBrand();
   const approveBrand = useApproveBrand();
+  const renameBrand = useRenameBrand();
   const logoRefs = useRef<Record<number, HTMLInputElement | null>>({});
+  const [editingId, setEditingId] = useState<number | null>(null);
+  const [editingName, setEditingName] = useState("");
+
+  const startEdit = (id: number, name: string) => { setEditingId(id); setEditingName(name); };
+  const cancelEdit = () => { setEditingId(null); setEditingName(""); };
+  const saveEdit = (id: number) => {
+    if (!editingName.trim()) return;
+    renameBrand.mutate(
+      { id, data: { name: editingName.trim() } },
+      {
+        onSuccess: () => {
+          toast({ title: "Brand renamed" });
+          queryClient.invalidateQueries({ queryKey: getGetAdminBrandsQueryKey() });
+          cancelEdit();
+        },
+        onError: () => toast({ title: "Name already in use", variant: "destructive" }),
+      },
+    );
+  };
 
   const form = useForm<BrandForm>({
     resolver: zodResolver(brandSchema),
@@ -829,26 +853,40 @@ function BrandsTab() {
                   className="flex items-center justify-between p-4 bg-card border-2 border-border rounded-2xl shadow-[0_4px_20px_rgba(0,0,0,0.25)]"
                   data-testid={`brand-row-${brand.id}`}
                 >
-                  <div className="flex items-center gap-3">
+                  <div className="flex items-center gap-3 flex-1 min-w-0">
                     {brandWithLogo.logo_path ? (
                       <img
                         src={`/api/uploads/${brandWithLogo.logo_path}`}
                         alt={brand.name}
-                        className="w-9 h-9 rounded-full object-cover ring-2 ring-[#99CC66]/40"
+                        className="w-9 h-9 rounded-full object-cover ring-2 ring-[#99CC66]/40 shrink-0"
                       />
                     ) : (
-                      <div className="w-9 h-9 rounded-full bg-muted flex items-center justify-center border-2 border-dashed border-border">
+                      <div className="w-9 h-9 rounded-full bg-muted flex items-center justify-center border-2 border-dashed border-border shrink-0">
                         <Tag className="h-4 w-4 text-muted-foreground" />
                       </div>
                     )}
-                    <span className="font-bold text-lg">
-                      {brand.name}
-                      {brand.is_featured === 1 && (
-                        <Star className="inline h-4 w-4 ml-2 fill-[#99CC66] text-[#99CC66]" />
-                      )}
-                    </span>
+                    {editingId === brand.id ? (
+                      <div className="flex items-center gap-2 flex-1 min-w-0">
+                        <input
+                          autoFocus
+                          value={editingName}
+                          onChange={(e) => setEditingName(e.target.value)}
+                          onKeyDown={(e) => { if (e.key === "Enter") saveEdit(brand.id); if (e.key === "Escape") cancelEdit(); }}
+                          className="flex-1 min-w-0 bg-background border-2 border-[#84C7D0] rounded-lg px-3 py-1 text-sm font-bold focus:outline-none"
+                        />
+                        <Button size="icon" variant="ghost" className="h-7 w-7 text-[#99CC66] hover:text-[#99CC66]" onClick={() => saveEdit(brand.id)} disabled={renameBrand.isPending}><Check className="h-4 w-4" /></Button>
+                        <Button size="icon" variant="ghost" className="h-7 w-7 text-muted-foreground" onClick={cancelEdit}><XIcon className="h-4 w-4" /></Button>
+                      </div>
+                    ) : (
+                      <span className="font-bold text-lg truncate">
+                        {brand.name}
+                        {brand.is_featured === 1 && (
+                          <Star className="inline h-4 w-4 ml-2 fill-[#99CC66] text-[#99CC66]" />
+                        )}
+                      </span>
+                    )}
                   </div>
-                  <div className="flex gap-2 items-center">
+                  <div className="flex gap-2 items-center shrink-0">
                     <input
                       ref={(el) => { logoRefs.current[brand.id] = el; }}
                       type="file"
@@ -859,6 +897,19 @@ function BrandsTab() {
                         if (file) uploadLogo(brand.id, file);
                       }}
                     />
+                    {editingId !== brand.id && (
+                      <Button
+                        size="sm"
+                        variant="outline"
+                        className="font-bold border border-border text-xs text-muted-foreground hover:text-foreground"
+                        onClick={() => startEdit(brand.id, brand.name)}
+                        title="Rename brand"
+                        data-testid={`button-rename-brand-${brand.id}`}
+                      >
+                        <Pencil className="h-3.5 w-3.5 mr-1" />
+                        Rename
+                      </Button>
+                    )}
                     <Button
                       size="sm"
                       variant="outline"

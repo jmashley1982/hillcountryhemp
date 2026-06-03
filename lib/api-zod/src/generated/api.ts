@@ -572,6 +572,22 @@ export const SuggestBrandBody = zod.object({
 
 
 /**
+ * @summary Rename a brand (admin)
+ */
+export const RenameBrandParams = zod.object({
+  "id": zod.coerce.number()
+})
+
+export const RenameBrandBody = zod.object({
+  "name": zod.string()
+})
+
+export const RenameBrandResponse = zod.object({
+  "success": zod.boolean()
+})
+
+
+/**
  * @summary Delete a brand (admin)
  */
 export const DeleteBrandParams = zod.object({

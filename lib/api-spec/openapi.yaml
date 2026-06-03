@@ -673,6 +673,28 @@ paths:
                 $ref: "#/components/schemas/ErrorResponse"
 
   /brands/{id}:
+    patch:
+      operationId: renameBrand
+      summary: Rename a brand (admin)
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/BrandInput"
+      responses:
+        "200":
+          description: Renamed
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/SuccessResponse"
     delete:
       operationId: deleteBrand
       summary: Delete a brand (admin)

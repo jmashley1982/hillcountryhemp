@@ -2489,6 +2489,78 @@ export const useSuggestBrand = <TError = ErrorType<ErrorResponse>,
       return useMutation(getSuggestBrandMutationOptions(options));
     }
 
+export const getRenameBrandUrl = (id: number,) => {
+
+
+
+
+  return `/api/brands/${id}`
+}
+
+/**
+ * @summary Rename a brand (admin)
+ */
+export const renameBrand = async (id: number,
+    brandInput: BrandInput, options?: RequestInit): Promise<SuccessResponse> => {
+
+  return customFetch<SuccessResponse>(getRenameBrandUrl(id),
+  {
+    ...options,
+    method: 'PATCH',
+    headers: { 'Content-Type': 'application/json', ...options?.headers },
+    body: JSON.stringify(
+      brandInput,)
+  }
+);}
+
+
+
+
+export const getRenameBrandMutationOptions = <TError = ErrorType<unknown>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof renameBrand>>, TError,{id: number;data: BodyType<BrandInput>}, TContext>, request?: SecondParameter<typeof customFetch>}
+): UseMutationOptions<Awaited<ReturnType<typeof renameBrand>>, TError,{id: number;data: BodyType<BrandInput>}, TContext> => {
+
+const mutationKey = ['renameBrand'];
+const {mutation: mutationOptions, request: requestOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, request: undefined};
+
+
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof renameBrand>>, {id: number;data: BodyType<BrandInput>}> = (props) => {
+          const {id,data} = props ?? {};
+
+          return  renameBrand(id,data,requestOptions)
+        }
+
+
+
+
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type RenameBrandMutationResult = NonNullable<Awaited<ReturnType<typeof renameBrand>>>
+    export type RenameBrandMutationBody = BodyType<BrandInput>
+    export type RenameBrandMutationError = ErrorType<unknown>
+
+    /**
+ * @summary Rename a brand (admin)
+ */
+export const useRenameBrand = <TError = ErrorType<unknown>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof renameBrand>>, TError,{id: number;data: BodyType<BrandInput>}, TContext>, request?: SecondParameter<typeof customFetch>}
+ ): UseMutationResult<
+        Awaited<ReturnType<typeof renameBrand>>,
+        TError,
+        {id: number;data: BodyType<BrandInput>},
+        TContext
+      > => {
+      return useMutation(getRenameBrandMutationOptions(options));
+    }
+
 export const getDeleteBrandUrl = (id: number,) => {
 
 

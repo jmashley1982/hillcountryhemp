@@ -135,6 +135,33 @@ router.put(
   },
 );
 
+// Admin: rename brand
+router.patch(
+  "/brands/:id",
+  requireLogin,
+  requireAdmin,
+  async (req, res): Promise<void> => {
+    const raw = Array.isArray(req.params.id) ? req.params.id[0] : req.params.id;
+    const id = parseInt(raw, 10);
+    const { name } = req.body as { name?: string };
+    if (!name?.trim()) {
+      res.status(400).json({ error: "Brand name required" });
+      return;
+    }
+    const [brand] = await db.select().from(brandsTable).where(eq(brandsTable.id, id));
+    if (!brand) {
+      res.status(404).json({ error: "Brand not found" });
+      return;
+    }
+    try {
+      await db.update(brandsTable).set({ name: name.trim() }).where(eq(brandsTable.id, id));
+      res.json({ success: true });
+    } catch {
+      res.status(400).json({ error: "A brand with that name already exists" });
+    }
+  },
+);
+
 // Admin: delete brand
 router.delete(
   "/brands/:id",
