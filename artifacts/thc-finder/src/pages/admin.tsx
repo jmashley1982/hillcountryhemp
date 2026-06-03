@@ -945,15 +945,24 @@ function SlotUploader({
 
   const uploadImage = async (file: File) => {
     setUploading("image");
+    if (fileRef.current) fileRef.current.value = "";
     try {
       const fd = new FormData();
       fd.append(imageField, file);
       const res = await fetch(endpoint, { method: "PUT", body: fd });
-      if (!res.ok) throw new Error("Upload failed");
+      if (!res.ok) {
+        let msg = "Upload failed";
+        try {
+          const body = await res.json() as { error?: string };
+          if (body.error) msg = body.error;
+        } catch {}
+        toast({ title: "Upload failed", description: msg, variant: "destructive" });
+        return;
+      }
       toast({ title: "Image updated" });
       onSuccess();
     } catch {
-      toast({ title: "Upload failed", variant: "destructive" });
+      toast({ title: "Upload failed", description: "Could not reach the server. Please try again.", variant: "destructive" });
     } finally {
       setUploading(null);
     }

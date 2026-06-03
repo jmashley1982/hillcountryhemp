@@ -533,4 +533,28 @@ router.put(
   },
 );
 
+// JSON error handler — converts multer errors (file too large, wrong type, etc.)
+// and any other route errors into a consistent { error } JSON response instead
+// of the default Express HTML error page.
+router.use(
+  (
+    err: Error & { code?: string },
+    _req: import("express").Request,
+    res: import("express").Response,
+    _next: import("express").NextFunction,
+  ): void => {
+    const status =
+      err.code === "LIMIT_FILE_SIZE"
+        ? 413
+        : err.message === "Only image files are allowed"
+          ? 415
+          : 500;
+    const message =
+      err.code === "LIMIT_FILE_SIZE"
+        ? "File is too large. Maximum size is 5 MB."
+        : err.message ?? "Upload failed";
+    res.status(status).json({ error: message });
+  },
+);
+
 export default router;
