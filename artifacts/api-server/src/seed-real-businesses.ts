@@ -256,30 +256,160 @@ const REAL_BUSINESSES: Array<{
     description:
       "Canyon Lake location of Gruene Vape & Smoke. Vapes, Delta 8/9, gummies, flower, kratom, cigars, and hemp wraps.",
   },
+  // ── Boerne ──────────────────────────────────────────────────────────────────
+  {
+    name: "Gruene Botanicals",
+    address: "1236 S Main St, Boerne, TX 78006",
+    street: "1236 S Main St",
+    city: "Boerne",
+    state: "TX",
+    zip: "78006",
+    lat: 29.778406,
+    lng: -98.728029,
+    phone: "(830) 331-4049",
+    website: "https://www.gruenebotanicals.com",
+    description:
+      "Hemp-focused wellness shop on Boerne's main corridor. Carries CBD, Delta-8, Delta-9, THCA flower, edibles, tinctures, and topicals.",
+  },
+  {
+    name: "Up In Smoke America",
+    address: "32828 IH 10 West, Boerne, TX 78006",
+    street: "32828 IH 10 West",
+    city: "Boerne",
+    state: "TX",
+    zip: "78006",
+    lat: 29.776561,
+    lng: -98.73206,
+    phone: "(830) 629-8453",
+    website: "https://upinsmokeamerica.com",
+    description:
+      "Full-service smoke and vape shop on I-10. Carries disposable vapes, CBD, Delta 8/9, glass, and accessories.",
+  },
+  // ── Fredericksburg ──────────────────────────────────────────────────────────
+  {
+    name: "Cave Creek Relief",
+    address: "609 W Main St, Fredericksburg, TX 78624",
+    street: "609 W Main St",
+    city: "Fredericksburg",
+    state: "TX",
+    zip: "78624",
+    lat: 30.281272,
+    lng: -98.881011,
+    phone: "(830) 992-3196",
+    website: "https://www.cavecreekrelief.com",
+    description:
+      "Hemp and wellness boutique on Fredericksburg's historic Main Street. Offers THCA flower, CBD tinctures, edibles, and topicals alongside knowledgeable staff.",
+  },
+  // ── Marble Falls ────────────────────────────────────────────────────────────
+  {
+    name: "Bluebonnet CBD",
+    address: "1506 Ranch Road 1431, Marble Falls, TX 78654",
+    street: "1506 Ranch Road 1431",
+    city: "Marble Falls",
+    state: "TX",
+    zip: "78654",
+    lat: 30.573682,
+    lng: -98.250547,
+    phone: "(830) 201-4068",
+    description:
+      "Locally owned and operated hemp retailer established in 2019. Carries a full line of cannabis hemp-based products including CBD, THCA, and wellness items.",
+  },
+  // ── Kerrville ───────────────────────────────────────────────────────────────
+  {
+    name: "Breathe Freely Cannabis Company",
+    address: "317 Sidney Baker St S, Ste 200, Kerrville, TX 78028",
+    street: "317 Sidney Baker St S",
+    city: "Kerrville",
+    state: "TX",
+    zip: "78028",
+    lat: 30.040748,
+    lng: -99.143432,
+    phone: "(830) 955-5014",
+    website: "https://www.bfcannco.com",
+    description:
+      "Veteran-owned cannabis company in Kerrville. Specializes in high-quality CBD, THCA flower, edibles, and topicals with a focus on education and community.",
+  },
+  // ── Kyle ────────────────────────────────────────────────────────────────────
+  {
+    name: "Sacred Leaf Zero CBD",
+    address: "4650 S FM 1626, Ste 102, Kyle, TX 78640",
+    street: "4650 S FM 1626",
+    city: "Kyle",
+    state: "TX",
+    zip: "78640",
+    lat: 30.022117,
+    lng: -97.872479,
+    phone: "(512) 262-0452",
+    website: "https://www.sacredleaf.com/pages/kyle-tx",
+    description:
+      "Part of the Sacred Leaf Zero CBD chain, a trusted name in Central Texas hemp retail. Carries CBD oils, gummies, topicals, and THCA products.",
+  },
+  {
+    name: "Allstars CBD",
+    address: "7212 Goforth Rd, Ste 110, Kyle, TX 78640",
+    street: "7212 Goforth Rd",
+    city: "Kyle",
+    state: "TX",
+    zip: "78640",
+    lat: 30.003067,
+    lng: -97.854681,
+    phone: "(512) 668-6155",
+    website: "https://www.texasallstarcbd.com",
+    description:
+      "Local hemp and CBD shop serving the Kyle/Buda area. Carries Delta 8, Delta 9, THCA, edibles, vapes, and accessories.",
+  },
+  // ── Georgetown ──────────────────────────────────────────────────────────────
+  {
+    name: "1848 CBD Georgetown",
+    address: "3415 Williams Dr, Ste 105, Georgetown, TX 78628",
+    street: "3415 Williams Dr",
+    city: "Georgetown",
+    state: "TX",
+    zip: "78628",
+    lat: 30.668655,
+    lng: -97.695724,
+    phone: "(512) 761-6998",
+    description:
+      "American Shaman franchise serving Georgetown with premium hemp-derived CBD products. Carries tinctures, gummies, topicals, and pet products, all third-party lab tested.",
+  },
+  // ── Austin (NW) ─────────────────────────────────────────────────────────────
+  {
+    name: "Green Herbal Care Austin",
+    address: "5145 N FM 620 Rd, Ste L120, Austin, TX 78732",
+    street: "5145 N FM 620 Rd",
+    city: "Austin",
+    state: "TX",
+    zip: "78732",
+    lat: 30.389225,
+    lng: -97.883925,
+    phone: "(512) 432-5323",
+    website: "https://greenherbalcare.com",
+    description:
+      "Austin outpost of the Green Herbal Care chain. Carries CBD, Delta-8, Delta-9, HHC, THCA flower, edibles, vapes, and topicals. Lab results available for all products.",
+  },
 ];
 
 export async function seedRealBusinesses(): Promise<void> {
+  // Step 1: remove any leftover fake/placeholder businesses
   const fakeRows = await db
     .select({ id: businessesTable.id })
     .from(businessesTable)
     .where(inArray(businessesTable.name, FAKE_NAMES));
 
-  if (fakeRows.length === 0) {
-    logger.info("seedRealBusinesses: no fake businesses found, skipping");
-    return;
+  if (fakeRows.length > 0) {
+    logger.info(
+      { count: fakeRows.length },
+      "seedRealBusinesses: removing fake businesses",
+    );
+    await db.delete(businessesTable).where(
+      inArray(
+        businessesTable.id,
+        fakeRows.map((r) => r.id),
+      ),
+    );
   }
 
-  logger.info(
-    { count: fakeRows.length },
-    "seedRealBusinesses: removing fake businesses",
-  );
-  await db.delete(businessesTable).where(
-    inArray(
-      businessesTable.id,
-      fakeRows.map((r) => r.id),
-    ),
-  );
-
+  // Step 2: insert any real businesses not already present (idempotent)
   const existing = await db
     .select({ name: businessesTable.name })
     .from(businessesTable);
