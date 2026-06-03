@@ -1,6 +1,6 @@
 import { Router } from "express";
 import multer from "multer";
-import { eq, and } from "drizzle-orm";
+import { eq, and, sql } from "drizzle-orm";
 import { db, brandsTable } from "@workspace/db";
 import { requireLogin, requireAdmin } from "../middlewares/auth.js";
 import { uploadBufferToGCS, makeUploadFilename, deleteFromGCS } from "../lib/gcs.js";
