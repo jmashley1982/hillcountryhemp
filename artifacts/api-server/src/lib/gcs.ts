@@ -31,9 +31,10 @@ function getBucket() {
 export function makeUploadFilename(
   prefix: string,
   originalName: string,
+  ext?: string,
 ): string {
-  const ext = path.extname(originalName).toLowerCase();
-  return `${prefix}-${Date.now()}-${Math.round(Math.random() * 1e9)}${ext}`;
+  const e = ext ?? path.extname(originalName).toLowerCase();
+  return `${prefix}-${Date.now()}-${Math.round(Math.random() * 1e9)}${e}`;
 }
 
 export async function uploadBufferToGCS(

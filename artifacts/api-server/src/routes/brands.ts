@@ -4,8 +4,16 @@ import { eq, and } from "drizzle-orm";
 import { db, brandsTable } from "@workspace/db";
 import { requireLogin, requireAdmin } from "../middlewares/auth.js";
 import { uploadBufferToGCS, makeUploadFilename, deleteFromGCS } from "../lib/gcs.js";
+import { ACCEPTED_IMAGE_MIMES, compressImage } from "../lib/compress.js";
 
-const upload = multer({ storage: multer.memoryStorage(), limits: { fileSize: 2 * 1024 * 1024 } });
+const upload = multer({
+  storage: multer.memoryStorage(),
+  limits: { fileSize: 2 * 1024 * 1024 },
+  fileFilter: (_req, file, cb) => {
+    if (ACCEPTED_IMAGE_MIMES.has(file.mimetype)) cb(null, true);
+    else cb(new Error("Only image files are allowed"));
+  },
+});
 
 const router = Router();
 
@@ -87,8 +95,9 @@ router.post(
     }
     let logoPath: string | null = null;
     if (req.file) {
-      logoPath = makeUploadFilename("brand", req.file.originalname);
-      await uploadBufferToGCS(logoPath, req.file.buffer, req.file.mimetype);
+      const c = await compressImage(req.file.buffer);
+      logoPath = makeUploadFilename("brand", req.file.originalname, c.ext);
+      await uploadBufferToGCS(logoPath, c.buffer, c.mimetype);
     }
     try {
       await db.insert(brandsTable).values({ name, logoPath, status: "approved" });
@@ -118,8 +127,9 @@ router.put(
       return;
     }
     if (brand.logoPath) await deleteFromGCS(brand.logoPath);
-    const filename = makeUploadFilename("brand", req.file.originalname);
-    await uploadBufferToGCS(filename, req.file.buffer, req.file.mimetype);
+    const c = await compressImage(req.file.buffer);
+    const filename = makeUploadFilename("brand", req.file.originalname, c.ext);
+    await uploadBufferToGCS(filename, c.buffer, c.mimetype);
     await db.update(brandsTable).set({ logoPath: filename }).where(eq(brandsTable.id, id));
     res.json({ logo_path: filename });
   },

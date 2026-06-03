@@ -2,6 +2,7 @@ import { Router } from "express";
 import multer from "multer";
 import { eq, and, isNull } from "drizzle-orm";
 import { uploadBufferToGCS, makeUploadFilename } from "../lib/gcs.js";
+import { ACCEPTED_IMAGE_MIMES, compressImage } from "../lib/compress.js";
 import {
   db,
   usersTable,
@@ -15,7 +16,14 @@ import {
 } from "@workspace/db";
 import { requireLogin, requireAdmin } from "../middlewares/auth.js";
 
-const upload = multer({ storage: multer.memoryStorage(), limits: { fileSize: 5 * 1024 * 1024 } });
+const upload = multer({
+  storage: multer.memoryStorage(),
+  limits: { fileSize: 5 * 1024 * 1024 },
+  fileFilter: (_req, file, cb) => {
+    if (ACCEPTED_IMAGE_MIMES.has(file.mimetype)) cb(null, true);
+    else cb(new Error("Only image files are allowed"));
+  },
+});
 
 const router = Router();
 
@@ -429,14 +437,16 @@ router.put(
     if (body.mobile_link_url !== undefined) updates.mobileLinkUrl = body.mobile_link_url || null;
     if (files?.["banner"]?.[0]) {
       const f = files["banner"][0];
-      const name = makeUploadFilename("ad", f.originalname);
-      await uploadBufferToGCS(name, f.buffer, f.mimetype);
+      const c = await compressImage(f.buffer);
+      const name = makeUploadFilename("ad", f.originalname, c.ext);
+      await uploadBufferToGCS(name, c.buffer, c.mimetype);
       updates.imagePath = name;
     }
     if (files?.["banner_mobile"]?.[0]) {
       const f = files["banner_mobile"][0];
-      const name = makeUploadFilename("ad-mobile", f.originalname);
-      await uploadBufferToGCS(name, f.buffer, f.mimetype);
+      const c = await compressImage(f.buffer);
+      const name = makeUploadFilename("ad-mobile", f.originalname, c.ext);
+      await uploadBufferToGCS(name, c.buffer, c.mimetype);
       updates.mobileImagePath = name;
     }
     if (existing) {
@@ -465,14 +475,16 @@ router.put(
     if (body.is_active !== undefined) updates.isActive = body.is_active === "true" ? 1 : 0;
     if (files?.["image"]?.[0]) {
       const f = files["image"][0];
-      const name = makeUploadFilename("popup", f.originalname);
-      await uploadBufferToGCS(name, f.buffer, f.mimetype);
+      const c = await compressImage(f.buffer);
+      const name = makeUploadFilename("popup", f.originalname, c.ext);
+      await uploadBufferToGCS(name, c.buffer, c.mimetype);
       updates.imagePath = name;
     }
     if (files?.["image_mobile"]?.[0]) {
       const f = files["image_mobile"][0];
-      const name = makeUploadFilename("popup-mobile", f.originalname);
-      await uploadBufferToGCS(name, f.buffer, f.mimetype);
+      const c = await compressImage(f.buffer);
+      const name = makeUploadFilename("popup-mobile", f.originalname, c.ext);
+      await uploadBufferToGCS(name, c.buffer, c.mimetype);
       updates.mobileImagePath = name;
     }
     if (existing) {
@@ -500,14 +512,16 @@ router.put(
     if (body.mobile_link_url !== undefined) updates.mobileLinkUrl = body.mobile_link_url || null;
     if (files?.["banner"]?.[0]) {
       const f = files["banner"][0];
-      const name = makeUploadFilename("ad", f.originalname);
-      await uploadBufferToGCS(name, f.buffer, f.mimetype);
+      const c = await compressImage(f.buffer);
+      const name = makeUploadFilename("ad", f.originalname, c.ext);
+      await uploadBufferToGCS(name, c.buffer, c.mimetype);
       updates.imagePath = name;
     }
     if (files?.["banner_mobile"]?.[0]) {
       const f = files["banner_mobile"][0];
-      const name = makeUploadFilename("ad-mobile", f.originalname);
-      await uploadBufferToGCS(name, f.buffer, f.mimetype);
+      const c = await compressImage(f.buffer);
+      const name = makeUploadFilename("ad-mobile", f.originalname, c.ext);
+      await uploadBufferToGCS(name, c.buffer, c.mimetype);
       updates.mobileImagePath = name;
     }
     if (existing) {

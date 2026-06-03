@@ -14,12 +14,13 @@ import {
 } from "@workspace/db";
 import { requireLogin, requireBusiness } from "../middlewares/auth.js";
 import { uploadBufferToGCS, makeUploadFilename, deleteFromGCS } from "../lib/gcs.js";
+import { ACCEPTED_IMAGE_MIMES, compressImage } from "../lib/compress.js";
 
 const upload = multer({
   storage: multer.memoryStorage(),
   limits: { fileSize: 5 * 1024 * 1024 },
   fileFilter: (_req, file, cb) => {
-    if (file.mimetype.startsWith("image/")) cb(null, true);
+    if (ACCEPTED_IMAGE_MIMES.has(file.mimetype)) cb(null, true);
     else cb(new Error("Only image files are allowed"));
   },
 });
@@ -27,7 +28,7 @@ const uploadCoupon = multer({
   storage: multer.memoryStorage(),
   limits: { fileSize: 5 * 1024 * 1024 },
   fileFilter: (_req, file, cb) => {
-    if (file.mimetype.startsWith("image/") || file.mimetype === "application/pdf")
+    if (ACCEPTED_IMAGE_MIMES.has(file.mimetype) || file.mimetype === "application/pdf")
       cb(null, true);
     else cb(new Error("Only image or PDF files are allowed"));
   },
@@ -598,8 +599,9 @@ router.post(
       return;
     }
     if (b.logoPath) await deleteFromGCS(b.logoPath);
-    const filename = makeUploadFilename("logo", req.file.originalname);
-    await uploadBufferToGCS(filename, req.file.buffer, req.file.mimetype);
+    const compressed = await compressImage(req.file.buffer);
+    const filename = makeUploadFilename("logo", req.file.originalname, compressed.ext);
+    await uploadBufferToGCS(filename, compressed.buffer, compressed.mimetype);
     await db
       .update(businessesTable)
       .set({ logoPath: filename })
@@ -640,8 +642,9 @@ router.post(
       res.status(400).json({ error: "Maximum 3 photos allowed" });
       return;
     }
-    const filename = makeUploadFilename("photo", req.file.originalname);
-    await uploadBufferToGCS(filename, req.file.buffer, req.file.mimetype);
+    const compressedPhoto = await compressImage(req.file.buffer);
+    const filename = makeUploadFilename("photo", req.file.originalname, compressedPhoto.ext);
+    await uploadBufferToGCS(filename, compressedPhoto.buffer, compressedPhoto.mimetype);
     await db.insert(businessPhotosTable).values({
       businessId: id,
       photoPath: filename,
@@ -731,8 +734,17 @@ router.post(
       res.status(400).json({ error: "Maximum 3 coupons allowed" });
       return;
     }
-    const filename = makeUploadFilename("coupon", req.file.originalname);
-    await uploadBufferToGCS(filename, req.file.buffer, req.file.mimetype);
+    let couponBuf = req.file.buffer;
+    let couponMime = req.file.mimetype;
+    let couponExt: string | undefined;
+    if (couponMime !== "application/pdf") {
+      const c = await compressImage(req.file.buffer);
+      couponBuf = c.buffer;
+      couponMime = c.mimetype;
+      couponExt = c.ext;
+    }
+    const filename = makeUploadFilename("coupon", req.file.originalname, couponExt);
+    await uploadBufferToGCS(filename, couponBuf, couponMime);
     await db.insert(couponsTable).values({
       businessId: id,
       imagePath: filename,
