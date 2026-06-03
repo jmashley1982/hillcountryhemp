@@ -146,7 +146,7 @@ export default function Home() {
       <div className="flex-1 flex flex-col md:flex-row overflow-hidden min-h-0">
         {/* Store list panel */}
         <div
-          className={`w-full flex-1 md:flex-none md:w-80 min-h-0 bg-card border-r border-border flex flex-col z-10 ${viewMode === "map" ? "hidden md:flex" : "flex"}`}
+          className={`w-full flex-1 md:flex-none md:w-[38%] min-h-0 bg-card border-r border-border flex flex-col z-10 ${viewMode === "map" ? "hidden md:flex" : "flex"}`}
         >
           {/* Search — top of list panel */}
           <div className="px-3 pt-3 pb-2 flex-none">
