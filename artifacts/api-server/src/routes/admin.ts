@@ -311,9 +311,10 @@ router.put(
   async (req, res): Promise<void> => {
     const raw = Array.isArray(req.params.id) ? req.params.id[0] : req.params.id;
     const { reason } = req.body as { reason?: string };
+    const rejectionReason = reason?.trim() || "Your listing did not meet our requirements. Please review and resubmit.";
     await db
       .update(businessesTable)
-      .set({ status: "rejected", rejectionReason: reason ?? "" })
+      .set({ status: "rejected", rejectionReason })
       .where(eq(businessesTable.id, parseInt(raw, 10)));
     res.json({ success: true });
   },

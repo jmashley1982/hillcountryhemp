@@ -126,11 +126,15 @@ function RejectDialog({
           name="reason"
           render={({ field }) => (
             <FormItem>
+              <FormLabel className="text-xs font-bold uppercase tracking-wider text-muted-foreground">
+                Rejection reason <span className="normal-case font-normal">(optional — shown to the owner)</span>
+              </FormLabel>
               <FormControl>
-                <Input
+                <Textarea
                   {...field}
-                  className="border-2 text-sm"
-                  placeholder="Rejection reason (optional)"
+                  className="border-2 text-sm resize-none"
+                  rows={3}
+                  placeholder="e.g. Phone number appears invalid, description violates policy…"
                   data-testid="input-rejection-reason"
                 />
               </FormControl>
