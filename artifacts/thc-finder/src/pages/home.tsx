@@ -113,7 +113,7 @@ export default function Home() {
           <FilterSelect
             value={selectedCat}
             onChange={setSelectedCat}
-            placeholder="All Categories"
+            placeholder="All Products"
             options={ALL_CATEGORIES}
             testId="select-category"
           />
