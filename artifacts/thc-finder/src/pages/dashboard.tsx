@@ -2,7 +2,7 @@ import { useGetMe, useGetOwnedBusinesses, getGetOwnedBusinessesQueryKey } from "
 import { useLocation, Link } from "wouter";
 import { useEffect, useState } from "react";
 import { Button } from "@/components/ui/button";
-import { Plus, Edit, Clock, CheckCircle, XCircle, Building2, Sparkles, ImagePlus, Settings } from "lucide-react";
+import { Plus, Edit, Clock, CheckCircle, XCircle, Building2, Sparkles, ImagePlus, Settings, RefreshCw, AlertTriangle } from "lucide-react";
 import { SuggestBrandModal } from "@/components/suggest-brand-modal";
 
 const statusConfig = {
@@ -115,15 +115,35 @@ export default function Dashboard() {
                         </p>
                       )}
 
-                      {biz.status === "rejected" && biz.rejection_reason && (
+                      {biz.status === "rejected" && (
                         <div className="mt-3 p-3 bg-red-950/50 border border-red-800 rounded-xl">
-                          <p className="text-sm font-bold text-red-400 uppercase tracking-wider mb-1">
+                          <p className="text-sm font-bold text-red-400 uppercase tracking-wider mb-1 flex items-center gap-1.5">
+                            <AlertTriangle className="h-3.5 w-3.5" />
                             Rejection Reason
                           </p>
-                          <p className="text-sm text-red-300">{biz.rejection_reason}</p>
-                          <p className="text-xs text-red-400 mt-1 font-bold">
-                            Edit your listing to re-submit for review.
-                          </p>
+                          {biz.rejection_reason ? (
+                            biz.rejection_reason === "Owner authorization not confirmed." ? (
+                              <>
+                                <p className="text-sm text-red-300 font-medium">
+                                  You did not check the authorization box confirming you are the owner or authorized representative of this business.
+                                </p>
+                                <p className="text-xs text-red-400 mt-2 font-bold">
+                                  To resubmit: click <span className="text-red-300">"Edit & Resubmit"</span> below and check the authorization checkbox before saving.
+                                </p>
+                              </>
+                            ) : (
+                              <>
+                                <p className="text-sm text-red-300">{biz.rejection_reason}</p>
+                                <p className="text-xs text-red-400 mt-1 font-bold">
+                                  Fix the issue above and click <span className="text-red-300">"Edit & Resubmit"</span> to send it back for review.
+                                </p>
+                              </>
+                            )
+                          ) : (
+                            <p className="text-sm text-red-300">
+                              No specific reason was provided. Click <span className="font-bold">"Edit & Resubmit"</span> to update your listing and resubmit for review.
+                            </p>
+                          )}
                         </div>
                       )}
 
@@ -142,16 +162,28 @@ export default function Dashboard() {
                     </div>
 
                     <div className="flex flex-col gap-2 shrink-0">
-                      <Link href={`/dashboard/edit/${biz.id}`}>
-                        <Button
-                          variant="outline"
-                          size="sm"
-                          className="font-bold border-2 w-full"
-                          data-testid={`button-edit-${biz.id}`}
-                        >
-                          <Edit className="h-3.5 w-3.5 mr-1.5" /> Edit
-                        </Button>
-                      </Link>
+                      {biz.status === "rejected" ? (
+                        <Link href={`/dashboard/edit/${biz.id}`}>
+                          <Button
+                            size="sm"
+                            className="font-bold w-full bg-red-700 hover:bg-red-600 text-white border-0"
+                            data-testid={`button-resubmit-${biz.id}`}
+                          >
+                            <RefreshCw className="h-3.5 w-3.5 mr-1.5" /> Edit & Resubmit
+                          </Button>
+                        </Link>
+                      ) : (
+                        <Link href={`/dashboard/edit/${biz.id}`}>
+                          <Button
+                            variant="outline"
+                            size="sm"
+                            className="font-bold border-2 w-full"
+                            data-testid={`button-edit-${biz.id}`}
+                          >
+                            <Edit className="h-3.5 w-3.5 mr-1.5" /> Edit
+                          </Button>
+                        </Link>
+                      )}
                       {biz.status === "approved" && (
                         <Link href={`/business/${biz.id}`}>
                           <Button
