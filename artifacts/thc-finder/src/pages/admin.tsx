@@ -71,6 +71,7 @@ import {
   Check,
   X as XIcon,
 } from "lucide-react";
+import { ALL_CATEGORIES } from "@/lib/categories";
 
 type Tab = "pending" | "all" | "brands" | "add-store" | "claims" | "map-banner-d" | "map-banner-m" | "map-popup-d" | "map-popup-m" | "dash-banner-d" | "dash-banner-m";
 
@@ -85,13 +86,6 @@ const rejectSchema = z.object({ reason: z.string().optional() });
 type RejectForm = z.infer<typeof rejectSchema>;
 const brandSchema = z.object({ name: z.string().min(1, "Brand name required") });
 type BrandForm = z.infer<typeof brandSchema>;
-
-const ALL_CATEGORIES = [
-  "Flower", "Pre-Rolls", "Concentrates", "Edibles", "Drinks",
-  "Topicals", "CBD Products", "Bongs/Pipes", "Cones/Papers",
-  "Lighters/Torches", "Batteries/E-Devices",
-  "Mushrooms", "Pet", "Novelty",
-];
 
 function RejectDialog({
   businessId,

@@ -1,4 +1,5 @@
 import { useGetBusinesses, useGetBrands } from "@workspace/api-client-react";
+import { ALL_CATEGORIES } from "@/lib/categories";
 import { useState } from "react";
 import { Input } from "@/components/ui/input";
 import { Search, Map as MapIcon, List, Star, MapPin, ChevronDown } from "lucide-react";
@@ -22,22 +23,6 @@ const ALL_CITIES = [
   "Garden Ridge",
 ];
 
-const ALL_CATEGORIES = [
-  "Flower",
-  "Pre-Rolls",
-  "Drinks",
-  "Edibles",
-  "Concentrates",
-  "Topicals",
-  "CBD Products",
-  "Bongs/Pipes",
-  "Cones/Papers",
-  "Lighters/Torches",
-  "Batteries/E-Devices",
-  "Mushrooms",
-  "Pet",
-  "Novelty",
-];
 
 const selectClass =
   "h-8 rounded-lg border-2 border-border bg-background text-xs font-bold text-foreground pl-2.5 pr-7 appearance-none cursor-pointer hover:border-[#84C7D0]/60 focus:outline-none focus:border-[#84C7D0] transition-colors";

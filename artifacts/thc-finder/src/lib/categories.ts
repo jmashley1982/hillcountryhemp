@@ -1,0 +1,16 @@
+export const ALL_CATEGORIES = [
+  "Flower",
+  "Pre-Rolls",
+  "Concentrates",
+  "Edibles",
+  "Drinks",
+  "Topicals",
+  "CBD Products",
+  "Bongs/Pipes",
+  "Cones/Papers",
+  "Lighters/Torches",
+  "Batteries/E-Devices",
+  "Mushrooms",
+  "Pet",
+  "Novelty",
+];
