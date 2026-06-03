@@ -46,6 +46,16 @@ export interface ResetPasswordInput {
   newPassword: string;
 }
 
+export interface UpdateEmailInput {
+  currentPassword: string;
+  newEmail: string;
+}
+
+export interface UpdatePasswordInput {
+  currentPassword: string;
+  newPassword: string;
+}
+
 export interface RegisterInput {
   email: string;
   password: string;

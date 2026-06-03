@@ -2,7 +2,7 @@ import { useGetMe, useGetOwnedBusinesses, getGetOwnedBusinessesQueryKey } from "
 import { useLocation, Link } from "wouter";
 import { useEffect, useState } from "react";
 import { Button } from "@/components/ui/button";
-import { Plus, Edit, Clock, CheckCircle, XCircle, Building2, Sparkles, ImagePlus, Lightbulb } from "lucide-react";
+import { Plus, Edit, Clock, CheckCircle, XCircle, Building2, Sparkles, ImagePlus, Settings } from "lucide-react";
 import { SuggestBrandModal } from "@/components/suggest-brand-modal";
 
 const statusConfig = {
@@ -47,9 +47,21 @@ export default function Dashboard() {
   return (
     <div className="min-h-screen bg-background">
       <div className="container mx-auto px-4 py-8 max-w-4xl">
-        <div className="mb-8">
-          <h1 className="text-4xl text-[#99CC66]">My Listings</h1>
-          <p className="text-muted-foreground font-bold mt-1 truncate">{user?.email}</p>
+        <div className="mb-8 flex items-start justify-between gap-4">
+          <div className="min-w-0">
+            <h1 className="text-4xl text-[#99CC66]">My Listings</h1>
+            <p className="text-muted-foreground font-bold mt-1 truncate">{user?.email}</p>
+          </div>
+          <Link href="/account-settings">
+            <Button
+              variant="outline"
+              size="sm"
+              className="font-bold border-2 shrink-0 mt-1"
+              data-testid="button-account-settings"
+            >
+              <Settings className="h-3.5 w-3.5 mr-1.5" /> Account Settings
+            </Button>
+          </Link>
         </div>
 
         {businesses.length === 0 ? (

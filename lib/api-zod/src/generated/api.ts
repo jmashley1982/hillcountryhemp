@@ -89,6 +89,32 @@ export const ResetPasswordResponse = zod.object({
 
 
 /**
+ * @summary Change the authenticated user's email address
+ */
+export const UpdateEmailBody = zod.object({
+  "currentPassword": zod.string(),
+  "newEmail": zod.string()
+})
+
+export const UpdateEmailResponse = zod.object({
+  "success": zod.boolean()
+})
+
+
+/**
+ * @summary Change the authenticated user's password
+ */
+export const UpdatePasswordBody = zod.object({
+  "currentPassword": zod.string(),
+  "newPassword": zod.string()
+})
+
+export const UpdatePasswordResponse = zod.object({
+  "success": zod.boolean()
+})
+
+
+/**
  * @summary List approved businesses (public, with filters)
  */
 export const GetBusinessesQueryParams = zod.object({

@@ -1,9 +1,10 @@
 import { Router } from "express";
 import bcrypt from "bcryptjs";
 import crypto from "crypto";
-import { eq, and, gt, isNull } from "drizzle-orm";
+import { eq, and, gt, isNull, ne } from "drizzle-orm";
 import { db, usersTable, passwordResetTokensTable } from "@workspace/db";
 import { sendPasswordResetEmail } from "../lib/mailer.js";
+import { requireLogin } from "../middlewares/auth.js";
 
 const router = Router();
 
@@ -164,6 +165,60 @@ router.post("/auth/reset-password", async (req, res): Promise<void> => {
     .set({ usedAt: now })
     .where(eq(passwordResetTokensTable.id, record.id));
 
+  res.json({ success: true });
+});
+
+// Authenticated: change email address
+router.put("/auth/email", requireLogin, async (req, res): Promise<void> => {
+  const { currentPassword, newEmail } = req.body as {
+    currentPassword?: string;
+    newEmail?: string;
+  };
+  if (!currentPassword || !newEmail?.trim()) {
+    res.status(400).json({ error: "Current password and new email are required" });
+    return;
+  }
+  const [user] = await db
+    .select()
+    .from(usersTable)
+    .where(eq(usersTable.id, req.session.userId!));
+  if (!user || !(await bcrypt.compare(currentPassword, user.passwordHash))) {
+    res.status(401).json({ error: "Current password is incorrect" });
+    return;
+  }
+  const trimmed = newEmail.trim().toLowerCase();
+  const [conflict] = await db
+    .select({ id: usersTable.id })
+    .from(usersTable)
+    .where(and(eq(usersTable.email, trimmed), ne(usersTable.id, user.id)));
+  if (conflict) {
+    res.status(400).json({ error: "That email address is already in use" });
+    return;
+  }
+  await db.update(usersTable).set({ email: trimmed }).where(eq(usersTable.id, user.id));
+  res.json({ success: true });
+});
+
+// Authenticated: change password
+router.put("/auth/password", requireLogin, async (req, res): Promise<void> => {
+  const { currentPassword, newPassword } = req.body as {
+    currentPassword?: string;
+    newPassword?: string;
+  };
+  if (!currentPassword || !newPassword || newPassword.length < 6) {
+    res.status(400).json({ error: "Current password and a new password (min 6 characters) are required" });
+    return;
+  }
+  const [user] = await db
+    .select()
+    .from(usersTable)
+    .where(eq(usersTable.id, req.session.userId!));
+  if (!user || !(await bcrypt.compare(currentPassword, user.passwordHash))) {
+    res.status(401).json({ error: "Current password is incorrect" });
+    return;
+  }
+  const hash = await bcrypt.hash(newPassword, 10);
+  await db.update(usersTable).set({ passwordHash: hash }).where(eq(usersTable.id, user.id));
   res.json({ success: true });
 });
 

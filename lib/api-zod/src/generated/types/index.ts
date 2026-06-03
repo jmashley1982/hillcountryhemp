@@ -33,4 +33,6 @@ export * from './registerInput';
 export * from './rejectInput';
 export * from './resetPasswordInput';
 export * from './successResponse';
+export * from './updateEmailInput';
+export * from './updatePasswordInput';
 export * from './user';
