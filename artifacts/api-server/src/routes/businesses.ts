@@ -385,7 +385,7 @@ router.post(
   requireLogin,
   requireBusiness,
   async (req, res): Promise<void> => {
-    const { name, address, street, city, state, zip, phone, website, hours_json, description, instagram, facebook, google_reviews_url, categories, brand_ids, on_site_smoking_area } =
+    const { name, address, street, city, state, zip, phone, website, hours_json, description, instagram, facebook, google_reviews_url, categories, brand_ids, on_site_smoking_area, owner_authorized } =
       req.body as {
         name: string;
         address?: string;
@@ -403,10 +403,15 @@ router.post(
         categories?: string[];
         brand_ids?: number[];
         on_site_smoking_area?: boolean;
+        owner_authorized?: boolean;
       };
     const composedAddress = composeAddress(street, city, state, zip, address ?? "");
     if (!name || !composedAddress) {
       res.status(400).json({ error: "Name and address required" });
+      return;
+    }
+    if (!owner_authorized) {
+      res.status(400).json({ error: "You must confirm that you are the owner or authorized representative of this business." });
       return;
     }
     const coords = await geocode(composedAddress);

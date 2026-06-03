@@ -219,6 +219,8 @@ export interface BusinessInput {
   google_reviews_url?: string;
   categories?: string[];
   brand_ids?: number[];
+  /** Must be true — confirms the submitter is the owner or authorized representative */
+  owner_authorized?: boolean;
 }
 
 export interface AdminBusinessInput {

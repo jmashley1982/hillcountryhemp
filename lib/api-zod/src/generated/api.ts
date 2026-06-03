@@ -178,7 +178,8 @@ export const CreateBusinessBody = zod.object({
   "facebook": zod.string().optional(),
   "google_reviews_url": zod.string().optional(),
   "categories": zod.array(zod.string()).optional(),
-  "brand_ids": zod.array(zod.number()).optional()
+  "brand_ids": zod.array(zod.number()).optional(),
+  "owner_authorized": zod.boolean().optional().describe('Must be true — confirms the submitter is the owner or authorized representative')
 })
 
 

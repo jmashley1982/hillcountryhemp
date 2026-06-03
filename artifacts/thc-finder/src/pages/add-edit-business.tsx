@@ -28,6 +28,7 @@ import {
   FormMessage,
 } from "@/components/ui/form";
 import { useToast } from "@/hooks/use-toast";
+import { Checkbox } from "@/components/ui/checkbox";
 import {
   ArrowLeft,
   Upload,
@@ -140,6 +141,7 @@ const schema = z.object({
   categories: z.array(z.string()).optional(),
   brand_ids: z.array(z.number()).optional(),
   on_site_smoking_area: z.boolean().optional(),
+  owner_authorized: z.boolean().optional(),
 });
 type FormData = z.infer<typeof schema>;
 
@@ -190,6 +192,7 @@ export default function AddEditBusiness() {
       categories: [],
       brand_ids: [],
       on_site_smoking_area: false,
+      owner_authorized: false,
     },
   });
 
@@ -266,6 +269,14 @@ export default function AddEditBusiness() {
   };
 
   const onSubmit = (data: FormData) => {
+    if (!isEdit && !data.owner_authorized) {
+      form.setError("owner_authorized", {
+        type: "manual",
+        message: "You must confirm you are the owner or authorized representative.",
+      });
+      return;
+    }
+
     const payload = { ...data, hours_json: JSON.stringify(hoursState) };
     if (isEdit && businessId) {
       updateBusiness.mutate(
@@ -301,8 +312,11 @@ export default function AddEditBusiness() {
             });
             setLocation("/dashboard");
           },
-          onError: () => {
-            toast({ title: "Submission failed", variant: "destructive" });
+          onError: (err: unknown) => {
+            const msg =
+              (err as { response?: { data?: { error?: string } } })?.response
+                ?.data?.error ?? "Submission failed";
+            toast({ title: msg, variant: "destructive" });
           },
         },
       );
@@ -851,6 +865,31 @@ export default function AddEditBusiness() {
                   ))}
                 </div>
               </div>
+            )}
+
+            {!isEdit && (
+              <FormField
+                control={form.control}
+                name="owner_authorized"
+                render={({ field }) => (
+                  <FormItem className="flex flex-row items-start gap-3 p-4 bg-card border-2 border-border rounded-2xl shadow-[0_4px_20px_rgba(0,0,0,0.15)]">
+                    <FormControl>
+                      <Checkbox
+                        checked={field.value ?? false}
+                        onCheckedChange={field.onChange}
+                        data-testid="checkbox-owner-authorized"
+                        className="mt-0.5"
+                      />
+                    </FormControl>
+                    <div className="space-y-1 leading-none">
+                      <FormLabel className="font-bold text-sm cursor-pointer">
+                        I confirm that I am the owner of this business, or am authorized to manage this listing on behalf of the owner.
+                      </FormLabel>
+                      <FormMessage />
+                    </div>
+                  </FormItem>
+                )}
+              />
             )}
 
             <Button

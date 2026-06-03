@@ -1102,6 +1102,9 @@ components:
           type: array
           items:
             type: integer
+        owner_authorized:
+          type: boolean
+          description: Must be true — confirms the submitter is the owner or authorized representative
 
     AdminBusinessInput:
       type: object
