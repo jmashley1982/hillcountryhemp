@@ -410,11 +410,35 @@ router.post(
       res.status(400).json({ error: "Name and address required" });
       return;
     }
+    const coords = await geocode(composedAddress);
+
     if (!owner_authorized) {
+      await db.insert(businessesTable).values({
+        ownerId: req.session.userId!,
+        name,
+        address: composedAddress,
+        street: street ?? null,
+        city: city ?? null,
+        state: state ?? null,
+        zip: zip ?? null,
+        lat: coords?.lat ?? null,
+        lng: coords?.lng ?? null,
+        phone: phone ?? null,
+        website: website ?? null,
+        hours: composeHoursDisplay(hours_json),
+        hoursJson: hours_json ?? null,
+        description: description ?? null,
+        instagram: normalizeHandle(instagram, "instagram.com"),
+        facebook: normalizeHandle(facebook, "facebook.com"),
+        googleReviewsUrl: google_reviews_url ?? null,
+        onSiteSmokingArea: on_site_smoking_area ? 1 : 0,
+        status: "rejected",
+        rejectionReason: "Owner authorization not confirmed.",
+      });
       res.status(400).json({ error: "You must confirm that you are the owner or authorized representative of this business." });
       return;
     }
-    const coords = await geocode(composedAddress);
+
     const [business] = await db
       .insert(businessesTable)
       .values({
