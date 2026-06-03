@@ -26,7 +26,7 @@ import {
   getGetAdminPopupQueryKey,
   getGetAdminClaimsQueryKey,
 } from "@workspace/api-client-react";
-import { useLocation } from "wouter";
+import { useLocation, Link } from "wouter";
 import { useEffect } from "react";
 import { useQueryClient } from "@tanstack/react-query";
 import { useForm } from "react-hook-form";
@@ -65,6 +65,7 @@ import {
   Flag,
   Monitor,
   Smartphone,
+  Settings,
 } from "lucide-react";
 
 type Tab = "pending" | "all" | "brands" | "add-store" | "claims" | "map-banner-d" | "map-banner-m" | "map-popup-d" | "map-popup-m" | "dash-banner-d" | "dash-banner-m";
@@ -1197,9 +1198,21 @@ export default function Admin() {
 
   return (
     <div className="container mx-auto px-4 py-8 max-w-5xl">
-      <div className="mb-8">
-        <h1 className="text-4xl text-[#99CC66]">Admin Panel</h1>
-        <p className="text-muted-foreground font-bold mt-1">{user?.email} — Super Admin</p>
+      <div className="mb-8 flex items-start justify-between gap-4">
+        <div className="min-w-0">
+          <h1 className="text-4xl text-[#99CC66]">Admin Panel</h1>
+          <p className="text-muted-foreground font-bold mt-1">{user?.email} — Super Admin</p>
+        </div>
+        <Link href="/account-settings">
+          <Button
+            variant="outline"
+            size="sm"
+            className="font-bold border-2 shrink-0 mt-1"
+            data-testid="button-account-settings"
+          >
+            <Settings className="h-3.5 w-3.5 mr-1.5" /> Account Settings
+          </Button>
+        </Link>
       </div>
 
       <div className="flex flex-wrap gap-2 mb-8 border-b-2 border-border pb-4">
