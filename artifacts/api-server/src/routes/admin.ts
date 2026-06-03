@@ -89,8 +89,8 @@ router.get("/admin/b2b-banner", async (_req, res): Promise<void> => {
     .where(eq(b2bBannerAdTable.id, 1));
   res.json(
     b2b
-      ? { id: b2b.id, image_path: b2b.imagePath, mobile_image_path: b2b.mobileImagePath, link_url: b2b.linkUrl, mobile_link_url: b2b.mobileLinkUrl }
-      : { id: 1, image_path: null, link_url: null, mobile_link_url: null },
+      ? { id: b2b.id, image_path: b2b.imagePath, mobile_image_path: b2b.mobileImagePath, link_url: b2b.linkUrl, mobile_link_url: b2b.mobileLinkUrl, link_opens_new_tab: b2b.linkOpensNewTab }
+      : { id: 1, image_path: null, link_url: null, mobile_link_url: null, link_opens_new_tab: 1 },
   );
 });
 
@@ -101,8 +101,8 @@ router.get("/admin/banner", async (_req, res): Promise<void> => {
     .where(eq(bannerAdTable.id, 1));
   res.json(
     banner
-      ? { id: banner.id, image_path: banner.imagePath, mobile_image_path: banner.mobileImagePath, link_url: banner.linkUrl, mobile_link_url: banner.mobileLinkUrl }
-      : { id: 1, image_path: null, link_url: null, mobile_link_url: null },
+      ? { id: banner.id, image_path: banner.imagePath, mobile_image_path: banner.mobileImagePath, link_url: banner.linkUrl, mobile_link_url: banner.mobileLinkUrl, link_opens_new_tab: banner.linkOpensNewTab }
+      : { id: 1, image_path: null, link_url: null, mobile_link_url: null, link_opens_new_tab: 1 },
   );
 });
 
@@ -113,8 +113,8 @@ router.get("/admin/popup", async (_req, res): Promise<void> => {
     .where(eq(popupAdTable.id, 1));
   res.json(
     popup
-      ? { id: popup.id, image_path: popup.imagePath, mobile_image_path: popup.mobileImagePath, link_url: popup.linkUrl, mobile_link_url: popup.mobileLinkUrl, is_active: popup.isActive }
-      : { id: 1, image_path: null, link_url: null, mobile_link_url: null, is_active: 0 },
+      ? { id: popup.id, image_path: popup.imagePath, mobile_image_path: popup.mobileImagePath, link_url: popup.linkUrl, mobile_link_url: popup.mobileLinkUrl, is_active: popup.isActive, link_opens_new_tab: popup.linkOpensNewTab }
+      : { id: 1, image_path: null, link_url: null, mobile_link_url: null, is_active: 0, link_opens_new_tab: 1 },
   );
 });
 

@@ -3,6 +3,7 @@ import { logger } from "./lib/logger";
 import { seedAdmin } from "./seed-admin";
 import { seedRealBusinesses } from "./seed-real-businesses";
 import { applyCoordOverrides, geocodeNullCoords } from "./geocode-null-coords";
+import { migrateAdColumns } from "./migrate-ad-columns";
 
 const rawPort = process.env["PORT"];
 
@@ -24,7 +25,8 @@ app.listen(port, (err) => {
     process.exit(1);
   }
   logger.info({ port }, "Server listening");
-  seedAdmin()
+  migrateAdColumns()
+    .then(() => seedAdmin())
     .then(() => seedRealBusinesses())
     .then(() => applyCoordOverrides())
     .then(() => geocodeNullCoords())
