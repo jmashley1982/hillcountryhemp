@@ -15,4 +15,5 @@ export interface BannerAd {
   link_url?: string | null;
   /** @nullable */
   mobile_link_url?: string | null;
+  link_opens_new_tab?: number;
 }

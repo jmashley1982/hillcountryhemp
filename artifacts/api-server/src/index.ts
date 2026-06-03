@@ -1,6 +1,7 @@
 import app from "./app";
 import { logger } from "./lib/logger";
 import { seedAdmin } from "./seed-admin";
+import { seedRealBusinesses } from "./seed-real-businesses";
 import { applyCoordOverrides, geocodeNullCoords } from "./geocode-null-coords";
 
 const rawPort = process.env["PORT"];
@@ -24,6 +25,7 @@ app.listen(port, (err) => {
   }
   logger.info({ port }, "Server listening");
   seedAdmin()
+    .then(() => seedRealBusinesses())
     .then(() => applyCoordOverrides())
     .then(() => geocodeNullCoords())
     .catch((e) => logger.error({ err: e }, "Startup tasks failed"));

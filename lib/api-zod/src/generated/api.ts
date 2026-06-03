@@ -511,7 +511,8 @@ export const GetBannerResponse = zod.object({
   "image_path": zod.string().nullish(),
   "mobile_image_path": zod.string().nullish(),
   "link_url": zod.string().nullish(),
-  "mobile_link_url": zod.string().nullish()
+  "mobile_link_url": zod.string().nullish(),
+  "link_opens_new_tab": zod.number().optional()
 })
 
 
@@ -523,7 +524,8 @@ export const GetB2bBannerResponse = zod.object({
   "image_path": zod.string().nullish(),
   "mobile_image_path": zod.string().nullish(),
   "link_url": zod.string().nullish(),
-  "mobile_link_url": zod.string().nullish()
+  "mobile_link_url": zod.string().nullish(),
+  "link_opens_new_tab": zod.number().optional()
 })
 
 
@@ -536,7 +538,8 @@ export const GetAdminPopupResponse = zod.object({
   "mobile_image_path": zod.string().nullish(),
   "link_url": zod.string().nullish(),
   "mobile_link_url": zod.string().nullish(),
-  "is_active": zod.number()
+  "is_active": zod.number(),
+  "link_opens_new_tab": zod.number().optional()
 })
 
 
@@ -625,7 +628,8 @@ export const GetPopupResponse = zod.object({
   "mobile_image_path": zod.string().nullish(),
   "link_url": zod.string().nullish(),
   "mobile_link_url": zod.string().nullish(),
-  "is_active": zod.number()
+  "is_active": zod.number(),
+  "link_opens_new_tab": zod.number().optional()
 })
 
 

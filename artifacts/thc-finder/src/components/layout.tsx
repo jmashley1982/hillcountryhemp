@@ -4,31 +4,32 @@ import { useGetMe, useLogout, useGetBanner, useGetB2bBanner } from "@workspace/a
 import { LogOut, LayoutDashboard, Menu, X } from "lucide-react";
 import { Button } from "./ui/button";
 import logoUrl from "@assets/magnific_a-logo-for-an-app-called-_TeJK7kKVNR_1780364254574.png";
-import overlayIconsUrl from "@assets/overlay-icons_1780465889713.png";
 
 const DASHBOARD_ROUTES = ["/dashboard", "/add-business", "/admin"];
 
-function BannerSlot({ imagePath, mobileImagePath, linkUrl, mobileLinkUrl }: {
+function BannerSlot({ imagePath, mobileImagePath, linkUrl, mobileLinkUrl, linkOpensNewTab }: {
   imagePath: string | null | undefined;
   mobileImagePath: string | null | undefined;
   linkUrl: string | null | undefined;
   mobileLinkUrl: string | null | undefined;
+  linkOpensNewTab?: number | null;
 }) {
   const hasDesktop = !!imagePath;
   const hasMobile = !!mobileImagePath;
   if (!hasDesktop && !hasMobile) return null;
 
+  const newTab = linkOpensNewTab !== 0;
   const imgClass = "w-full h-auto block opacity-90 hover:opacity-100 transition-opacity";
 
   if (hasDesktop && hasMobile) {
     return (
       <>
         <a href={linkUrl || "#"} className="hidden md:block w-full bg-black"
-          target={linkUrl ? "_blank" : undefined} rel="noopener noreferrer" data-testid="banner-ad-desktop">
+          target={linkUrl && newTab ? "_blank" : undefined} rel="noopener noreferrer" data-testid="banner-ad-desktop">
           <img src={`/api/uploads/${imagePath}`} alt="Advertisement" className={imgClass} />
         </a>
         <a href={mobileLinkUrl || linkUrl || "#"} className="block md:hidden w-full bg-black"
-          target={(mobileLinkUrl || linkUrl) ? "_blank" : undefined} rel="noopener noreferrer" data-testid="banner-ad-mobile">
+          target={(mobileLinkUrl || linkUrl) && newTab ? "_blank" : undefined} rel="noopener noreferrer" data-testid="banner-ad-mobile">
           <img src={`/api/uploads/${mobileImagePath}`} alt="Advertisement" className={imgClass} />
         </a>
       </>
@@ -40,7 +41,7 @@ function BannerSlot({ imagePath, mobileImagePath, linkUrl, mobileLinkUrl }: {
   const hasLink = !!(imagePath ? linkUrl : mobileLinkUrl);
   return (
     <a href={href} className="block w-full bg-black"
-      target={hasLink ? "_blank" : undefined} rel="noopener noreferrer" data-testid="banner-ad">
+      target={hasLink && newTab ? "_blank" : undefined} rel="noopener noreferrer" data-testid="banner-ad">
       <img src={`/api/uploads/${src}`} alt="Advertisement" className={imgClass} />
     </a>
   );
@@ -75,6 +76,7 @@ export function Layout({ children }: { children: React.ReactNode }) {
           mobileImagePath={dashBanner?.mobile_image_path}
           linkUrl={dashBanner?.link_url}
           mobileLinkUrl={dashBanner?.mobile_link_url}
+          linkOpensNewTab={dashBanner?.link_opens_new_tab}
         />
       ) : (
         <BannerSlot
@@ -82,24 +84,15 @@ export function Layout({ children }: { children: React.ReactNode }) {
           mobileImagePath={banner?.mobile_image_path}
           linkUrl={banner?.link_url}
           mobileLinkUrl={banner?.mobile_link_url}
+          linkOpensNewTab={banner?.link_opens_new_tab}
         />
       )}
 
       {/* Navbar — iron-grey brand gradient */}
-      <header className="sticky top-0 z-50 w-full border-b border-border shadow-lg relative overflow-hidden"
+      <header className="sticky top-0 z-50 w-full border-b border-border shadow-lg"
         style={{ background: "linear-gradient(135deg, #1a2226 0%, #2c3a40 45%, #0a1012 100%)" }}
       >
-        <div
-          aria-hidden="true"
-          className="absolute inset-0 pointer-events-none z-0"
-          style={{
-            backgroundImage: `url(${overlayIconsUrl})`,
-            backgroundRepeat: "repeat",
-            backgroundSize: "auto",
-            opacity: 0.09,
-          }}
-        />
-        <div className="container mx-auto flex h-16 items-center justify-between px-4 relative z-10">
+        <div className="container mx-auto flex h-16 items-center justify-between px-4">
           <Link href="/" className="flex items-center group shrink-0">
             <img
               src={logoUrl}

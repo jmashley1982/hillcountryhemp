@@ -429,13 +429,14 @@ router.put(
   requireAdmin,
   upload.fields([{ name: "banner", maxCount: 1 }, { name: "banner_mobile", maxCount: 1 }]),
   async (req, res): Promise<void> => {
-    const body = req.body as { link_url?: string; mobile_link_url?: string };
+    const body = req.body as { link_url?: string; mobile_link_url?: string; link_opens_new_tab?: string };
     const files = req.files as { [f: string]: Express.Multer.File[] } | undefined;
     const [existing] = await db.select().from(bannerAdTable).where(eq(bannerAdTable.id, 1));
 
     const updates: Partial<typeof bannerAdTable.$inferInsert> = {};
     if (body.link_url !== undefined) updates.linkUrl = body.link_url || null;
     if (body.mobile_link_url !== undefined) updates.mobileLinkUrl = body.mobile_link_url || null;
+    if (body.link_opens_new_tab !== undefined) updates.linkOpensNewTab = body.link_opens_new_tab === "true" ? 1 : 0;
     if (files?.["banner"]?.[0]) {
       const f = files["banner"][0];
       const c = await compressImage(f.buffer);
@@ -453,7 +454,7 @@ router.put(
     if (existing) {
       await db.update(bannerAdTable).set(updates).where(eq(bannerAdTable.id, 1));
     } else {
-      await db.insert(bannerAdTable).values({ id: 1, imagePath: null, mobileImagePath: null, linkUrl: null, mobileLinkUrl: null, ...updates });
+      await db.insert(bannerAdTable).values({ id: 1, imagePath: null, mobileImagePath: null, linkUrl: null, mobileLinkUrl: null, linkOpensNewTab: 1, ...updates });
     }
     res.json({ success: true });
   },
@@ -466,7 +467,7 @@ router.put(
   requireAdmin,
   upload.fields([{ name: "image", maxCount: 1 }, { name: "image_mobile", maxCount: 1 }]),
   async (req, res): Promise<void> => {
-    const body = req.body as { link_url?: string; mobile_link_url?: string; is_active?: string };
+    const body = req.body as { link_url?: string; mobile_link_url?: string; is_active?: string; link_opens_new_tab?: string };
     const files = req.files as { [f: string]: Express.Multer.File[] } | undefined;
     const [existing] = await db.select().from(popupAdTable).where(eq(popupAdTable.id, 1));
 
@@ -474,6 +475,7 @@ router.put(
     if (body.link_url !== undefined) updates.linkUrl = body.link_url || null;
     if (body.mobile_link_url !== undefined) updates.mobileLinkUrl = body.mobile_link_url || null;
     if (body.is_active !== undefined) updates.isActive = body.is_active === "true" ? 1 : 0;
+    if (body.link_opens_new_tab !== undefined) updates.linkOpensNewTab = body.link_opens_new_tab === "true" ? 1 : 0;
     if (files?.["image"]?.[0]) {
       const f = files["image"][0];
       const c = await compressImage(f.buffer);
@@ -491,7 +493,7 @@ router.put(
     if (existing) {
       await db.update(popupAdTable).set(updates).where(eq(popupAdTable.id, 1));
     } else {
-      await db.insert(popupAdTable).values({ id: 1, imagePath: null, mobileImagePath: null, linkUrl: null, mobileLinkUrl: null, isActive: 0, ...updates });
+      await db.insert(popupAdTable).values({ id: 1, imagePath: null, mobileImagePath: null, linkUrl: null, mobileLinkUrl: null, isActive: 0, linkOpensNewTab: 1, ...updates });
     }
     res.json({ success: true });
   },
@@ -504,13 +506,14 @@ router.put(
   requireAdmin,
   upload.fields([{ name: "banner", maxCount: 1 }, { name: "banner_mobile", maxCount: 1 }]),
   async (req, res): Promise<void> => {
-    const body = req.body as { link_url?: string; mobile_link_url?: string };
+    const body = req.body as { link_url?: string; mobile_link_url?: string; link_opens_new_tab?: string };
     const files = req.files as { [f: string]: Express.Multer.File[] } | undefined;
     const [existing] = await db.select().from(b2bBannerAdTable).where(eq(b2bBannerAdTable.id, 1));
 
     const updates: Partial<typeof b2bBannerAdTable.$inferInsert> = {};
     if (body.link_url !== undefined) updates.linkUrl = body.link_url || null;
     if (body.mobile_link_url !== undefined) updates.mobileLinkUrl = body.mobile_link_url || null;
+    if (body.link_opens_new_tab !== undefined) updates.linkOpensNewTab = body.link_opens_new_tab === "true" ? 1 : 0;
     if (files?.["banner"]?.[0]) {
       const f = files["banner"][0];
       const c = await compressImage(f.buffer);
@@ -528,7 +531,7 @@ router.put(
     if (existing) {
       await db.update(b2bBannerAdTable).set(updates).where(eq(b2bBannerAdTable.id, 1));
     } else {
-      await db.insert(b2bBannerAdTable).values({ id: 1, imagePath: null, mobileImagePath: null, linkUrl: null, mobileLinkUrl: null, ...updates });
+      await db.insert(b2bBannerAdTable).values({ id: 1, imagePath: null, mobileImagePath: null, linkUrl: null, mobileLinkUrl: null, linkOpensNewTab: 1, ...updates });
     }
     res.json({ success: true });
   },

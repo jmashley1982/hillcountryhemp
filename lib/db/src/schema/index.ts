@@ -114,6 +114,7 @@ export const bannerAdTable = pgTable("banner_ad", {
   mobileImagePath: text("mobile_image_path"),
   linkUrl: text("link_url"),
   mobileLinkUrl: text("mobile_link_url"),
+  linkOpensNewTab: integer("link_opens_new_tab").notNull().default(1),
 });
 
 export const b2bBannerAdTable = pgTable("b2b_banner_ad", {
@@ -122,6 +123,7 @@ export const b2bBannerAdTable = pgTable("b2b_banner_ad", {
   mobileImagePath: text("mobile_image_path"),
   linkUrl: text("link_url"),
   mobileLinkUrl: text("mobile_link_url"),
+  linkOpensNewTab: integer("link_opens_new_tab").notNull().default(1),
 });
 
 export const popupAdTable = pgTable("popup_ad", {
@@ -131,6 +133,7 @@ export const popupAdTable = pgTable("popup_ad", {
   linkUrl: text("link_url"),
   mobileLinkUrl: text("mobile_link_url"),
   isActive: integer("is_active").notNull().default(0),
+  linkOpensNewTab: integer("link_opens_new_tab").notNull().default(1),
 });
 
 export const sessionsTable = pgTable("session", {

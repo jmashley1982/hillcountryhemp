@@ -1233,6 +1233,8 @@ components:
           type: ["string", "null"]
         mobile_link_url:
           type: ["string", "null"]
+        link_opens_new_tab:
+          type: integer
 
     PopupAd:
       type: object
@@ -1249,6 +1251,8 @@ components:
         mobile_link_url:
           type: ["string", "null"]
         is_active:
+          type: integer
+        link_opens_new_tab:
           type: integer
 
     BusinessStats:

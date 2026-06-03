@@ -925,6 +925,7 @@ function SlotUploader({
   currentLink,
   showActiveToggle,
   currentActive,
+  currentNewTab,
   onSuccess,
 }: {
   endpoint: string;
@@ -936,16 +937,19 @@ function SlotUploader({
   currentLink?: string | null;
   showActiveToggle?: boolean;
   currentActive?: number;
+  currentNewTab?: number | null;
   onSuccess: () => void;
 }) {
   const { toast } = useToast();
   const [uploading, setUploading] = useState<"image" | "link" | null>(null);
   const [link, setLink] = useState(currentLink ?? "");
   const [isActive, setIsActive] = useState(currentActive === 1);
+  const [openInNewTab, setOpenInNewTab] = useState(currentNewTab !== 0);
   const fileRef = useRef<HTMLInputElement>(null);
 
   useEffect(() => { setLink(currentLink ?? ""); }, [currentLink]);
   useEffect(() => { setIsActive(currentActive === 1); }, [currentActive]);
+  useEffect(() => { setOpenInNewTab(currentNewTab !== 0); }, [currentNewTab]);
 
   const uploadImage = async (file: File) => {
     setUploading("image");
@@ -977,6 +981,7 @@ function SlotUploader({
     try {
       const fd = new FormData();
       fd.append(linkField, link);
+      fd.append("link_opens_new_tab", String(openInNewTab));
       if (showActiveToggle) fd.append("is_active", String(isActive));
       await fetch(endpoint, { method: "PUT", body: fd });
       toast({ title: "Saved" });
@@ -1033,36 +1038,48 @@ function SlotUploader({
       {/* Link URL */}
       <div className="space-y-3 pt-4 border-t border-border">
         <h3 className="font-bold text-sm uppercase tracking-wider">Destination Link</h3>
-        <div className="flex flex-col sm:flex-row gap-3">
-          <Input
-            value={link}
-            onChange={(e) => setLink(e.target.value)}
-            className="border-2 flex-1"
-            placeholder="https://advertiser-site.com"
-            data-testid={`input-${imageField}-link`}
-          />
-          {showActiveToggle && (
-            <label className="flex items-center gap-2 font-bold text-sm cursor-pointer shrink-0">
-              <input
-                type="checkbox"
-                checked={isActive}
-                onChange={(e) => setIsActive(e.target.checked)}
-                className="w-4 h-4"
-                data-testid="checkbox-popup-active"
-              />
-              Active
-            </label>
-          )}
-          <Button
-            variant="outline"
-            className="border-2 font-bold shrink-0"
-            onClick={saveLink}
-            disabled={busy}
-            data-testid={`button-save-${imageField}-link`}
-          >
-            {uploading === "link" ? <Loader2 className="h-4 w-4 mr-2 animate-spin" /> : null}
-            Save
-          </Button>
+        <div className="flex flex-col gap-3">
+          <div className="flex flex-col sm:flex-row gap-3">
+            <Input
+              value={link}
+              onChange={(e) => setLink(e.target.value)}
+              className="border-2 flex-1"
+              placeholder="https://advertiser-site.com"
+              data-testid={`input-${imageField}-link`}
+            />
+            {showActiveToggle && (
+              <label className="flex items-center gap-2 font-bold text-sm cursor-pointer shrink-0">
+                <input
+                  type="checkbox"
+                  checked={isActive}
+                  onChange={(e) => setIsActive(e.target.checked)}
+                  className="w-4 h-4"
+                  data-testid="checkbox-popup-active"
+                />
+                Active
+              </label>
+            )}
+            <Button
+              variant="outline"
+              className="border-2 font-bold shrink-0"
+              onClick={saveLink}
+              disabled={busy}
+              data-testid={`button-save-${imageField}-link`}
+            >
+              {uploading === "link" ? <Loader2 className="h-4 w-4 mr-2 animate-spin" /> : null}
+              Save
+            </Button>
+          </div>
+          <label className="flex items-center gap-2 text-sm cursor-pointer w-fit">
+            <input
+              type="checkbox"
+              checked={openInNewTab}
+              onChange={(e) => setOpenInNewTab(e.target.checked)}
+              className="w-4 h-4"
+              data-testid={`checkbox-${imageField}-new-tab`}
+            />
+            <span className="text-muted-foreground">Open link in a new tab</span>
+          </label>
         </div>
       </div>
     </div>
@@ -1082,6 +1099,7 @@ function MapBannerDesktopTab() {
       description="Shown above the nav on the map page for desktop visitors."
       currentImage={banner?.image_path ?? null}
       currentLink={banner?.link_url ?? null}
+      currentNewTab={banner?.link_opens_new_tab}
       onSuccess={() => queryClient.invalidateQueries({ queryKey: getGetBannerQueryKey() })}
     />
   );
@@ -1100,6 +1118,7 @@ function MapBannerMobileTab() {
       description="Shown above the nav on the map page for mobile visitors."
       currentImage={banner?.mobile_image_path ?? null}
       currentLink={banner?.mobile_link_url ?? null}
+      currentNewTab={banner?.link_opens_new_tab}
       onSuccess={() => queryClient.invalidateQueries({ queryKey: getGetBannerQueryKey() })}
     />
   );
@@ -1120,6 +1139,7 @@ function MapPopupDesktopTab() {
       currentLink={popup?.link_url ?? null}
       showActiveToggle
       currentActive={popup?.is_active}
+      currentNewTab={popup?.link_opens_new_tab}
       onSuccess={() => queryClient.invalidateQueries({ queryKey: getGetAdminPopupQueryKey() })}
     />
   );
@@ -1138,6 +1158,7 @@ function MapPopupMobileTab() {
       description="Session popup shown to mobile visitors on the map page."
       currentImage={popup?.mobile_image_path ?? null}
       currentLink={popup?.mobile_link_url ?? null}
+      currentNewTab={popup?.link_opens_new_tab}
       onSuccess={() => queryClient.invalidateQueries({ queryKey: getGetAdminPopupQueryKey() })}
     />
   );
@@ -1156,6 +1177,7 @@ function DashBannerDesktopTab() {
       description="Shown above the nav on the business dashboard for desktop visitors."
       currentImage={b2b?.image_path ?? null}
       currentLink={b2b?.link_url ?? null}
+      currentNewTab={b2b?.link_opens_new_tab}
       onSuccess={() => queryClient.invalidateQueries({ queryKey: getGetB2bBannerQueryKey() })}
     />
   );
@@ -1174,6 +1196,7 @@ function DashBannerMobileTab() {
       description="Shown above the nav on the business dashboard for mobile visitors."
       currentImage={b2b?.mobile_image_path ?? null}
       currentLink={b2b?.mobile_link_url ?? null}
+      currentNewTab={b2b?.link_opens_new_tab}
       onSuccess={() => queryClient.invalidateQueries({ queryKey: getGetB2bBannerQueryKey() })}
     />
   );

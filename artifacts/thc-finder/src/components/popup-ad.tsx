@@ -80,7 +80,7 @@ export function PopupAd() {
         </button>
 
         {activeLink ? (
-          <a href={activeLink} target="_blank" rel="noopener noreferrer" onClick={handleClose}>
+          <a href={activeLink} target={popup.link_opens_new_tab !== 0 ? "_blank" : undefined} rel="noopener noreferrer" onClick={handleClose}>
             <img src={`/api/uploads/${activePath}`} alt="Special Offer" className={imgClass} />
           </a>
         ) : (
