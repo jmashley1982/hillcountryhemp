@@ -1,6 +1,7 @@
 import { useEffect, useState } from "react";
 import { Link, useLocation } from "wouter";
-import { useGetMe, useLogout, useGetBanner, useGetB2bBanner } from "@workspace/api-client-react";
+import { useGetMe, useLogout, useGetBanner, useGetB2bBanner, getGetMeQueryKey } from "@workspace/api-client-react";
+import { useQueryClient } from "@tanstack/react-query";
 import { LogOut, LayoutDashboard, Menu, X } from "lucide-react";
 import { Button } from "./ui/button";
 import logoUrl from "@assets/magnific_a-logo-for-an-app-called-_TeJK7kKVNR_1780364254574.png";
@@ -48,6 +49,7 @@ function BannerSlot({ imagePath, mobileImagePath, linkUrl, mobileLinkUrl, linkOp
 }
 
 export function Layout({ children }: { children: React.ReactNode }) {
+  const queryClient = useQueryClient();
   const { data: user, isLoading } = useGetMe();
   const logout = useLogout();
   const { data: banner } = useGetBanner();
@@ -62,6 +64,8 @@ export function Layout({ children }: { children: React.ReactNode }) {
   const handleLogout = () => {
     logout.mutate(undefined, {
       onSuccess: () => {
+        queryClient.setQueryData(getGetMeQueryKey(), undefined);
+        queryClient.removeQueries({ queryKey: getGetMeQueryKey() });
         setLocation("/");
       }
     });
