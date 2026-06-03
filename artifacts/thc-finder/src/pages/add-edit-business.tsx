@@ -50,6 +50,9 @@ const ALL_CATEGORIES = [
   "Cones/Papers",
   "Lighters/Torches",
   "Batteries/E-Devices",
+  "Mushrooms",
+  "Pet",
+  "Novelty",
 ];
 
 const DAYS = [
