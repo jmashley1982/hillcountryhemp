@@ -126,7 +126,7 @@ async function enrichBusiness(b: {
     lng: b.lng,
     phone: b.phone,
     website: b.website,
-    hours: b.hours,
+    hours: composeHoursDisplay(b.hoursJson),
     hours_json: b.hoursJson,
     description: b.description,
     logo_path: b.logoPath,

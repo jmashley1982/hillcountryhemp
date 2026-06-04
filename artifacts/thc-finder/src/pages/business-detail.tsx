@@ -173,7 +173,7 @@ export default function BusinessDetail() {
                   className="flex items-center justify-center gap-2 bg-[#99CC66] hover:bg-[#88bb55] text-black font-black text-xs uppercase tracking-wide px-4 py-3.5 rounded-xl transition-colors shadow-md"
                 >
                   <Phone className="h-4 w-4 shrink-0" />
-                  Call Store
+                  Call
                 </a>
               )}
               <a
