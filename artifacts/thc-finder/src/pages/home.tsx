@@ -13,6 +13,7 @@ import {
   Wind,
   ShieldCheck,
   ShieldAlert,
+  RotateCcw,
 } from "lucide-react";
 import { BusinessMap } from "@/components/map";
 import { ShopOverlay } from "@/components/shop-overlay";
@@ -318,19 +319,19 @@ export default function Home() {
       {/* ── Filter bar ── */}
       <div className="bg-muted/30 border-b-2 border-border px-3 py-2 flex-none">
         <div className="flex items-center gap-2">
-          <span className="text-[10px] font-black uppercase tracking-widest text-muted-foreground/50 shrink-0 pr-1">Filter</span>
           <MultiFilterSelect values={selectedBrands} onChange={setSelectedBrands} placeholder="Brands" options={allBrands.map((b) => b.name)} testId="select-brand" />
           <MultiFilterSelect values={selectedCats} onChange={setSelectedCats} placeholder="Products" options={ALL_CATEGORIES} testId="select-category" />
           <MultiFilterSelect values={selectedCities} onChange={setSelectedCities} placeholder="Cities" options={ALL_CITIES} testId="select-city" />
           <button
             onClick={() => { setSelectedBrands([]); setSelectedCats([]); setSelectedCities([]); }}
             disabled={!hasFilters}
-            className={`shrink-0 flex items-center gap-1 text-[10px] font-bold uppercase tracking-wider transition-colors whitespace-nowrap px-2 py-1 rounded-lg border ${
-              hasFilters ? "border-[#84C7D0]/50 text-[#84C7D0] hover:bg-[#84C7D0]/10" : "border-transparent text-muted-foreground/30 cursor-default"
+            title="Reset filters"
+            className={`shrink-0 h-8 w-8 flex items-center justify-center rounded-full border-2 transition-colors ${
+              hasFilters ? "border-[#84C7D0]/60 text-[#84C7D0] hover:bg-[#84C7D0]/10" : "border-border/40 text-muted-foreground/25 cursor-default"
             }`}
             data-testid="button-clear-filters"
           >
-            <X className="h-3 w-3" /> Reset
+            <RotateCcw className="h-3.5 w-3.5" />
           </button>
         </div>
       </div>
