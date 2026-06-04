@@ -2,6 +2,7 @@ import { useGetBusiness, useClaimBusiness } from "@workspace/api-client-react";
 import { useParams, Link } from "wouter";
 import { MapPin, Phone, Globe, Clock, Star, ArrowLeft, RefreshCw, Wind, ExternalLink, Ticket, Flag, Loader2 } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
+import { BANNED_TAGS } from "@/lib/categories";
 import { Button } from "@/components/ui/button";
 import { useQueryClient } from "@tanstack/react-query";
 import { useToast } from "@/hooks/use-toast";
@@ -110,7 +111,7 @@ export default function BusinessDetail() {
                 </div>
               )}
               <div className="flex flex-wrap gap-2 mt-2">
-                {biz.categories?.map(cat => (
+                {biz.categories?.filter(cat => !BANNED_TAGS.has(cat.toLowerCase())).map(cat => (
                   <Badge key={cat} className="bg-primary/20 text-[#99CC66] hover:bg-primary/30 font-bold border border-primary/40 rounded-full">{cat}</Badge>
                 ))}
               </div>
@@ -138,7 +139,7 @@ export default function BusinessDetail() {
             <div className="space-y-4">
               <h3 className="text-2xl text-[#99CC66]">Featured Brands</h3>
               <div className="flex flex-wrap gap-3">
-                {(biz.brands as BrandWithLogo[]).map(brand => (
+                {[...(biz.brands as BrandWithLogo[])].sort((a, b) => a.name.localeCompare(b.name)).map(brand => (
                   <div
                     key={brand.id}
                     className={`flex items-center gap-2 px-4 py-2.5 rounded-2xl font-bold border-2 shadow-[0_4px_20px_rgba(0,0,0,0.25)] transition-all hover:border-[#99CC66]/50 ${

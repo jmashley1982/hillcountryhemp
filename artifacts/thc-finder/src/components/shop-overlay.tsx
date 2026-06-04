@@ -15,6 +15,7 @@ import {
   Flag,
 } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
+import { BANNED_TAGS } from "@/lib/categories";
 
 function formatDate(dateStr: string) {
   try {
@@ -147,14 +148,16 @@ export function ShopOverlay({ businessId, onClose }: ShopOverlayProps) {
                   )}
                   {biz.categories && biz.categories.length > 0 && (
                     <div className="flex flex-wrap gap-1.5 mt-3">
-                      {biz.categories.map((cat) => (
-                        <Badge
-                          key={cat}
-                          className="bg-primary/20 text-[#99CC66] hover:bg-primary/30 font-bold border border-primary/40 rounded-full text-[11px]"
-                        >
-                          {cat}
-                        </Badge>
-                      ))}
+                      {biz.categories
+                        .filter((cat) => !BANNED_TAGS.has(cat.toLowerCase()))
+                        .map((cat) => (
+                          <Badge
+                            key={cat}
+                            className="bg-primary/20 text-[#99CC66] hover:bg-primary/30 font-bold border border-primary/40 rounded-full text-[11px]"
+                          >
+                            {cat}
+                          </Badge>
+                        ))}
                     </div>
                   )}
                 </div>
@@ -276,7 +279,7 @@ export function ShopOverlay({ businessId, onClose }: ShopOverlayProps) {
                     Featured Brands
                   </h3>
                   <div className="flex flex-wrap gap-2.5">
-                    {(biz.brands as BrandWithLogo[]).map((brand) => (
+                    {[...(biz.brands as BrandWithLogo[])].sort((a, b) => a.name.localeCompare(b.name)).map((brand) => (
                       <div
                         key={brand.id}
                         className={`flex items-center gap-2 px-3.5 py-2 rounded-2xl font-bold border-2 shadow-md transition-all ${

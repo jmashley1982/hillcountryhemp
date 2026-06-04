@@ -1,3 +1,5 @@
+export const BANNED_TAGS = new Set(["smoke shop", "vape shop"]);
+
 export const ALL_CATEGORIES = [
   "Flower",
   "Pre-Rolls",
