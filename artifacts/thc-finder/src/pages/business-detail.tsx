@@ -166,13 +166,13 @@ export default function BusinessDetail() {
             <h3 className="text-xl text-[#99CC66] mb-4 pb-3 border-b-2 border-border font-heading">Store Info</h3>
 
             {/* Action buttons */}
-            <div className={`grid gap-2 mb-5 ${biz.phone ? "grid-cols-2" : "grid-cols-1"}`}>
+            <div className={`grid gap-3 mb-6 ${biz.phone ? "grid-cols-2" : "grid-cols-1"}`}>
               {biz.phone && (
                 <a
                   href={`tel:${biz.phone}`}
-                  className="flex items-center justify-center gap-2 bg-[#99CC66] hover:bg-[#88bb55] text-black font-black text-sm uppercase tracking-wider py-2.5 rounded-xl transition-colors shadow-md"
+                  className="flex items-center justify-center gap-2 bg-[#99CC66] hover:bg-[#88bb55] text-black font-black text-xs uppercase tracking-wide px-4 py-3.5 rounded-xl transition-colors shadow-md"
                 >
-                  <Phone className="h-4 w-4" />
+                  <Phone className="h-4 w-4 shrink-0" />
                   Call Store
                 </a>
               )}
@@ -180,10 +180,10 @@ export default function BusinessDetail() {
                 href={`https://www.google.com/maps/dir/?api=1&destination=${encodeURIComponent(biz.address)}`}
                 target="_blank"
                 rel="noopener noreferrer"
-                className="flex items-center justify-center gap-2 bg-[#84C7D0]/20 hover:bg-[#84C7D0]/30 border-2 border-[#84C7D0]/60 text-[#84C7D0] font-black text-sm uppercase tracking-wider py-2.5 rounded-xl transition-colors"
+                className="flex items-center justify-center gap-2 bg-[#84C7D0]/20 hover:bg-[#84C7D0]/30 border-2 border-[#84C7D0]/60 text-[#84C7D0] font-black text-xs uppercase tracking-wide px-4 py-3.5 rounded-xl transition-colors"
               >
-                <MapPin className="h-4 w-4" />
-                Get Directions
+                <MapPin className="h-4 w-4 shrink-0" />
+                Directions
               </a>
             </div>
 

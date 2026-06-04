@@ -319,9 +319,9 @@ export default function Home() {
       <div className="bg-muted/30 border-b-2 border-border px-3 py-2 flex-none">
         <div className="flex items-center gap-2">
           <span className="text-[10px] font-black uppercase tracking-widest text-muted-foreground/50 shrink-0 pr-1">Filter</span>
-          <MultiFilterSelect values={selectedBrands} onChange={setSelectedBrands} placeholder="All Brands" options={allBrands.map((b) => b.name)} testId="select-brand" />
-          <MultiFilterSelect values={selectedCats} onChange={setSelectedCats} placeholder="All Products" options={ALL_CATEGORIES} testId="select-category" />
-          <MultiFilterSelect values={selectedCities} onChange={setSelectedCities} placeholder="All Cities" options={ALL_CITIES} testId="select-city" />
+          <MultiFilterSelect values={selectedBrands} onChange={setSelectedBrands} placeholder="Brands" options={allBrands.map((b) => b.name)} testId="select-brand" />
+          <MultiFilterSelect values={selectedCats} onChange={setSelectedCats} placeholder="Products" options={ALL_CATEGORIES} testId="select-category" />
+          <MultiFilterSelect values={selectedCities} onChange={setSelectedCities} placeholder="Cities" options={ALL_CITIES} testId="select-city" />
           <button
             onClick={() => { setSelectedBrands([]); setSelectedCats([]); setSelectedCities([]); }}
             disabled={!hasFilters}

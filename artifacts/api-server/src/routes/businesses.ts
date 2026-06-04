@@ -161,6 +161,11 @@ const DAY_ORDER = [
   "Sunday",
 ];
 
+const DAY_ABBR: Record<string, string> = {
+  Monday: "Mon", Tuesday: "Tue", Wednesday: "Wed", Thursday: "Thu",
+  Friday: "Fri", Saturday: "Sat", Sunday: "Sun",
+};
+
 function composeHoursDisplay(hoursJson: string | null | undefined): string | null {
   if (!hoursJson) return null;
   let parsed: DayHours[];
@@ -172,10 +177,11 @@ function composeHoursDisplay(hoursJson: string | null | undefined): string | nul
   if (!Array.isArray(parsed) || parsed.length === 0) return null;
   const lines = DAY_ORDER.map((day) => {
     const entry = parsed.find((d) => d.day === day);
+    const abbr = DAY_ABBR[day] ?? day;
     if (!entry) return null;
-    if (entry.closed) return `${day}: Closed`;
+    if (entry.closed) return `${abbr}: Closed`;
     if (!entry.open || !entry.close) return null;
-    return `${day}: ${entry.open} – ${entry.close}`;
+    return `${abbr}: ${entry.open} – ${entry.close}`;
   }).filter((l): l is string => l !== null);
   return lines.length ? lines.join("\n") : null;
 }
