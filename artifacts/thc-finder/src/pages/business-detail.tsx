@@ -115,7 +115,7 @@ export default function BusinessDetail() {
               )}
               {(() => {
                 const validCats = new Set(ALL_CATEGORIES);
-                const cats = biz.categories?.filter(cat => validCats.has(cat)) ?? [];
+                const cats = (biz.categories?.filter(cat => validCats.has(cat)) ?? []).sort((a, b) => a.localeCompare(b));
                 return cats.length > 0 ? (
                   <div className="flex flex-wrap gap-2 mt-2">
                     {cats.map(cat => (
