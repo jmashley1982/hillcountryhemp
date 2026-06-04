@@ -463,8 +463,7 @@ export default function Home() {
 
                       {/* Row 3: Product tags */}
                       {productTags.length > 0 && (
-                        <div className="flex items-center gap-1 flex-wrap mb-1.5">
-                          <Tag className="h-2.5 w-2.5 text-muted-foreground/50 shrink-0" />
+                        <div className="flex items-center gap-1 flex-wrap mb-1">
                           {productTags.slice(0, 3).map((t) => (
                             <span key={t} className="text-[9px] font-bold uppercase tracking-wide bg-[#99CC66]/10 border border-[#99CC66]/30 text-[#99CC66] px-1.5 py-0.5 rounded-full">
                               {t}
