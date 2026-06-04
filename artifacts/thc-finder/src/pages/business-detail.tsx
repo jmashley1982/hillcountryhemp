@@ -163,7 +163,29 @@ export default function BusinessDetail() {
 
         <div className="space-y-6">
           <div className="bg-card border-2 border-border rounded-2xl p-6 shadow-[0_4px_20px_rgba(0,0,0,0.25)]">
-            <h3 className="text-xl text-[#99CC66] mb-6 pb-4 border-b-2 border-border font-heading">Store Info</h3>
+            <h3 className="text-xl text-[#99CC66] mb-4 pb-3 border-b-2 border-border font-heading">Store Info</h3>
+
+            {/* Action buttons */}
+            <div className={`grid gap-2 mb-5 ${biz.phone ? "grid-cols-2" : "grid-cols-1"}`}>
+              {biz.phone && (
+                <a
+                  href={`tel:${biz.phone}`}
+                  className="flex items-center justify-center gap-2 bg-[#99CC66] hover:bg-[#88bb55] text-black font-black text-sm uppercase tracking-wider py-2.5 rounded-xl transition-colors shadow-md"
+                >
+                  <Phone className="h-4 w-4" />
+                  Call Store
+                </a>
+              )}
+              <a
+                href={`https://www.google.com/maps/dir/?api=1&destination=${encodeURIComponent(biz.address)}`}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="flex items-center justify-center gap-2 bg-[#84C7D0]/20 hover:bg-[#84C7D0]/30 border-2 border-[#84C7D0]/60 text-[#84C7D0] font-black text-sm uppercase tracking-wider py-2.5 rounded-xl transition-colors"
+              >
+                <MapPin className="h-4 w-4" />
+                Get Directions
+              </a>
+            </div>
 
             <div className="space-y-4 font-medium">
               <div className="flex items-start gap-3">
