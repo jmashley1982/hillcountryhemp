@@ -490,12 +490,16 @@ router.post(
   },
 );
 
-// Update business
+// Update business (owner or admin)
 router.put(
   "/businesses/:id",
   requireLogin,
-  requireBusiness,
   async (req, res): Promise<void> => {
+    const isAdmin = req.session.role === "admin";
+    if (!isAdmin && req.session.role !== "business") {
+      res.status(403).json({ error: "Forbidden" });
+      return;
+    }
     const raw = Array.isArray(req.params.id)
       ? req.params.id[0]
       : req.params.id;
@@ -504,13 +508,12 @@ router.put(
       .select()
       .from(businessesTable)
       .where(
-        and(
-          eq(businessesTable.id, id),
-          eq(businessesTable.ownerId, req.session.userId!),
-        ),
+        isAdmin
+          ? eq(businessesTable.id, id)
+          : and(eq(businessesTable.id, id), eq(businessesTable.ownerId, req.session.userId!)),
       );
     if (!b) {
-      res.status(403).json({ error: "Forbidden" });
+      res.status(isAdmin ? 404 : 403).json({ error: isAdmin ? "Business not found" : "Forbidden" });
       return;
     }
 

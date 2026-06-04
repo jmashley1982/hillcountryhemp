@@ -1,8 +1,7 @@
 import { useGetBusiness, useClaimBusiness } from "@workspace/api-client-react";
 import { useParams, Link } from "wouter";
-import { MapPin, Phone, Globe, Clock, Star, ArrowLeft, RefreshCw, Wind, ExternalLink, Ticket, Flag, Loader2 } from "lucide-react";
-import { Badge } from "@/components/ui/badge";
-import { BANNED_TAGS } from "@/lib/categories";
+import { MapPin, Phone, Globe, Clock, Star, ArrowLeft, RefreshCw, Wind, ExternalLink, Ticket, Flag, Loader2, Pencil } from "lucide-react";
+
 import { Button } from "@/components/ui/button";
 import { useQueryClient } from "@tanstack/react-query";
 import { useToast } from "@/hooks/use-toast";
@@ -113,11 +112,17 @@ export default function BusinessDetail() {
                   Claim This Business
                 </button>
               )}
-              <div className="flex flex-wrap gap-2 mt-2">
-                {biz.categories?.filter(cat => !BANNED_TAGS.has(cat.toLowerCase())).map(cat => (
-                  <Badge key={cat} className="bg-primary/20 text-[#99CC66] hover:bg-primary/30 font-bold border border-primary/40 rounded-full">{cat}</Badge>
-                ))}
-              </div>
+              {currentUser?.role === "admin" && (
+                <div className="mt-3">
+                  <Link
+                    href={`/dashboard/edit/${params.id}`}
+                    className="inline-flex items-center gap-1.5 bg-[#84C7D0]/15 border border-[#84C7D0]/50 text-[#84C7D0] text-xs font-bold uppercase tracking-wider px-3 py-1.5 rounded-full hover:bg-[#84C7D0]/25 transition-colors"
+                  >
+                    <Pencil className="h-3 w-3" />
+                    Edit Listing
+                  </Link>
+                </div>
+              )}
             </div>
           </div>
 
