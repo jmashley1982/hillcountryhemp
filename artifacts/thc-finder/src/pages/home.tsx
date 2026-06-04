@@ -340,7 +340,7 @@ export default function Home() {
       {/* ── Main area ── */}
       <div className="flex-1 flex flex-col md:flex-row overflow-hidden min-h-0">
         {/* List panel */}
-        <div className={`w-full flex-1 md:flex-none md:w-[290px] min-h-0 bg-card border-r border-border flex flex-col z-10 ${viewMode === "map" ? "hidden md:flex" : "flex"}`}>
+        <div className={`w-full flex-1 md:flex-none md:w-[360px] min-h-0 bg-card border-r border-border flex flex-col z-10 ${viewMode === "map" ? "hidden md:flex" : "flex"}`}>
 
           {/* Search with suggestions */}
           <div className="px-3 pt-3 pb-2 flex-none" ref={searchContainerRef}>
