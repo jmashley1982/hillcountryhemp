@@ -1,7 +1,8 @@
 import { useGetBusiness, useClaimBusiness } from "@workspace/api-client-react";
 import { useParams, Link } from "wouter";
 import { MapPin, Phone, Globe, Clock, Star, ArrowLeft, RefreshCw, Wind, ExternalLink, Ticket, Flag, Loader2, Pencil } from "lucide-react";
-
+import { Badge } from "@/components/ui/badge";
+import { ALL_CATEGORIES } from "@/lib/categories";
 import { Button } from "@/components/ui/button";
 import { useQueryClient } from "@tanstack/react-query";
 import { useToast } from "@/hooks/use-toast";
@@ -112,6 +113,17 @@ export default function BusinessDetail() {
                   Claim This Business
                 </button>
               )}
+              {(() => {
+                const validCats = new Set(ALL_CATEGORIES);
+                const cats = biz.categories?.filter(cat => validCats.has(cat)) ?? [];
+                return cats.length > 0 ? (
+                  <div className="flex flex-wrap gap-2 mt-2">
+                    {cats.map(cat => (
+                      <Badge key={cat} className="bg-primary/20 text-[#99CC66] hover:bg-primary/30 font-bold border border-primary/40 rounded-full">{cat}</Badge>
+                    ))}
+                  </div>
+                ) : null;
+              })()}
               {currentUser?.role === "admin" && (
                 <div className="mt-3">
                   <Link
