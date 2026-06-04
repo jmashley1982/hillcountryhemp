@@ -13,9 +13,7 @@ import {
   Wind,
   ShieldCheck,
   ShieldAlert,
-  Tag,
 } from "lucide-react";
-import { Link } from "wouter";
 import { BusinessMap } from "@/components/map";
 import { ShopOverlay } from "@/components/shop-overlay";
 import { SuggestBrandModal } from "@/components/suggest-brand-modal";
@@ -426,7 +424,7 @@ export default function Home() {
                 const isVerified = (biz as { owner_id?: number | null }).owner_id != null;
 
                 return (
-                  <Link key={biz.id} href={`/business/${biz.id}`} data-testid={`card-business-${biz.id}`}>
+                  <div key={biz.id} onClick={() => setSelectedBizId(biz.id)} data-testid={`card-business-${biz.id}`} role="button" tabIndex={0} onKeyDown={(e) => e.key === "Enter" && setSelectedBizId(biz.id)}>
                     <div
                       className={`bg-card rounded-xl border-2 px-3 py-2.5 cursor-pointer transition-all hover:-translate-y-0.5 ${
                         biz.is_featured
@@ -499,7 +497,7 @@ export default function Home() {
                         </div>
                       </div>
                     </div>
-                  </Link>
+                  </div>
                 );
               })
             )}
