@@ -105,10 +105,13 @@ export default function BusinessDetail() {
                 {biz.is_featured === 1 && <Star className="h-8 w-8 fill-[#99CC66] text-[#99CC66]" />}
               </h1>
               {isUnclaimed && (
-                <div className="inline-flex items-center gap-1.5 bg-orange-900/30 border border-orange-700/50 text-orange-300 text-xs font-bold uppercase tracking-wider px-3 py-1.5 rounded-full mb-3">
+                <button
+                  onClick={() => document.getElementById("claim-section")?.scrollIntoView({ behavior: "smooth", block: "center" })}
+                  className="inline-flex items-center gap-1.5 bg-orange-900/30 border border-orange-700/50 text-orange-300 text-xs font-bold uppercase tracking-wider px-3 py-1.5 rounded-full mb-3 hover:bg-orange-900/50 transition-colors cursor-pointer"
+                >
                   <Flag className="h-3.5 w-3.5" />
                   Claim This Business
-                </div>
+                </button>
               )}
               <div className="flex flex-wrap gap-2 mt-2">
                 {biz.categories?.filter(cat => !BANNED_TAGS.has(cat.toLowerCase())).map(cat => (
@@ -269,7 +272,7 @@ export default function BusinessDetail() {
           </div>
 
           {isUnclaimed && (
-            <div className="bg-orange-950/30 border-2 border-orange-700/40 rounded-2xl p-5 space-y-3">
+            <div id="claim-section" className="bg-orange-950/30 border-2 border-orange-700/40 rounded-2xl p-5 space-y-3">
               <div className="flex items-center gap-2">
                 <Flag className="h-5 w-5 text-orange-400 shrink-0" />
                 <h3 className="font-heading text-lg text-orange-300">Is this your business?</h3>
