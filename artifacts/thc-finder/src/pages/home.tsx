@@ -1,6 +1,6 @@
 import { useGetBusinesses, useGetBrands } from "@workspace/api-client-react";
 import { ALL_CATEGORIES } from "@/lib/categories";
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { Input } from "@/components/ui/input";
 import { Search, Map as MapIcon, List, Star, MapPin, ChevronDown } from "lucide-react";
 import { Link } from "wouter";
@@ -69,6 +69,16 @@ export default function Home() {
   const [highlightedId, setHighlightedId] = useState<number | null>(null);
   const [selectedBizId, setSelectedBizId] = useState<number | null>(null);
   const [suggestOpen, setSuggestOpen] = useState(false);
+  const [userCoords, setUserCoords] = useState<{ lat: number; lng: number } | null>(null);
+
+  useEffect(() => {
+    if (!navigator.geolocation) return;
+    navigator.geolocation.getCurrentPosition(
+      (pos) => setUserCoords({ lat: pos.coords.latitude, lng: pos.coords.longitude }),
+      () => setUserCoords(null),
+      { timeout: 8000 },
+    );
+  }, []);
 
   const { data: allBrands = [] } = useGetBrands();
 
@@ -77,6 +87,9 @@ export default function Home() {
     category: selectedCat || undefined,
     city: selectedCity || undefined,
     brand: selectedBrand || undefined,
+    ...(userCoords
+      ? { sort: "distance", lat: String(userCoords.lat), lng: String(userCoords.lng) }
+      : {}),
   });
 
   const hasFilters = selectedBrand || selectedCat || selectedCity;

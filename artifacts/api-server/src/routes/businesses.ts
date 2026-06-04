@@ -272,6 +272,8 @@ router.get("/businesses", async (req, res): Promise<void> => {
     const centerLat = parseFloat(lat);
     const centerLng = parseFloat(lng);
     enriched.sort((a, b) => {
+      const featuredDiff = b.is_featured - a.is_featured;
+      if (featuredDiff !== 0) return featuredDiff;
       const da =
         a.lat != null && a.lng != null
           ? haversineKm(centerLat, centerLng, a.lat, a.lng)
@@ -283,7 +285,11 @@ router.get("/businesses", async (req, res): Promise<void> => {
       return da - db_;
     });
   } else {
-    enriched.sort((a, b) => b.is_featured - a.is_featured || b.id - a.id);
+    enriched.sort(
+      (a, b) =>
+        b.is_featured - a.is_featured ||
+        a.name.localeCompare(b.name, "en", { sensitivity: "base" }),
+    );
   }
 
   res.json(enriched);
