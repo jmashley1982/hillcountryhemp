@@ -79,9 +79,9 @@ type SuggestionItem =
 function getSuggestions(
   query: string,
   brands: { name: string }[],
-  selBrands: string[],
-  selCats: string[],
-  selCities: string[],
+  selBrand: string,
+  selCat: string,
+  selCity: string,
 ): SuggestionItem[] {
   const q = query.toLowerCase().trim();
   if (!q) return [];
@@ -90,24 +90,24 @@ function getSuggestions(
 
   for (const word of q.split(/[\s\-_/]+/)) {
     const cat = SYNONYMS[word];
-    if (cat && !selCats.includes(cat) && !addedCats.has(cat)) {
+    if (cat && selCat !== cat && !addedCats.has(cat)) {
       addedCats.add(cat);
       results.push({ kind: "category", value: cat });
     }
   }
   for (const cat of ALL_CATEGORIES) {
-    if (!addedCats.has(cat) && !selCats.includes(cat) && cat.toLowerCase().includes(q)) {
+    if (!addedCats.has(cat) && selCat !== cat && cat.toLowerCase().includes(q)) {
       addedCats.add(cat);
       results.push({ kind: "category", value: cat });
     }
   }
   for (const brand of brands) {
-    if (!selBrands.includes(brand.name) && brand.name.toLowerCase().includes(q)) {
+    if (selBrand !== brand.name && brand.name.toLowerCase().includes(q)) {
       results.push({ kind: "brand", value: brand.name });
     }
   }
   for (const city of ALL_CITIES) {
-    if (!selCities.includes(city) && city.toLowerCase().includes(q)) {
+    if (selCity !== city && city.toLowerCase().includes(q)) {
       results.push({ kind: "city", value: city });
     }
   }
@@ -173,12 +173,12 @@ function isOpenNow(hoursJson: unknown): "open" | "closed" | "unknown" {
   } catch { return "unknown"; }
 }
 
-// ── MultiFilterSelect ─────────────────────────────────────────────
-function MultiFilterSelect({
-  values, onChange, placeholder, options, testId,
+// ── SingleFilterSelect ────────────────────────────────────────────
+function SingleFilterSelect({
+  value, onChange, placeholder, options, testId,
 }: {
-  values: string[];
-  onChange: (v: string[]) => void;
+  value: string;
+  onChange: (v: string) => void;
   placeholder: string;
   options: string[];
   testId?: string;
@@ -192,12 +192,10 @@ function MultiFilterSelect({
     document.addEventListener("mousedown", h);
     return () => document.removeEventListener("mousedown", h);
   }, []);
-  const toggle = (opt: string) =>
-    onChange(values.includes(opt) ? values.filter((v) => v !== opt) : [...values, opt]);
-  const label =
-    values.length === 0 ? placeholder
-    : values.length === 1 ? values[0]
-    : `${values.length} selected`;
+  const select = (opt: string) => {
+    onChange(value === opt ? "" : opt);
+    setOpen(false);
+  };
 
   return (
     <div ref={ref} className="relative flex-1 min-w-0" data-testid={testId}>
@@ -205,21 +203,28 @@ function MultiFilterSelect({
         type="button"
         onClick={() => setOpen((o) => !o)}
         className={`h-8 rounded-lg border-2 w-full text-left pl-2.5 pr-7 text-xs font-bold cursor-pointer transition-colors truncate ${
-          values.length > 0
+          value
             ? "border-[#84C7D0] bg-[#84C7D0]/10 text-foreground"
             : "border-border bg-background text-muted-foreground hover:border-[#84C7D0]/60"
         }`}
       >
-        {label}
+        {value || placeholder}
       </button>
       <ChevronDown className="pointer-events-none absolute right-2 top-1/2 -translate-y-1/2 h-3.5 w-3.5 text-muted-foreground" />
       {open && (
         <div className="absolute top-full left-0 mt-1 min-w-[160px] max-h-52 overflow-y-auto bg-card border-2 border-border rounded-xl shadow-2xl z-50 py-1">
           {options.map((opt) => (
-            <label key={opt} className="flex items-center gap-2.5 px-3 py-1.5 cursor-pointer hover:bg-muted/60 text-xs font-bold select-none">
-              <input type="checkbox" checked={values.includes(opt)} onChange={() => toggle(opt)} className="accent-[#99CC66] h-3.5 w-3.5 cursor-pointer" />
-              <span>{opt}</span>
-            </label>
+            <button
+              key={opt}
+              type="button"
+              onClick={() => select(opt)}
+              className={`flex items-center gap-2 px-3 py-1.5 w-full text-left text-xs font-bold hover:bg-muted/60 transition-colors ${
+                value === opt ? "text-[#84C7D0]" : "text-foreground"
+              }`}
+            >
+              <span className={`w-2 h-2 rounded-full shrink-0 border ${value === opt ? "bg-[#84C7D0] border-[#84C7D0]" : "border-muted-foreground/40"}`} />
+              {opt}
+            </button>
           ))}
         </div>
       )}
@@ -230,15 +235,15 @@ function MultiFilterSelect({
 // ── Home ──────────────────────────────────────────────────────────
 export default function Home() {
   const [search, setSearch] = useState("");
-  const [selectedCats, setSelectedCats] = useState<string[]>([]);
-  const [selectedCities, setSelectedCities] = useState<string[]>([]);
-  const [selectedBrands, setSelectedBrands] = useState<string[]>([]);
+  const [selectedCat, setSelectedCat] = useState("");
+  const [selectedCity, setSelectedCity] = useState("");
+  const [selectedBrand, setSelectedBrand] = useState("");
   const searchQuery = useSearch();
   useEffect(() => {
     const params = new URLSearchParams(searchQuery);
     const brand = params.get("brand");
     if (brand) {
-      setSelectedBrands([decodeURIComponent(brand)]);
+      setSelectedBrand(decodeURIComponent(brand));
       window.history.replaceState({}, "", window.location.pathname);
     }
   }, [searchQuery]);
@@ -281,34 +286,34 @@ export default function Home() {
   });
 
   const businesses = allBusinesses.filter((biz) => {
-    if (selectedBrands.length > 0) {
+    if (selectedBrand) {
       const bizBrands = (biz as { brands?: { name: string }[] }).brands ?? [];
-      if (!selectedBrands.some((b) => bizBrands.some((br) => br.name === b))) return false;
+      if (!bizBrands.some((br) => br.name === selectedBrand)) return false;
     }
-    if (selectedCats.length > 0) {
+    if (selectedCat) {
       const cats = biz.categories ?? [];
-      if (!selectedCats.some((c) => cats.includes(c))) return false;
+      if (!cats.includes(selectedCat)) return false;
     }
-    if (selectedCities.length > 0) {
+    if (selectedCity) {
       const city = (biz as { city?: string | null }).city ?? "";
-      if (!selectedCities.some((c) => city.toLowerCase().includes(c.toLowerCase()))) return false;
+      if (!city.toLowerCase().includes(selectedCity.toLowerCase())) return false;
     }
     return true;
   });
 
-  const hasFilters = selectedBrands.length > 0 || selectedCats.length > 0 || selectedCities.length > 0;
+  const hasFilters = !!selectedBrand || !!selectedCat || !!selectedCity;
 
   const suggestions = useMemo(
-    () => getSuggestions(search, allBrands, selectedBrands, selectedCats, selectedCities),
-    [search, allBrands, selectedBrands, selectedCats, selectedCities],
+    () => getSuggestions(search, allBrands, selectedBrand, selectedCat, selectedCity),
+    [search, allBrands, selectedBrand, selectedCat, selectedCity],
   );
 
   const showDropdown = searchFocused && search.trim().length > 0 && suggestions.length > 0;
 
   function applySuggestion(s: SuggestionItem) {
-    if (s.kind === "category") setSelectedCats((p) => [...p, s.value]);
-    else if (s.kind === "brand") setSelectedBrands((p) => [...p, s.value]);
-    else setSelectedCities((p) => [...p, s.value]);
+    if (s.kind === "category") setSelectedCat(s.value);
+    else if (s.kind === "brand") setSelectedBrand(s.value);
+    else setSelectedCity(s.value);
     setSearch("");
     setSearchFocused(false);
   }
@@ -329,11 +334,11 @@ export default function Home() {
       {/* ── Filter bar ── */}
       <div className="bg-muted/30 border-b-2 border-border px-3 py-2 flex-none">
         <div className="flex items-center gap-2">
-          <MultiFilterSelect values={selectedBrands} onChange={setSelectedBrands} placeholder="Brands" options={allBrands.map((b) => b.name)} testId="select-brand" />
-          <MultiFilterSelect values={selectedCats} onChange={setSelectedCats} placeholder="Products" options={ALL_CATEGORIES} testId="select-category" />
-          <MultiFilterSelect values={selectedCities} onChange={setSelectedCities} placeholder="Cities" options={ALL_CITIES} testId="select-city" />
+          <SingleFilterSelect value={selectedBrand} onChange={setSelectedBrand} placeholder="Brands" options={allBrands.map((b) => b.name)} testId="select-brand" />
+          <SingleFilterSelect value={selectedCat} onChange={setSelectedCat} placeholder="Products" options={ALL_CATEGORIES} testId="select-category" />
+          <SingleFilterSelect value={selectedCity} onChange={setSelectedCity} placeholder="Cities" options={ALL_CITIES} testId="select-city" />
           <button
-            onClick={() => { setSelectedBrands([]); setSelectedCats([]); setSelectedCities([]); }}
+            onClick={() => { setSelectedBrand(""); setSelectedCat(""); setSelectedCity(""); }}
             disabled={!hasFilters}
             title="Reset filters"
             className={`shrink-0 h-8 w-8 flex items-center justify-center rounded-full border-2 transition-colors ${
@@ -396,21 +401,21 @@ export default function Home() {
             {/* Active filter chips */}
             {hasFilters && (
               <div className="flex flex-wrap gap-1 mt-1.5">
-                {selectedBrands.map((b) => (
-                  <button key={b} onClick={() => setSelectedBrands((p) => p.filter((x) => x !== b))} className="flex items-center gap-1 text-[10px] font-bold bg-[#84C7D0]/15 border border-[#84C7D0]/40 text-[#84C7D0] px-1.5 py-0.5 rounded-full hover:bg-[#84C7D0]/25 transition-colors">
-                    {b} <X className="h-2.5 w-2.5" />
+                {selectedBrand && (
+                  <button onClick={() => setSelectedBrand("")} className="flex items-center gap-1 text-[10px] font-bold bg-[#84C7D0]/15 border border-[#84C7D0]/40 text-[#84C7D0] px-1.5 py-0.5 rounded-full hover:bg-[#84C7D0]/25 transition-colors">
+                    {selectedBrand} <X className="h-2.5 w-2.5" />
                   </button>
-                ))}
-                {selectedCats.map((c) => (
-                  <button key={c} onClick={() => setSelectedCats((p) => p.filter((x) => x !== c))} className="flex items-center gap-1 text-[10px] font-bold bg-[#99CC66]/15 border border-[#99CC66]/40 text-[#99CC66] px-1.5 py-0.5 rounded-full hover:bg-[#99CC66]/25 transition-colors">
-                    {c} <X className="h-2.5 w-2.5" />
+                )}
+                {selectedCat && (
+                  <button onClick={() => setSelectedCat("")} className="flex items-center gap-1 text-[10px] font-bold bg-[#99CC66]/15 border border-[#99CC66]/40 text-[#99CC66] px-1.5 py-0.5 rounded-full hover:bg-[#99CC66]/25 transition-colors">
+                    {selectedCat} <X className="h-2.5 w-2.5" />
                   </button>
-                ))}
-                {selectedCities.map((c) => (
-                  <button key={c} onClick={() => setSelectedCities((p) => p.filter((x) => x !== c))} className="flex items-center gap-1 text-[10px] font-bold bg-amber-900/20 border border-amber-700/40 text-amber-400 px-1.5 py-0.5 rounded-full hover:bg-amber-900/30 transition-colors">
-                    {c} <X className="h-2.5 w-2.5" />
+                )}
+                {selectedCity && (
+                  <button onClick={() => setSelectedCity("")} className="flex items-center gap-1 text-[10px] font-bold bg-amber-900/20 border border-amber-700/40 text-amber-400 px-1.5 py-0.5 rounded-full hover:bg-amber-900/30 transition-colors">
+                    {selectedCity} <X className="h-2.5 w-2.5" />
                   </button>
-                ))}
+                )}
               </div>
             )}
           </div>
