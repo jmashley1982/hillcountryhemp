@@ -141,10 +141,13 @@ export function ShopOverlay({ businessId, onClose }: ShopOverlayProps) {
                     )}
                   </h2>
                   {(biz as { owner_id?: number | null }).owner_id == null && (
-                    <div className="inline-flex items-center gap-1 bg-orange-900/30 border border-orange-700/50 text-orange-300 text-[11px] font-bold uppercase tracking-wider px-2.5 py-1 rounded-full mt-2 mb-1">
+                    <Link
+                      href={`/business/${biz.id}`}
+                      className="inline-flex items-center gap-1 bg-orange-900/30 border border-orange-700/50 text-orange-300 text-[11px] font-bold uppercase tracking-wider px-2.5 py-1 rounded-full mt-2 mb-1 hover:bg-orange-800/40 hover:border-orange-600/70 transition-colors cursor-pointer"
+                    >
                       <Flag className="h-3 w-3 shrink-0" />
                       Claim This Business
-                    </div>
+                    </Link>
                   )}
                   {biz.categories && biz.categories.length > 0 && (
                     <div className="flex flex-wrap gap-1.5 mt-3">
