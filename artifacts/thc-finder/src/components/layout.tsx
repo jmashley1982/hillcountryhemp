@@ -193,6 +193,16 @@ export function Layout({ children }: { children: React.ReactNode }) {
       <main className="flex-1 flex flex-col min-h-0 overflow-y-auto">
         {children}
       </main>
+
+      <footer className="border-t border-border/50 bg-[#0d1518] py-4 px-6 shrink-0">
+        <div className="container mx-auto flex flex-col sm:flex-row items-center justify-between gap-2 text-xs text-muted-foreground">
+          <span>© {new Date().getFullYear()} Texas Hill Country Hemp Finder. All rights reserved.</span>
+          <div className="flex items-center gap-4">
+            <Link href="/privacy" className="hover:text-[#99CC66] transition-colors font-bold uppercase tracking-wider">Privacy</Link>
+            <Link href="/terms" className="hover:text-[#99CC66] transition-colors font-bold uppercase tracking-wider">Terms</Link>
+          </div>
+        </div>
+      </footer>
     </div>
   );
 }

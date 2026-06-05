@@ -18,6 +18,8 @@ import Dashboard from "@/pages/dashboard";
 import AddEditBusiness from "@/pages/add-edit-business";
 import Admin from "@/pages/admin";
 import AccountSettings from "@/pages/account-settings";
+import Privacy from "@/pages/privacy";
+import Terms from "@/pages/terms";
 
 const queryClient = new QueryClient({
   defaultOptions: {
@@ -44,6 +46,8 @@ function Router() {
         <Route path="/dashboard/edit/:id" component={AddEditBusiness} />
         <Route path="/admin" component={Admin} />
         <Route path="/account-settings" component={AccountSettings} />
+        <Route path="/privacy" component={Privacy} />
+        <Route path="/terms" component={Terms} />
         <Route component={NotFound} />
       </Switch>
     </Layout>
