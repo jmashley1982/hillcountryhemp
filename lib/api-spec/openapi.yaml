@@ -1257,6 +1257,8 @@ components:
           type: ["string", "null"]
         link_opens_new_tab:
           type: integer
+        brand_filter:
+          type: ["string", "null"]
 
     PopupAd:
       type: object
@@ -1276,6 +1278,8 @@ components:
           type: integer
         link_opens_new_tab:
           type: integer
+        brand_filter:
+          type: ["string", "null"]
 
     BusinessStats:
       type: object

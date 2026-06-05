@@ -3,6 +3,8 @@ import { useGetPopup } from "@workspace/api-client-react";
 import { useLocation } from "wouter";
 import { X } from "lucide-react";
 
+type PopupWithBrand = { brand_filter?: string | null };
+
 const CUSTOMER_ROUTES = ["/", "/advertise"];
 
 function isCustomerRoute(location: string): boolean {
@@ -12,7 +14,7 @@ function isCustomerRoute(location: string): boolean {
 }
 
 export function PopupAd() {
-  const [location] = useLocation();
+  const [location, setLocation] = useLocation();
   const { data: popup } = useGetPopup();
   const [show, setShow] = useState(false);
   const [isMobile, setIsMobile] = useState(
@@ -57,8 +59,14 @@ export function PopupAd() {
   const activeLink = useMobileSlot
     ? (popup.mobile_link_url || popup.link_url)
     : popup.link_url;
+  const brandFilter = (popup as typeof popup & PopupWithBrand).brand_filter;
 
   const imgClass = "w-full max-h-[82vh] object-contain rounded-xl shadow-2xl border-4 border-white block";
+
+  const handleBrandClick = () => {
+    handleClose();
+    setLocation(`/?brand=${encodeURIComponent(brandFilter!)}`);
+  };
 
   return (
     <div
@@ -79,7 +87,11 @@ export function PopupAd() {
           <X className="h-5 w-5 text-gray-900" />
         </button>
 
-        {activeLink ? (
+        {brandFilter ? (
+          <button onClick={handleBrandClick} className="block w-full">
+            <img src={`/api/uploads/${activePath}`} alt="Special Offer" className={imgClass} />
+          </button>
+        ) : activeLink ? (
           <a href={activeLink} target={popup.link_opens_new_tab !== 0 ? "_blank" : undefined} rel="noopener noreferrer" onClick={handleClose}>
             <img src={`/api/uploads/${activePath}`} alt="Special Offer" className={imgClass} />
           </a>

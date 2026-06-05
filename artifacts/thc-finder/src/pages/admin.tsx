@@ -972,6 +972,8 @@ function SlotUploader({
   showActiveToggle,
   currentActive,
   currentNewTab,
+  brandOptions,
+  currentBrandFilter,
   onSuccess,
 }: {
   endpoint: string;
@@ -984,6 +986,8 @@ function SlotUploader({
   showActiveToggle?: boolean;
   currentActive?: number;
   currentNewTab?: number | null;
+  brandOptions?: string[];
+  currentBrandFilter?: string | null;
   onSuccess: () => void;
 }) {
   const { toast } = useToast();
@@ -991,11 +995,17 @@ function SlotUploader({
   const [link, setLink] = useState(currentLink ?? "");
   const [isActive, setIsActive] = useState(currentActive === 1);
   const [openInNewTab, setOpenInNewTab] = useState(currentNewTab !== 0);
+  const [actionMode, setActionMode] = useState<"url" | "brand">(() => currentBrandFilter ? "brand" : "url");
+  const [brandFilter, setBrandFilter] = useState(currentBrandFilter ?? "");
   const fileRef = useRef<HTMLInputElement>(null);
 
   useEffect(() => { setLink(currentLink ?? ""); }, [currentLink]);
   useEffect(() => { setIsActive(currentActive === 1); }, [currentActive]);
   useEffect(() => { setOpenInNewTab(currentNewTab !== 0); }, [currentNewTab]);
+  useEffect(() => {
+    setActionMode(currentBrandFilter ? "brand" : "url");
+    setBrandFilter(currentBrandFilter ?? "");
+  }, [currentBrandFilter]);
 
   const uploadImage = async (file: File) => {
     setUploading("image");
@@ -1026,7 +1036,13 @@ function SlotUploader({
     setUploading("link");
     try {
       const fd = new FormData();
-      fd.append(linkField, link);
+      if (actionMode === "brand") {
+        fd.append(linkField, "");
+        fd.append("brand_filter", brandFilter);
+      } else {
+        fd.append(linkField, link);
+        fd.append("brand_filter", "");
+      }
       fd.append("link_opens_new_tab", String(openInNewTab));
       if (showActiveToggle) fd.append("is_active", String(isActive));
       await fetch(endpoint, { method: "PUT", body: fd });
@@ -1081,18 +1097,57 @@ function SlotUploader({
         </Button>
       </div>
 
-      {/* Link URL */}
+      {/* Action */}
       <div className="space-y-3 pt-4 border-t border-border">
-        <h3 className="font-bold text-sm uppercase tracking-wider">Destination Link</h3>
+        <h3 className="font-bold text-sm uppercase tracking-wider">Click Action</h3>
+
+        {/* Mode toggle — only show when brand options are available */}
+        {brandOptions && brandOptions.length > 0 && (
+          <div className="flex gap-2">
+            <button
+              type="button"
+              onClick={() => setActionMode("url")}
+              className={`px-3 py-1.5 rounded-lg text-xs font-bold uppercase tracking-wider border-2 transition-colors ${
+                actionMode === "url" ? "bg-[#99CC66]/20 border-[#99CC66] text-[#99CC66]" : "border-border text-muted-foreground hover:border-muted-foreground"
+              }`}
+            >
+              URL Link
+            </button>
+            <button
+              type="button"
+              onClick={() => setActionMode("brand")}
+              className={`px-3 py-1.5 rounded-lg text-xs font-bold uppercase tracking-wider border-2 transition-colors ${
+                actionMode === "brand" ? "bg-[#84C7D0]/20 border-[#84C7D0] text-[#84C7D0]" : "border-border text-muted-foreground hover:border-muted-foreground"
+              }`}
+            >
+              Brand Filter
+            </button>
+          </div>
+        )}
+
         <div className="flex flex-col gap-3">
           <div className="flex flex-col sm:flex-row gap-3">
-            <Input
-              value={link}
-              onChange={(e) => setLink(e.target.value)}
-              className="border-2 flex-1"
-              placeholder="https://advertiser-site.com"
-              data-testid={`input-${imageField}-link`}
-            />
+            {actionMode === "brand" && brandOptions && brandOptions.length > 0 ? (
+              <select
+                value={brandFilter}
+                onChange={(e) => setBrandFilter(e.target.value)}
+                className="border-2 border-border rounded-md bg-background text-foreground px-3 py-2 text-sm flex-1"
+                data-testid={`select-${imageField}-brand`}
+              >
+                <option value="">— Select a brand —</option>
+                {brandOptions.map((b) => (
+                  <option key={b} value={b}>{b}</option>
+                ))}
+              </select>
+            ) : (
+              <Input
+                value={link}
+                onChange={(e) => setLink(e.target.value)}
+                className="border-2 flex-1"
+                placeholder="https://advertiser-site.com"
+                data-testid={`input-${imageField}-link`}
+              />
+            )}
             {showActiveToggle && (
               <label className="flex items-center gap-2 font-bold text-sm cursor-pointer shrink-0">
                 <input
@@ -1116,16 +1171,23 @@ function SlotUploader({
               Save
             </Button>
           </div>
-          <label className="flex items-center gap-2 text-sm cursor-pointer w-fit">
-            <input
-              type="checkbox"
-              checked={openInNewTab}
-              onChange={(e) => setOpenInNewTab(e.target.checked)}
-              className="w-4 h-4"
-              data-testid={`checkbox-${imageField}-new-tab`}
-            />
-            <span className="text-muted-foreground">Open link in a new tab</span>
-          </label>
+          {actionMode !== "brand" && (
+            <label className="flex items-center gap-2 text-sm cursor-pointer w-fit">
+              <input
+                type="checkbox"
+                checked={openInNewTab}
+                onChange={(e) => setOpenInNewTab(e.target.checked)}
+                className="w-4 h-4"
+                data-testid={`checkbox-${imageField}-new-tab`}
+              />
+              <span className="text-muted-foreground">Open link in a new tab</span>
+            </label>
+          )}
+          {actionMode === "brand" && brandFilter && (
+            <p className="text-xs text-[#84C7D0]">
+              Clicking this ad will filter the map to show all retailers carrying <strong>{brandFilter}</strong>.
+            </p>
+          )}
         </div>
       </div>
     </div>
@@ -1135,6 +1197,9 @@ function SlotUploader({
 function MapBannerDesktopTab() {
   const queryClient = useQueryClient();
   const { data: banner, isLoading } = useGetBanner({ query: { queryKey: getGetBannerQueryKey() } });
+  const { data: brands = [] } = useGetAdminBrands({ query: { queryKey: getGetAdminBrandsQueryKey() } });
+  const approvedBrandNames = brands.filter(b => b.status !== "pending").map(b => b.name).sort((a, b) => a.localeCompare(b));
+  const bannerWithFilter = banner as typeof banner & { brand_filter?: string | null };
   if (isLoading) return <div className="animate-pulse font-bold p-4">Loading...</div>;
   return (
     <SlotUploader
@@ -1146,6 +1211,8 @@ function MapBannerDesktopTab() {
       currentImage={banner?.image_path ?? null}
       currentLink={banner?.link_url ?? null}
       currentNewTab={banner?.link_opens_new_tab}
+      brandOptions={approvedBrandNames}
+      currentBrandFilter={bannerWithFilter?.brand_filter ?? null}
       onSuccess={() => queryClient.invalidateQueries({ queryKey: getGetBannerQueryKey() })}
     />
   );
@@ -1154,6 +1221,9 @@ function MapBannerDesktopTab() {
 function MapBannerMobileTab() {
   const queryClient = useQueryClient();
   const { data: banner, isLoading } = useGetBanner({ query: { queryKey: getGetBannerQueryKey() } });
+  const { data: brands = [] } = useGetAdminBrands({ query: { queryKey: getGetAdminBrandsQueryKey() } });
+  const approvedBrandNames = brands.filter(b => b.status !== "pending").map(b => b.name).sort((a, b) => a.localeCompare(b));
+  const bannerWithFilter = banner as typeof banner & { brand_filter?: string | null };
   if (isLoading) return <div className="animate-pulse font-bold p-4">Loading...</div>;
   return (
     <SlotUploader
@@ -1165,6 +1235,8 @@ function MapBannerMobileTab() {
       currentImage={banner?.mobile_image_path ?? null}
       currentLink={banner?.mobile_link_url ?? null}
       currentNewTab={banner?.link_opens_new_tab}
+      brandOptions={approvedBrandNames}
+      currentBrandFilter={bannerWithFilter?.brand_filter ?? null}
       onSuccess={() => queryClient.invalidateQueries({ queryKey: getGetBannerQueryKey() })}
     />
   );
@@ -1173,6 +1245,9 @@ function MapBannerMobileTab() {
 function MapPopupDesktopTab() {
   const queryClient = useQueryClient();
   const { data: popup, isLoading } = useGetAdminPopup({ query: { queryKey: getGetAdminPopupQueryKey() } });
+  const { data: brands = [] } = useGetAdminBrands({ query: { queryKey: getGetAdminBrandsQueryKey() } });
+  const approvedBrandNames = brands.filter(b => b.status !== "pending").map(b => b.name).sort((a, b) => a.localeCompare(b));
+  const popupWithFilter = popup as typeof popup & { brand_filter?: string | null };
   if (isLoading) return <div className="animate-pulse font-bold p-4">Loading...</div>;
   return (
     <SlotUploader
@@ -1186,6 +1261,8 @@ function MapPopupDesktopTab() {
       showActiveToggle
       currentActive={popup?.is_active}
       currentNewTab={popup?.link_opens_new_tab}
+      brandOptions={approvedBrandNames}
+      currentBrandFilter={popupWithFilter?.brand_filter ?? null}
       onSuccess={() => queryClient.invalidateQueries({ queryKey: getGetAdminPopupQueryKey() })}
     />
   );
@@ -1194,6 +1271,9 @@ function MapPopupDesktopTab() {
 function MapPopupMobileTab() {
   const queryClient = useQueryClient();
   const { data: popup, isLoading } = useGetAdminPopup({ query: { queryKey: getGetAdminPopupQueryKey() } });
+  const { data: brands = [] } = useGetAdminBrands({ query: { queryKey: getGetAdminBrandsQueryKey() } });
+  const approvedBrandNames = brands.filter(b => b.status !== "pending").map(b => b.name).sort((a, b) => a.localeCompare(b));
+  const popupWithFilter = popup as typeof popup & { brand_filter?: string | null };
   if (isLoading) return <div className="animate-pulse font-bold p-4">Loading...</div>;
   return (
     <SlotUploader
@@ -1205,6 +1285,8 @@ function MapPopupMobileTab() {
       currentImage={popup?.mobile_image_path ?? null}
       currentLink={popup?.mobile_link_url ?? null}
       currentNewTab={popup?.link_opens_new_tab}
+      brandOptions={approvedBrandNames}
+      currentBrandFilter={popupWithFilter?.brand_filter ?? null}
       onSuccess={() => queryClient.invalidateQueries({ queryKey: getGetAdminPopupQueryKey() })}
     />
   );

@@ -101,8 +101,8 @@ router.get("/admin/banner", async (_req, res): Promise<void> => {
     .where(eq(bannerAdTable.id, 1));
   res.json(
     banner
-      ? { id: banner.id, image_path: banner.imagePath, mobile_image_path: banner.mobileImagePath, link_url: banner.linkUrl, mobile_link_url: banner.mobileLinkUrl, link_opens_new_tab: banner.linkOpensNewTab }
-      : { id: 1, image_path: null, link_url: null, mobile_link_url: null, link_opens_new_tab: 1 },
+      ? { id: banner.id, image_path: banner.imagePath, mobile_image_path: banner.mobileImagePath, link_url: banner.linkUrl, mobile_link_url: banner.mobileLinkUrl, link_opens_new_tab: banner.linkOpensNewTab, brand_filter: banner.brandFilter }
+      : { id: 1, image_path: null, link_url: null, mobile_link_url: null, link_opens_new_tab: 1, brand_filter: null },
   );
 });
 
@@ -113,8 +113,8 @@ router.get("/admin/popup", async (_req, res): Promise<void> => {
     .where(eq(popupAdTable.id, 1));
   res.json(
     popup
-      ? { id: popup.id, image_path: popup.imagePath, mobile_image_path: popup.mobileImagePath, link_url: popup.linkUrl, mobile_link_url: popup.mobileLinkUrl, is_active: popup.isActive, link_opens_new_tab: popup.linkOpensNewTab }
-      : { id: 1, image_path: null, link_url: null, mobile_link_url: null, is_active: 0, link_opens_new_tab: 1 },
+      ? { id: popup.id, image_path: popup.imagePath, mobile_image_path: popup.mobileImagePath, link_url: popup.linkUrl, mobile_link_url: popup.mobileLinkUrl, is_active: popup.isActive, link_opens_new_tab: popup.linkOpensNewTab, brand_filter: popup.brandFilter }
+      : { id: 1, image_path: null, link_url: null, mobile_link_url: null, is_active: 0, link_opens_new_tab: 1, brand_filter: null },
   );
 });
 
@@ -429,7 +429,7 @@ router.put(
   requireAdmin,
   upload.fields([{ name: "banner", maxCount: 1 }, { name: "banner_mobile", maxCount: 1 }]),
   async (req, res): Promise<void> => {
-    const body = req.body as { link_url?: string; mobile_link_url?: string; link_opens_new_tab?: string };
+    const body = req.body as { link_url?: string; mobile_link_url?: string; link_opens_new_tab?: string; brand_filter?: string };
     const files = req.files as { [f: string]: Express.Multer.File[] } | undefined;
     const [existing] = await db.select().from(bannerAdTable).where(eq(bannerAdTable.id, 1));
 
@@ -437,6 +437,7 @@ router.put(
     if (body.link_url !== undefined) updates.linkUrl = body.link_url || null;
     if (body.mobile_link_url !== undefined) updates.mobileLinkUrl = body.mobile_link_url || null;
     if (body.link_opens_new_tab !== undefined) updates.linkOpensNewTab = body.link_opens_new_tab === "true" ? 1 : 0;
+    if (body.brand_filter !== undefined) updates.brandFilter = body.brand_filter || null;
     if (files?.["banner"]?.[0]) {
       const f = files["banner"][0];
       const c = await compressImage(f.buffer);
@@ -467,7 +468,7 @@ router.put(
   requireAdmin,
   upload.fields([{ name: "image", maxCount: 1 }, { name: "image_mobile", maxCount: 1 }]),
   async (req, res): Promise<void> => {
-    const body = req.body as { link_url?: string; mobile_link_url?: string; is_active?: string; link_opens_new_tab?: string };
+    const body = req.body as { link_url?: string; mobile_link_url?: string; is_active?: string; link_opens_new_tab?: string; brand_filter?: string };
     const files = req.files as { [f: string]: Express.Multer.File[] } | undefined;
     const [existing] = await db.select().from(popupAdTable).where(eq(popupAdTable.id, 1));
 
@@ -476,6 +477,7 @@ router.put(
     if (body.mobile_link_url !== undefined) updates.mobileLinkUrl = body.mobile_link_url || null;
     if (body.is_active !== undefined) updates.isActive = body.is_active === "true" ? 1 : 0;
     if (body.link_opens_new_tab !== undefined) updates.linkOpensNewTab = body.link_opens_new_tab === "true" ? 1 : 0;
+    if (body.brand_filter !== undefined) updates.brandFilter = body.brand_filter || null;
     if (files?.["image"]?.[0]) {
       const f = files["image"][0];
       const c = await compressImage(f.buffer);

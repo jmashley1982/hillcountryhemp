@@ -290,6 +290,8 @@ export interface BannerAd {
   /** @nullable */
   mobile_link_url?: string | null;
   link_opens_new_tab?: number;
+  /** @nullable */
+  brand_filter?: string | null;
 }
 
 export interface PopupAd {
@@ -304,6 +306,8 @@ export interface PopupAd {
   mobile_link_url?: string | null;
   is_active: number;
   link_opens_new_tab?: number;
+  /** @nullable */
+  brand_filter?: string | null;
 }
 
 export type BusinessStatsCategoriesItem = {

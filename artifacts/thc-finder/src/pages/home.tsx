@@ -231,7 +231,15 @@ export default function Home() {
   const [search, setSearch] = useState("");
   const [selectedCats, setSelectedCats] = useState<string[]>([]);
   const [selectedCities, setSelectedCities] = useState<string[]>([]);
-  const [selectedBrands, setSelectedBrands] = useState<string[]>([]);
+  const [selectedBrands, setSelectedBrands] = useState<string[]>(() => {
+    const params = new URLSearchParams(window.location.search);
+    const brand = params.get("brand");
+    if (brand) {
+      window.history.replaceState({}, "", window.location.pathname);
+      return [decodeURIComponent(brand)];
+    }
+    return [];
+  });
   const [viewMode, setViewMode] = useState<"map" | "list">("map");
   const [highlightedId, setHighlightedId] = useState<number | null>(null);
   const [selectedBizId, setSelectedBizId] = useState<number | null>(null);

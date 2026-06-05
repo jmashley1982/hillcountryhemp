@@ -17,4 +17,6 @@ export interface PopupAd {
   mobile_link_url?: string | null;
   is_active: number;
   link_opens_new_tab?: number;
+  /** @nullable */
+  brand_filter?: string | null;
 }
