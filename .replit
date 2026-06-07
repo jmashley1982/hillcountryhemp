@@ -39,3 +39,6 @@ channel = "stable-25_05"
 [userenv.shared]
 ADMIN_EMAIL = "admin@thcfinder.com"
 ADMIN_PASSWORD = "changeme123!"
+
+[objectStorage]
+defaultBucketID = "replit-objstore-b26d2a7c-656b-475e-90f5-814a6e7109db"
