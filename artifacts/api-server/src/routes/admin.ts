@@ -1,7 +1,8 @@
 import { Router } from "express";
+import path from "path";
 import multer from "multer";
-import { eq, and, isNull } from "drizzle-orm";
-import { uploadBufferToGCS, makeUploadFilename } from "../lib/gcs.js";
+import { eq, and, isNull, isNotNull } from "drizzle-orm";
+import { uploadBufferToGCS, makeUploadFilename, listStorageFiles, deleteFileFromStorage } from "../lib/gcs.js";
 import { ACCEPTED_IMAGE_MIMES, compressImage } from "../lib/compress.js";
 import {
   db,
@@ -9,6 +10,9 @@ import {
   businessesTable,
   businessCategoriesTable,
   businessBrandsTable,
+  businessPhotosTable,
+  couponsTable,
+  brandsTable,
   claimsTable,
   bannerAdTable,
   b2bBannerAdTable,
@@ -535,6 +539,112 @@ router.put(
     } else {
       await db.insert(b2bBannerAdTable).values({ id: 1, imagePath: null, mobileImagePath: null, linkUrl: null, mobileLinkUrl: null, linkOpensNewTab: 1, ...updates });
     }
+    res.json({ success: true });
+  },
+);
+
+// ─── Image storage manager ─────────────────────────────────────────────────
+
+// Build a map of filename → context labels from all DB tables
+async function buildLiveRefs(): Promise<Map<string, string[]>> {
+  const refs = new Map<string, string[]>();
+  const addRef = (filename: string | null | undefined, label: string) => {
+    if (!filename) return;
+    const list = refs.get(filename) ?? [];
+    list.push(label);
+    refs.set(filename, list);
+  };
+
+  const [banner] = await db.select().from(bannerAdTable).where(eq(bannerAdTable.id, 1));
+  addRef(banner?.imagePath, "Banner – Desktop");
+  addRef(banner?.mobileImagePath, "Banner – Mobile");
+
+  const [b2b] = await db.select().from(b2bBannerAdTable).where(eq(b2bBannerAdTable.id, 1));
+  addRef(b2b?.imagePath, "B2B Banner – Desktop");
+  addRef(b2b?.mobileImagePath, "B2B Banner – Mobile");
+
+  const [popup] = await db.select().from(popupAdTable).where(eq(popupAdTable.id, 1));
+  addRef(popup?.imagePath, "Popup – Desktop");
+  addRef(popup?.mobileImagePath, "Popup – Mobile");
+
+  const bizLogos = await db
+    .select({ name: businessesTable.name, logoPath: businessesTable.logoPath })
+    .from(businessesTable)
+    .where(isNotNull(businessesTable.logoPath));
+  for (const b of bizLogos) addRef(b.logoPath, `${b.name} – Logo`);
+
+  const photos = await db
+    .select({ businessName: businessesTable.name, photoPath: businessPhotosTable.photoPath })
+    .from(businessPhotosTable)
+    .innerJoin(businessesTable, eq(businessesTable.id, businessPhotosTable.businessId));
+  for (const p of photos) addRef(p.photoPath, `${p.businessName} – Photo`);
+
+  const couponRows = await db
+    .select({ businessName: businessesTable.name, imagePath: couponsTable.imagePath })
+    .from(couponsTable)
+    .innerJoin(businessesTable, eq(businessesTable.id, couponsTable.businessId));
+  for (const c of couponRows) addRef(c.imagePath, `${c.businessName} – Coupon`);
+
+  const brandRows = await db
+    .select({ name: brandsTable.name, logoPath: brandsTable.logoPath })
+    .from(brandsTable)
+    .where(isNotNull(brandsTable.logoPath));
+  for (const b of brandRows) addRef(b.logoPath!, `Brand: ${b.name} – Logo`);
+
+  return refs;
+}
+
+router.get(
+  "/admin/images",
+  requireLogin,
+  requireAdmin,
+  async (_req, res): Promise<void> => {
+    const [refs, files] = await Promise.all([buildLiveRefs(), listStorageFiles()]);
+    res.json(
+      files.map((f) => ({
+        filename: f.filename,
+        size: f.size,
+        last_modified: f.lastModified,
+        live: refs.has(f.filename),
+        contexts: refs.get(f.filename) ?? [],
+      })),
+    );
+  },
+);
+
+// Must be registered before /:filename to avoid "bulk-delete" matching as a filename for DELETE
+router.post(
+  "/admin/images/bulk-delete",
+  requireLogin,
+  requireAdmin,
+  async (req, res): Promise<void> => {
+    const { filenames } = req.body as { filenames?: unknown };
+    if (!Array.isArray(filenames) || filenames.length === 0) {
+      res.status(400).json({ error: "filenames array required" });
+      return;
+    }
+    await Promise.allSettled(
+      (filenames as string[]).map((f) => {
+        const safe = path.basename(String(f));
+        return safe ? deleteFileFromStorage(safe) : Promise.resolve();
+      }),
+    );
+    res.json({ success: true });
+  },
+);
+
+router.delete(
+  "/admin/images/:filename",
+  requireLogin,
+  requireAdmin,
+  async (req, res): Promise<void> => {
+    const raw = Array.isArray(req.params.filename) ? req.params.filename[0] : req.params.filename;
+    const filename = path.basename(raw);
+    if (!filename || filename === ".") {
+      res.status(400).json({ error: "Invalid filename" });
+      return;
+    }
+    await deleteFileFromStorage(filename);
     res.json({ success: true });
   },
 );

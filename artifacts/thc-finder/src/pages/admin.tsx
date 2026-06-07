@@ -8,6 +8,7 @@ import {
   useGetBanner,
   useGetB2bBanner,
   useGetAdminClaims,
+  useGetAdminImages,
   useApproveBusiness,
   useRejectBusiness,
   useToggleFeatureBusiness,
@@ -19,6 +20,8 @@ import {
   useToggleFeatureBrand,
   useApproveBrand,
   useRenameBrand,
+  useDeleteAdminImage,
+  useBulkDeleteAdminImages,
   getGetPendingBusinessesQueryKey,
   getGetAllBusinessesQueryKey,
   getGetAdminBrandsQueryKey,
@@ -26,6 +29,7 @@ import {
   getGetB2bBannerQueryKey,
   getGetAdminPopupQueryKey,
   getGetAdminClaimsQueryKey,
+  getGetAdminImagesQueryKey,
 } from "@workspace/api-client-react";
 import { useLocation, Link } from "wouter";
 import { useEffect } from "react";
@@ -73,7 +77,7 @@ import {
 } from "lucide-react";
 import { ALL_CATEGORIES } from "@/lib/categories";
 
-type Tab = "pending" | "all" | "brands" | "add-store" | "claims" | "map-banner-d" | "map-banner-m" | "map-popup-d" | "map-popup-m" | "dash-banner-d" | "dash-banner-m";
+type Tab = "pending" | "all" | "brands" | "add-store" | "claims" | "map-banner-d" | "map-banner-m" | "map-popup-d" | "map-popup-m" | "dash-banner-d" | "dash-banner-m" | "images";
 
 function formatPhone(raw: string | null | undefined): string {
   if (!raw) return "";
@@ -1330,6 +1334,170 @@ function DashBannerMobileTab() {
   );
 }
 
+function formatBytes(bytes: number): string {
+  if (bytes < 1024) return `${bytes} B`;
+  if (bytes < 1024 * 1024) return `${(bytes / 1024).toFixed(1)} KB`;
+  return `${(bytes / (1024 * 1024)).toFixed(1)} MB`;
+}
+
+function ImagesTab() {
+  const { toast } = useToast();
+  const queryClient = useQueryClient();
+  const { data: images = [], isLoading } = useGetAdminImages({
+    query: { queryKey: getGetAdminImagesQueryKey() },
+  });
+  const deleteImage = useDeleteAdminImage();
+  const bulkDelete = useBulkDeleteAdminImages();
+  const [filter, setFilter] = useState<"all" | "live" | "unlisted">("all");
+
+  const live = images.filter((i) => i.live);
+  const unlisted = images.filter((i) => !i.live);
+  const filtered = filter === "live" ? live : filter === "unlisted" ? unlisted : images;
+
+  const invalidate = () =>
+    queryClient.invalidateQueries({ queryKey: getGetAdminImagesQueryKey() });
+
+  const handleDelete = (filename: string) => {
+    if (!confirm(`Delete "${filename}"? This cannot be undone.`)) return;
+    deleteImage.mutate(
+      { filename },
+      {
+        onSuccess: () => { toast({ title: "Image deleted" }); invalidate(); },
+        onError: () => toast({ title: "Failed to delete", variant: "destructive" }),
+      },
+    );
+  };
+
+  const handleBulkDelete = () => {
+    if (
+      !confirm(
+        `Permanently delete all ${unlisted.length} unlisted image${unlisted.length !== 1 ? "s" : ""}? This cannot be undone.`,
+      )
+    )
+      return;
+    bulkDelete.mutate(
+      { data: { filenames: unlisted.map((i) => i.filename) } },
+      {
+        onSuccess: () => {
+          toast({ title: `Deleted ${unlisted.length} unlisted image${unlisted.length !== 1 ? "s" : ""}` });
+          invalidate();
+        },
+        onError: () => toast({ title: "Bulk delete failed", variant: "destructive" }),
+      },
+    );
+  };
+
+  if (isLoading) return <div className="p-8 text-center font-bold animate-pulse">Loading...</div>;
+
+  return (
+    <div className="space-y-5">
+      <div className="flex flex-wrap gap-3 items-center justify-between">
+        <div className="flex gap-5 text-sm font-bold">
+          <span className="text-muted-foreground">{images.length} total</span>
+          <span className="text-green-400">{live.length} live</span>
+          <span className="text-orange-400">{unlisted.length} unlisted</span>
+        </div>
+        {unlisted.length > 0 && (
+          <Button
+            size="sm"
+            variant="destructive"
+            className="font-bold"
+            onClick={handleBulkDelete}
+            disabled={bulkDelete.isPending}
+          >
+            {bulkDelete.isPending ? (
+              <Loader2 className="h-3.5 w-3.5 mr-1.5 animate-spin" />
+            ) : (
+              <Trash2 className="h-3.5 w-3.5 mr-1.5" />
+            )}
+            Delete All Unlisted ({unlisted.length})
+          </Button>
+        )}
+      </div>
+
+      <div className="flex gap-2">
+        {(["all", "live", "unlisted"] as const).map((f) => (
+          <button
+            key={f}
+            onClick={() => setFilter(f)}
+            className={`px-3 py-1.5 rounded-lg font-bold text-xs uppercase tracking-wider border-2 transition-all ${
+              filter === f
+                ? "bg-primary text-primary-foreground border-primary"
+                : "border-border hover:border-[#99CC66]/50"
+            }`}
+          >
+            {f === "all" ? `All (${images.length})` : f === "live" ? `Live (${live.length})` : `Unlisted (${unlisted.length})`}
+          </button>
+        ))}
+      </div>
+
+      {filtered.length === 0 ? (
+        <p className="text-center text-muted-foreground font-bold py-8">
+          {filter === "unlisted" ? "No unlisted images." : "No images found."}
+        </p>
+      ) : (
+        <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-3">
+          {filtered.map((img) => (
+            <div
+              key={img.filename}
+              className="bg-card border-2 border-border rounded-xl overflow-hidden"
+            >
+              <a href={`/api/uploads/${img.filename}`} target="_blank" rel="noopener noreferrer">
+                <img
+                  src={`/api/uploads/${img.filename}`}
+                  alt={img.filename}
+                  className="w-full aspect-square object-cover bg-muted"
+                  loading="lazy"
+                />
+              </a>
+              <div className="p-2 space-y-1.5">
+                <p
+                  className="text-[10px] font-mono text-muted-foreground truncate"
+                  title={img.filename}
+                >
+                  {img.filename}
+                </p>
+                <p className="text-[10px] text-muted-foreground">{formatBytes(img.size)}</p>
+                {img.live ? (
+                  <div className="flex flex-wrap gap-1">
+                    {img.contexts.slice(0, 2).map((ctx) => (
+                      <span
+                        key={ctx}
+                        className="text-[9px] font-bold bg-green-900/40 text-green-300 px-1.5 py-0.5 rounded-full leading-none truncate max-w-full"
+                        title={ctx}
+                      >
+                        {ctx}
+                      </span>
+                    ))}
+                    {img.contexts.length > 2 && (
+                      <span className="text-[9px] font-bold bg-green-900/40 text-green-300 px-1.5 py-0.5 rounded-full leading-none">
+                        +{img.contexts.length - 2}
+                      </span>
+                    )}
+                  </div>
+                ) : (
+                  <span className="inline-block text-[9px] font-bold bg-orange-900/40 text-orange-300 px-1.5 py-0.5 rounded-full leading-none">
+                    Unlisted
+                  </span>
+                )}
+                <Button
+                  size="sm"
+                  variant="ghost"
+                  className="w-full h-7 text-destructive hover:text-destructive font-bold text-xs mt-1"
+                  onClick={() => handleDelete(img.filename)}
+                  disabled={deleteImage.isPending}
+                >
+                  <Trash2 className="h-3 w-3 mr-1" /> Delete
+                </Button>
+              </div>
+            </div>
+          ))}
+        </div>
+      )}
+    </div>
+  );
+}
+
 const TABS: { id: Tab; label: string; icon: React.ElementType }[] = [
   { id: "pending", label: "Pending", icon: Clock },
   { id: "all", label: "All Listings", icon: Building },
@@ -1342,6 +1510,7 @@ const TABS: { id: Tab; label: string; icon: React.ElementType }[] = [
   { id: "map-popup-m", label: "Map Popup · Mobile", icon: Smartphone },
   { id: "dash-banner-d", label: "Dash Banner · Desktop", icon: Monitor },
   { id: "dash-banner-m", label: "Dash Banner · Mobile", icon: Smartphone },
+  { id: "images", label: "Images", icon: Image },
 ];
 
 export default function Admin() {
@@ -1414,6 +1583,7 @@ export default function Admin() {
         {activeTab === "map-popup-m" && <MapPopupMobileTab />}
         {activeTab === "dash-banner-d" && <DashBannerDesktopTab />}
         {activeTab === "dash-banner-m" && <DashBannerMobileTab />}
+        {activeTab === "images" && <ImagesTab />}
       </div>
     </div>
   );

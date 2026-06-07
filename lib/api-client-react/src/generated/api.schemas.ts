@@ -310,6 +310,18 @@ export interface PopupAd {
   brand_filter?: string | null;
 }
 
+export interface StorageImage {
+  filename: string;
+  size: number;
+  last_modified: string;
+  live: boolean;
+  contexts: string[];
+}
+
+export interface BulkDeleteImagesInput {
+  filenames: string[];
+}
+
 export type BusinessStatsCategoriesItem = {
   name: string;
   count: number;

@@ -547,6 +547,43 @@ export const GetAdminPopupResponse = zod.object({
 
 
 /**
+ * @summary List all uploaded image files with live/unlisted status (admin)
+ */
+export const GetAdminImagesResponseItem = zod.object({
+  "filename": zod.string(),
+  "size": zod.number(),
+  "last_modified": zod.string(),
+  "live": zod.boolean(),
+  "contexts": zod.array(zod.string())
+})
+export const GetAdminImagesResponse = zod.array(GetAdminImagesResponseItem)
+
+
+/**
+ * @summary Bulk delete image files from storage (admin)
+ */
+export const BulkDeleteAdminImagesBody = zod.object({
+  "filenames": zod.array(zod.string())
+})
+
+export const BulkDeleteAdminImagesResponse = zod.object({
+  "success": zod.boolean()
+})
+
+
+/**
+ * @summary Delete a single image file from storage (admin)
+ */
+export const DeleteAdminImageParams = zod.object({
+  "filename": zod.coerce.string()
+})
+
+export const DeleteAdminImageResponse = zod.object({
+  "success": zod.boolean()
+})
+
+
+/**
  * @summary List approved brands (public)
  */
 export const GetBrandsResponseItem = zod.object({

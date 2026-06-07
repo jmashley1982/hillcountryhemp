@@ -617,6 +617,56 @@ paths:
               schema:
                 $ref: "#/components/schemas/PopupAd"
 
+  /admin/images:
+    get:
+      operationId: getAdminImages
+      summary: List all uploaded image files with live/unlisted status (admin)
+      responses:
+        "200":
+          description: Image file list
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/StorageImage"
+
+  /admin/images/bulk-delete:
+    post:
+      operationId: bulkDeleteAdminImages
+      summary: Bulk delete image files from storage (admin)
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/BulkDeleteImagesInput"
+      responses:
+        "200":
+          description: Deleted
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/SuccessResponse"
+
+  /admin/images/{filename}:
+    delete:
+      operationId: deleteAdminImage
+      summary: Delete a single image file from storage (admin)
+      parameters:
+        - name: filename
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        "200":
+          description: Deleted
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/SuccessResponse"
+
   /brands:
     get:
       operationId: getBrands
@@ -1280,6 +1330,32 @@ components:
           type: integer
         brand_filter:
           type: ["string", "null"]
+
+    StorageImage:
+      type: object
+      required: [filename, size, last_modified, live, contexts]
+      properties:
+        filename:
+          type: string
+        size:
+          type: integer
+        last_modified:
+          type: string
+        live:
+          type: boolean
+        contexts:
+          type: array
+          items:
+            type: string
+
+    BulkDeleteImagesInput:
+      type: object
+      required: [filenames]
+      properties:
+        filenames:
+          type: array
+          items:
+            type: string
 
     BusinessStats:
       type: object

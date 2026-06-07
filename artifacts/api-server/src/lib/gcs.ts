@@ -1,6 +1,8 @@
 import { Storage } from "@google-cloud/storage";
 import { randomUUID } from "crypto";
 import path from "path";
+import fs from "fs";
+import fsPromises from "fs/promises";
 
 const REPLIT_SIDECAR_ENDPOINT = "http://127.0.0.1:1106";
 
@@ -56,6 +58,54 @@ export async function deleteFromGCS(filename: string): Promise<void> {
   } catch {
     // best-effort — ignore errors on delete
   }
+}
+
+const UPLOADS_DIR = path.join(__dirname, "..", "uploads");
+
+export async function listStorageFiles(): Promise<
+  Array<{ filename: string; size: number; lastModified: string }>
+> {
+  if (process.env.DEFAULT_OBJECT_STORAGE_BUCKET_ID) {
+    try {
+      const bucket = getBucket();
+      const [files] = await bucket.getFiles({ prefix: "uploads/" });
+      return files.map((f) => ({
+        filename: f.name.replace(/^uploads\//, ""),
+        size: parseInt(String(f.metadata.size ?? "0"), 10),
+        lastModified: String(f.metadata.updated ?? f.metadata.timeCreated ?? ""),
+      }));
+    } catch {
+      return [];
+    }
+  } else {
+    try {
+      if (!fs.existsSync(UPLOADS_DIR)) return [];
+      const names = await fsPromises.readdir(UPLOADS_DIR);
+      const results = await Promise.all(
+        names.map(async (name) => {
+          try {
+            const stat = await fsPromises.stat(path.join(UPLOADS_DIR, name));
+            return { filename: name, size: stat.size, lastModified: stat.mtime.toISOString() };
+          } catch {
+            return null;
+          }
+        }),
+      );
+      return results.filter((r): r is NonNullable<typeof r> => r !== null);
+    } catch {
+      return [];
+    }
+  }
+}
+
+export async function deleteFileFromStorage(filename: string): Promise<void> {
+  const localPath = path.join(UPLOADS_DIR, filename);
+  if (fs.existsSync(localPath)) {
+    try {
+      await fsPromises.unlink(localPath);
+    } catch { /* best-effort */ }
+  }
+  await deleteFromGCS(filename);
 }
 
 export async function streamFromGCS(

@@ -25,6 +25,7 @@ import type {
   Brand,
   BrandInput,
   BrandSuggestInput,
+  BulkDeleteImagesInput,
   Business,
   BusinessDetail,
   BusinessInput,
@@ -43,6 +44,7 @@ import type {
   RegisterInput,
   RejectInput,
   ResetPasswordInput,
+  StorageImage,
   SuccessResponse,
   UpdateEmailInput,
   UpdatePasswordInput,
@@ -2269,6 +2271,224 @@ export function useGetAdminPopup<TData = Awaited<ReturnType<typeof getAdminPopup
 
 
 
+
+export const getGetAdminImagesUrl = () => {
+
+
+
+
+  return `/api/admin/images`
+}
+
+/**
+ * @summary List all uploaded image files with live/unlisted status (admin)
+ */
+export const getAdminImages = async ( options?: RequestInit): Promise<StorageImage[]> => {
+
+  return customFetch<StorageImage[]>(getGetAdminImagesUrl(),
+  {
+    ...options,
+    method: 'GET'
+
+
+  }
+);}
+
+
+
+
+
+export const getGetAdminImagesQueryKey = () => {
+    return [
+    `/api/admin/images`
+    ] as const;
+    }
+
+
+export const getGetAdminImagesQueryOptions = <TData = Awaited<ReturnType<typeof getAdminImages>>, TError = ErrorType<unknown>>( options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof getAdminImages>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+) => {
+
+const {query: queryOptions, request: requestOptions} = options ?? {};
+
+  const queryKey =  queryOptions?.queryKey ?? getGetAdminImagesQueryKey();
+
+
+
+    const queryFn: QueryFunction<Awaited<ReturnType<typeof getAdminImages>>> = ({ signal }) => getAdminImages({ signal, ...requestOptions });
+
+
+
+
+
+   return  { queryKey, queryFn, ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof getAdminImages>>, TError, TData> & { queryKey: QueryKey }
+}
+
+export type GetAdminImagesQueryResult = NonNullable<Awaited<ReturnType<typeof getAdminImages>>>
+export type GetAdminImagesQueryError = ErrorType<unknown>
+
+
+/**
+ * @summary List all uploaded image files with live/unlisted status (admin)
+ */
+
+export function useGetAdminImages<TData = Awaited<ReturnType<typeof getAdminImages>>, TError = ErrorType<unknown>>(
+  options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof getAdminImages>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+
+ ):  UseQueryResult<TData, TError> & { queryKey: QueryKey } {
+
+  const queryOptions = getGetAdminImagesQueryOptions(options)
+
+  const query = useQuery(queryOptions) as  UseQueryResult<TData, TError> & { queryKey: QueryKey };
+
+  return { ...query, queryKey: queryOptions.queryKey };
+}
+
+
+
+
+
+
+
+export const getBulkDeleteAdminImagesUrl = () => {
+
+
+
+
+  return `/api/admin/images/bulk-delete`
+}
+
+/**
+ * @summary Bulk delete image files from storage (admin)
+ */
+export const bulkDeleteAdminImages = async (bulkDeleteImagesInput: BulkDeleteImagesInput, options?: RequestInit): Promise<SuccessResponse> => {
+
+  return customFetch<SuccessResponse>(getBulkDeleteAdminImagesUrl(),
+  {
+    ...options,
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json', ...options?.headers },
+    body: JSON.stringify(
+      bulkDeleteImagesInput,)
+  }
+);}
+
+
+
+
+export const getBulkDeleteAdminImagesMutationOptions = <TError = ErrorType<unknown>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof bulkDeleteAdminImages>>, TError,{data: BodyType<BulkDeleteImagesInput>}, TContext>, request?: SecondParameter<typeof customFetch>}
+): UseMutationOptions<Awaited<ReturnType<typeof bulkDeleteAdminImages>>, TError,{data: BodyType<BulkDeleteImagesInput>}, TContext> => {
+
+const mutationKey = ['bulkDeleteAdminImages'];
+const {mutation: mutationOptions, request: requestOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, request: undefined};
+
+
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof bulkDeleteAdminImages>>, {data: BodyType<BulkDeleteImagesInput>}> = (props) => {
+          const {data} = props ?? {};
+
+          return  bulkDeleteAdminImages(data,requestOptions)
+        }
+
+
+
+
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type BulkDeleteAdminImagesMutationResult = NonNullable<Awaited<ReturnType<typeof bulkDeleteAdminImages>>>
+    export type BulkDeleteAdminImagesMutationBody = BodyType<BulkDeleteImagesInput>
+    export type BulkDeleteAdminImagesMutationError = ErrorType<unknown>
+
+    /**
+ * @summary Bulk delete image files from storage (admin)
+ */
+export const useBulkDeleteAdminImages = <TError = ErrorType<unknown>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof bulkDeleteAdminImages>>, TError,{data: BodyType<BulkDeleteImagesInput>}, TContext>, request?: SecondParameter<typeof customFetch>}
+ ): UseMutationResult<
+        Awaited<ReturnType<typeof bulkDeleteAdminImages>>,
+        TError,
+        {data: BodyType<BulkDeleteImagesInput>},
+        TContext
+      > => {
+      return useMutation(getBulkDeleteAdminImagesMutationOptions(options));
+    }
+
+export const getDeleteAdminImageUrl = (filename: string,) => {
+
+
+
+
+  return `/api/admin/images/${filename}`
+}
+
+/**
+ * @summary Delete a single image file from storage (admin)
+ */
+export const deleteAdminImage = async (filename: string, options?: RequestInit): Promise<SuccessResponse> => {
+
+  return customFetch<SuccessResponse>(getDeleteAdminImageUrl(filename),
+  {
+    ...options,
+    method: 'DELETE'
+
+
+  }
+);}
+
+
+
+
+export const getDeleteAdminImageMutationOptions = <TError = ErrorType<unknown>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof deleteAdminImage>>, TError,{filename: string}, TContext>, request?: SecondParameter<typeof customFetch>}
+): UseMutationOptions<Awaited<ReturnType<typeof deleteAdminImage>>, TError,{filename: string}, TContext> => {
+
+const mutationKey = ['deleteAdminImage'];
+const {mutation: mutationOptions, request: requestOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, request: undefined};
+
+
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof deleteAdminImage>>, {filename: string}> = (props) => {
+          const {filename} = props ?? {};
+
+          return  deleteAdminImage(filename,requestOptions)
+        }
+
+
+
+
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type DeleteAdminImageMutationResult = NonNullable<Awaited<ReturnType<typeof deleteAdminImage>>>
+
+    export type DeleteAdminImageMutationError = ErrorType<unknown>
+
+    /**
+ * @summary Delete a single image file from storage (admin)
+ */
+export const useDeleteAdminImage = <TError = ErrorType<unknown>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof deleteAdminImage>>, TError,{filename: string}, TContext>, request?: SecondParameter<typeof customFetch>}
+ ): UseMutationResult<
+        Awaited<ReturnType<typeof deleteAdminImage>>,
+        TError,
+        {filename: string},
+        TContext
+      > => {
+      return useMutation(getDeleteAdminImageMutationOptions(options));
+    }
 
 export const getGetBrandsUrl = () => {
 
