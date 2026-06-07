@@ -612,7 +612,7 @@ router.get(
   },
 );
 
-// Must be registered before /:filename to avoid "bulk-delete" matching as a filename for DELETE
+// Must be registered before /:filename/* routes to avoid path conflicts
 router.post(
   "/admin/images/bulk-delete",
   requireLogin,
@@ -623,16 +623,33 @@ router.post(
       res.status(400).json({ error: "filenames array required" });
       return;
     }
-    await Promise.allSettled(
-      (filenames as string[]).map((f) => {
-        const safe = path.basename(String(f));
-        return safe ? deleteFileFromStorage(safe) : Promise.resolve();
-      }),
-    );
+    // Bulk delete only operates on unlisted files — skip any that are currently live
+    const refs = await buildLiveRefs();
+    const safeFilenames = (filenames as string[]).map((f) => path.basename(String(f))).filter(Boolean);
+    const toDelete = safeFilenames.filter((f) => !refs.has(f));
+    await Promise.allSettled(toDelete.map((f) => deleteFileFromStorage(f)));
+    res.json({ success: true, deleted: toDelete.length, skipped: safeFilenames.length - toDelete.length });
+  },
+);
+
+// Force-delete a live image — requires explicit admin intent
+router.post(
+  "/admin/images/:filename/force-delete",
+  requireLogin,
+  requireAdmin,
+  async (req, res): Promise<void> => {
+    const raw = Array.isArray(req.params.filename) ? req.params.filename[0] : req.params.filename;
+    const filename = path.basename(raw);
+    if (!filename || filename === ".") {
+      res.status(400).json({ error: "Invalid filename" });
+      return;
+    }
+    await deleteFileFromStorage(filename);
     res.json({ success: true });
   },
 );
 
+// Safe delete — blocked if the file is currently live in the DB
 router.delete(
   "/admin/images/:filename",
   requireLogin,
@@ -642,6 +659,14 @@ router.delete(
     const filename = path.basename(raw);
     if (!filename || filename === ".") {
       res.status(400).json({ error: "Invalid filename" });
+      return;
+    }
+    const refs = await buildLiveRefs();
+    if (refs.has(filename)) {
+      res.status(409).json({
+        error: "Image is currently live",
+        contexts: refs.get(filename) ?? [],
+      });
       return;
     }
     await deleteFileFromStorage(filename);

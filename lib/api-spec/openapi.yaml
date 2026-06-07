@@ -652,7 +652,31 @@ paths:
   /admin/images/{filename}:
     delete:
       operationId: deleteAdminImage
-      summary: Delete a single image file from storage (admin)
+      summary: Delete a single image file from storage; returns 409 if the file is currently live (admin)
+      parameters:
+        - name: filename
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        "200":
+          description: Deleted
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/SuccessResponse"
+        "409":
+          description: File is currently live — use the force-delete endpoint to override
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+
+  /admin/images/{filename}/force-delete:
+    post:
+      operationId: forceDeleteAdminImage
+      summary: Force-delete an image file even if it is currently live (admin; use with caution)
       parameters:
         - name: filename
           in: path

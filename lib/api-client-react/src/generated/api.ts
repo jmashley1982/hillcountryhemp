@@ -2429,7 +2429,7 @@ export const getDeleteAdminImageUrl = (filename: string,) => {
 }
 
 /**
- * @summary Delete a single image file from storage (admin)
+ * @summary Delete a single image file from storage; returns 409 if the file is currently live (admin)
  */
 export const deleteAdminImage = async (filename: string, options?: RequestInit): Promise<SuccessResponse> => {
 
@@ -2445,7 +2445,7 @@ export const deleteAdminImage = async (filename: string, options?: RequestInit):
 
 
 
-export const getDeleteAdminImageMutationOptions = <TError = ErrorType<unknown>,
+export const getDeleteAdminImageMutationOptions = <TError = ErrorType<ErrorResponse>,
     TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof deleteAdminImage>>, TError,{filename: string}, TContext>, request?: SecondParameter<typeof customFetch>}
 ): UseMutationOptions<Awaited<ReturnType<typeof deleteAdminImage>>, TError,{filename: string}, TContext> => {
 
@@ -2474,12 +2474,12 @@ const {mutation: mutationOptions, request: requestOptions} = options ?
 
     export type DeleteAdminImageMutationResult = NonNullable<Awaited<ReturnType<typeof deleteAdminImage>>>
 
-    export type DeleteAdminImageMutationError = ErrorType<unknown>
+    export type DeleteAdminImageMutationError = ErrorType<ErrorResponse>
 
     /**
- * @summary Delete a single image file from storage (admin)
+ * @summary Delete a single image file from storage; returns 409 if the file is currently live (admin)
  */
-export const useDeleteAdminImage = <TError = ErrorType<unknown>,
+export const useDeleteAdminImage = <TError = ErrorType<ErrorResponse>,
     TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof deleteAdminImage>>, TError,{filename: string}, TContext>, request?: SecondParameter<typeof customFetch>}
  ): UseMutationResult<
         Awaited<ReturnType<typeof deleteAdminImage>>,
@@ -2488,6 +2488,76 @@ export const useDeleteAdminImage = <TError = ErrorType<unknown>,
         TContext
       > => {
       return useMutation(getDeleteAdminImageMutationOptions(options));
+    }
+
+export const getForceDeleteAdminImageUrl = (filename: string,) => {
+
+
+
+
+  return `/api/admin/images/${filename}/force-delete`
+}
+
+/**
+ * @summary Force-delete an image file even if it is currently live (admin; use with caution)
+ */
+export const forceDeleteAdminImage = async (filename: string, options?: RequestInit): Promise<SuccessResponse> => {
+
+  return customFetch<SuccessResponse>(getForceDeleteAdminImageUrl(filename),
+  {
+    ...options,
+    method: 'POST'
+
+
+  }
+);}
+
+
+
+
+export const getForceDeleteAdminImageMutationOptions = <TError = ErrorType<unknown>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof forceDeleteAdminImage>>, TError,{filename: string}, TContext>, request?: SecondParameter<typeof customFetch>}
+): UseMutationOptions<Awaited<ReturnType<typeof forceDeleteAdminImage>>, TError,{filename: string}, TContext> => {
+
+const mutationKey = ['forceDeleteAdminImage'];
+const {mutation: mutationOptions, request: requestOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, request: undefined};
+
+
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof forceDeleteAdminImage>>, {filename: string}> = (props) => {
+          const {filename} = props ?? {};
+
+          return  forceDeleteAdminImage(filename,requestOptions)
+        }
+
+
+
+
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type ForceDeleteAdminImageMutationResult = NonNullable<Awaited<ReturnType<typeof forceDeleteAdminImage>>>
+
+    export type ForceDeleteAdminImageMutationError = ErrorType<unknown>
+
+    /**
+ * @summary Force-delete an image file even if it is currently live (admin; use with caution)
+ */
+export const useForceDeleteAdminImage = <TError = ErrorType<unknown>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof forceDeleteAdminImage>>, TError,{filename: string}, TContext>, request?: SecondParameter<typeof customFetch>}
+ ): UseMutationResult<
+        Awaited<ReturnType<typeof forceDeleteAdminImage>>,
+        TError,
+        {filename: string},
+        TContext
+      > => {
+      return useMutation(getForceDeleteAdminImageMutationOptions(options));
     }
 
 export const getGetBrandsUrl = () => {

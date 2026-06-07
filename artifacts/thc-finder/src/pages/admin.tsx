@@ -22,6 +22,7 @@ import {
   useRenameBrand,
   useDeleteAdminImage,
   useBulkDeleteAdminImages,
+  useForceDeleteAdminImage,
   getGetPendingBusinessesQueryKey,
   getGetAllBusinessesQueryKey,
   getGetAdminBrandsQueryKey,
@@ -1340,6 +1341,15 @@ function formatBytes(bytes: number): string {
   return `${(bytes / (1024 * 1024)).toFixed(1)} MB`;
 }
 
+function formatUploadDate(iso: string): string {
+  if (!iso) return "";
+  try {
+    return new Date(iso).toLocaleDateString("en-US", { month: "short", day: "numeric", year: "numeric" });
+  } catch {
+    return iso;
+  }
+}
+
 function ImagesTab() {
   const { toast } = useToast();
   const queryClient = useQueryClient();
@@ -1347,6 +1357,7 @@ function ImagesTab() {
     query: { queryKey: getGetAdminImagesQueryKey() },
   });
   const deleteImage = useDeleteAdminImage();
+  const forceDeleteImage = useForceDeleteAdminImage();
   const bulkDelete = useBulkDeleteAdminImages();
   const [filter, setFilter] = useState<"all" | "live" | "unlisted">("all");
 
@@ -1364,6 +1375,23 @@ function ImagesTab() {
       {
         onSuccess: () => { toast({ title: "Image deleted" }); invalidate(); },
         onError: () => toast({ title: "Failed to delete", variant: "destructive" }),
+      },
+    );
+  };
+
+  const handleForceDelete = (img: { filename: string; contexts: string[] }) => {
+    const ctxList = img.contexts.join(", ");
+    if (
+      !confirm(
+        `⚠️ WARNING: "${img.filename}" is CURRENTLY LIVE.\n\nIt is used by: ${ctxList}\n\nDeleting it will IMMEDIATELY BREAK those placements until a replacement is uploaded.\n\nAre you absolutely sure you want to delete this live image?`,
+      )
+    )
+      return;
+    forceDeleteImage.mutate(
+      { filename: img.filename },
+      {
+        onSuccess: () => { toast({ title: "Live image force-deleted" }); invalidate(); },
+        onError: () => toast({ title: "Force delete failed", variant: "destructive" }),
       },
     );
   };
@@ -1440,7 +1468,7 @@ function ImagesTab() {
           {filtered.map((img) => (
             <div
               key={img.filename}
-              className="bg-card border-2 border-border rounded-xl overflow-hidden"
+              className={`bg-card border-2 rounded-xl overflow-hidden ${img.live ? "border-green-800/60" : "border-border"}`}
             >
               <a href={`/api/uploads/${img.filename}`} target="_blank" rel="noopener noreferrer">
                 <img
@@ -1457,7 +1485,12 @@ function ImagesTab() {
                 >
                   {img.filename}
                 </p>
-                <p className="text-[10px] text-muted-foreground">{formatBytes(img.size)}</p>
+                <div className="flex gap-2 text-[10px] text-muted-foreground">
+                  <span>{formatBytes(img.size)}</span>
+                  {img.last_modified && (
+                    <span title={img.last_modified}>{formatUploadDate(img.last_modified)}</span>
+                  )}
+                </div>
                 {img.live ? (
                   <div className="flex flex-wrap gap-1">
                     {img.contexts.slice(0, 2).map((ctx) => (
@@ -1480,15 +1513,28 @@ function ImagesTab() {
                     Unlisted
                   </span>
                 )}
-                <Button
-                  size="sm"
-                  variant="ghost"
-                  className="w-full h-7 text-destructive hover:text-destructive font-bold text-xs mt-1"
-                  onClick={() => handleDelete(img.filename)}
-                  disabled={deleteImage.isPending}
-                >
-                  <Trash2 className="h-3 w-3 mr-1" /> Delete
-                </Button>
+                {img.live ? (
+                  <Button
+                    size="sm"
+                    variant="ghost"
+                    className="w-full h-7 text-orange-400 hover:text-orange-300 hover:bg-orange-900/20 font-bold text-xs mt-1"
+                    onClick={() => handleForceDelete(img)}
+                    disabled={forceDeleteImage.isPending}
+                    title="This image is live — deleting it will break its placements"
+                  >
+                    <Trash2 className="h-3 w-3 mr-1" /> Force Delete
+                  </Button>
+                ) : (
+                  <Button
+                    size="sm"
+                    variant="ghost"
+                    className="w-full h-7 text-destructive hover:text-destructive font-bold text-xs mt-1"
+                    onClick={() => handleDelete(img.filename)}
+                    disabled={deleteImage.isPending}
+                  >
+                    <Trash2 className="h-3 w-3 mr-1" /> Delete
+                  </Button>
+                )}
               </div>
             </div>
           ))}

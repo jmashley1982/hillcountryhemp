@@ -572,13 +572,25 @@ export const BulkDeleteAdminImagesResponse = zod.object({
 
 
 /**
- * @summary Delete a single image file from storage (admin)
+ * @summary Delete a single image file from storage; returns 409 if the file is currently live (admin)
  */
 export const DeleteAdminImageParams = zod.object({
   "filename": zod.coerce.string()
 })
 
 export const DeleteAdminImageResponse = zod.object({
+  "success": zod.boolean()
+})
+
+
+/**
+ * @summary Force-delete an image file even if it is currently live (admin; use with caution)
+ */
+export const ForceDeleteAdminImageParams = zod.object({
+  "filename": zod.coerce.string()
+})
+
+export const ForceDeleteAdminImageResponse = zod.object({
   "success": zod.boolean()
 })
 
