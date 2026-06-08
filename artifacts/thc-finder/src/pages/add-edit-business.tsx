@@ -117,6 +117,7 @@ const schema = z.object({
       (v) => !v || v.replace(/\D/g, "").length === 10,
       "Enter a 10-digit phone number",
     ),
+  email: z.string().email("Must be a valid email").or(z.literal("")).optional(),
   website: z.string().url("Must be a valid URL").or(z.literal("")).optional(),
   description: z.string().optional(),
   instagram: z.string().optional(),
@@ -172,6 +173,7 @@ export default function AddEditBusiness() {
       state: "TX",
       zip: "",
       phone: "",
+      email: "",
       website: "",
       description: "",
       instagram: "",
@@ -219,6 +221,7 @@ export default function AddEditBusiness() {
         state: ext.state ?? "TX",
         zip: ext.zip ?? "",
         phone: existing.phone ? formatPhoneInput(existing.phone) : "",
+        email: (existing as { email?: string | null }).email ?? "",
         website: existing.website ?? "",
         description: existing.description ?? "",
         instagram: ext.instagram ?? "",
@@ -580,9 +583,31 @@ export default function AddEditBusiness() {
 
               <FormField
                 control={form.control}
-                name="website"
+                name="email"
                 render={({ field }) => (
                   <FormItem>
+                    <FormLabel className="font-bold uppercase text-xs tracking-wider">
+                      Email
+                    </FormLabel>
+                    <FormControl>
+                      <Input
+                        {...field}
+                        type="email"
+                        className="border-2 font-medium"
+                        placeholder="hello@yourbusiness.com"
+                        data-testid="input-email"
+                      />
+                    </FormControl>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+
+              <FormField
+                control={form.control}
+                name="website"
+                render={({ field }) => (
+                  <FormItem className="sm:col-span-2">
                     <FormLabel className="font-bold uppercase text-xs tracking-wider">
                       Website
                     </FormLabel>

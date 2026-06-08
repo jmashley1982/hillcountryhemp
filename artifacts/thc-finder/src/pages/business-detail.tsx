@@ -1,6 +1,15 @@
 import { useGetBusiness, useClaimBusiness } from "@workspace/api-client-react";
 import { useParams, Link } from "wouter";
 import { MapPin, Phone, Mail, Globe, Clock, Star, ArrowLeft, RefreshCw, Wind, ExternalLink, Ticket, Flag, Loader2, Pencil } from "lucide-react";
+import { MapContainer, TileLayer, Marker } from "react-leaflet";
+import L from "leaflet";
+
+delete (L.Icon.Default.prototype as unknown as Record<string, unknown>)._getIconUrl;
+L.Icon.Default.mergeOptions({
+  iconUrl: "https://unpkg.com/leaflet@1.9.4/dist/images/marker-icon.png",
+  iconRetinaUrl: "https://unpkg.com/leaflet@1.9.4/dist/images/marker-icon-2x.png",
+  shadowUrl: "https://unpkg.com/leaflet@1.9.4/dist/images/marker-shadow.png",
+});
 import { Badge } from "@/components/ui/badge";
 import { ALL_CATEGORIES } from "@/lib/categories";
 import { Button } from "@/components/ui/button";
@@ -219,22 +228,23 @@ export default function BusinessDetail() {
               </div>
 
               {biz.lat != null && biz.lng != null && (
-                <a
-                  href={`https://www.google.com/maps/dir/?api=1&destination=${encodeURIComponent(biz.address)}`}
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  className="block rounded-xl overflow-hidden border-2 border-border h-36 hover:opacity-90 transition-opacity"
-                >
-                  <img
-                    src={`https://staticmap.openstreetmap.de/staticmap.php?center=${biz.lat},${biz.lng}&zoom=15&size=400x144&markers=${biz.lat},${biz.lng},red-pushpin`}
-                    alt={`Map for ${biz.name}`}
-                    className="w-full h-full object-cover"
-                    loading="lazy"
-                    onError={(e) => {
-                      e.currentTarget.parentElement!.style.display = "none";
-                    }}
-                  />
-                </a>
+                <div className="rounded-xl overflow-hidden border-2 border-border" style={{ height: "144px" }}>
+                  <MapContainer
+                    center={[biz.lat, biz.lng]}
+                    zoom={15}
+                    style={{ height: "144px", width: "100%" }}
+                    scrollWheelZoom={false}
+                    dragging={false}
+                    zoomControl={false}
+                    keyboard={false}
+                    touchZoom={false}
+                    doubleClickZoom={false}
+                    attributionControl={false}
+                  >
+                    <TileLayer url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png" />
+                    <Marker position={[biz.lat, biz.lng]} />
+                  </MapContainer>
+                </div>
               )}
 
               {biz.phone && (
