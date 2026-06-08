@@ -596,6 +596,98 @@ export const ForceDeleteAdminImageResponse = zod.object({
 
 
 /**
+ * @summary List all product categories (public)
+ */
+export const GetCategoriesResponseItem = zod.object({
+  "id": zod.number(),
+  "name": zod.string()
+})
+export const GetCategoriesResponse = zod.array(GetCategoriesResponseItem)
+
+
+/**
+ * @summary Add a product category (admin)
+ */
+export const CreateCategoryBody = zod.object({
+  "name": zod.string()
+})
+
+
+/**
+ * @summary Rename a product category (admin)
+ */
+export const RenameCategoryParams = zod.object({
+  "id": zod.coerce.number()
+})
+
+export const RenameCategoryBody = zod.object({
+  "name": zod.string()
+})
+
+export const RenameCategoryResponse = zod.object({
+  "success": zod.boolean()
+})
+
+
+/**
+ * @summary Delete a product category (admin)
+ */
+export const DeleteCategoryParams = zod.object({
+  "id": zod.coerce.number()
+})
+
+export const DeleteCategoryResponse = zod.object({
+  "success": zod.boolean()
+})
+
+
+/**
+ * @summary List all cities (public)
+ */
+export const GetCitiesResponseItem = zod.object({
+  "id": zod.number(),
+  "name": zod.string()
+})
+export const GetCitiesResponse = zod.array(GetCitiesResponseItem)
+
+
+/**
+ * @summary Add a city (admin)
+ */
+export const CreateCityBody = zod.object({
+  "name": zod.string()
+})
+
+
+/**
+ * @summary Rename a city (admin)
+ */
+export const RenameCityParams = zod.object({
+  "id": zod.coerce.number()
+})
+
+export const RenameCityBody = zod.object({
+  "name": zod.string()
+})
+
+export const RenameCityResponse = zod.object({
+  "success": zod.boolean()
+})
+
+
+/**
+ * @summary Delete a city (admin)
+ */
+export const DeleteCityParams = zod.object({
+  "id": zod.coerce.number()
+})
+
+export const DeleteCityResponse = zod.object({
+  "success": zod.boolean()
+})
+
+
+/**
  * @summary List approved brands (public)
  */
 export const GetBrandsResponseItem = zod.object({

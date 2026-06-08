@@ -61,6 +61,20 @@ export interface RegisterInput {
   password: string;
 }
 
+export interface Category {
+  id: number;
+  name: string;
+}
+
+export interface City {
+  id: number;
+  name: string;
+}
+
+export interface NameInput {
+  name: string;
+}
+
 export interface Brand {
   id: number;
   name: string;

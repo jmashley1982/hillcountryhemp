@@ -23,6 +23,14 @@ import {
   useDeleteAdminImage,
   useBulkDeleteAdminImages,
   useForceDeleteAdminImage,
+  useGetCategories,
+  useCreateCategory,
+  useRenameCategory,
+  useDeleteCategory,
+  useGetCities,
+  useCreateCity,
+  useRenameCity,
+  useDeleteCity,
   getGetPendingBusinessesQueryKey,
   getGetAllBusinessesQueryKey,
   getGetAdminBrandsQueryKey,
@@ -31,6 +39,8 @@ import {
   getGetAdminPopupQueryKey,
   getGetAdminClaimsQueryKey,
   getGetAdminImagesQueryKey,
+  getGetCategoriesQueryKey,
+  getGetCitiesQueryKey,
 } from "@workspace/api-client-react";
 import { useLocation, Link } from "wouter";
 import { useEffect } from "react";
@@ -76,9 +86,8 @@ import {
   Check,
   X as XIcon,
 } from "lucide-react";
-import { ALL_CATEGORIES } from "@/lib/categories";
 
-type Tab = "pending" | "all" | "brands" | "add-store" | "claims" | "map-banner-d" | "map-banner-m" | "map-popup-d" | "map-popup-m" | "dash-banner-d" | "dash-banner-m" | "images";
+type Tab = "pending" | "all" | "brands" | "add-store" | "claims" | "categories" | "cities" | "map-banner-d" | "map-banner-m" | "map-popup-d" | "map-popup-m" | "dash-banner-d" | "dash-banner-m" | "images";
 
 function formatPhone(raw: string | null | undefined): string {
   if (!raw) return "";
@@ -438,6 +447,7 @@ function AddStoreTab() {
   const { toast } = useToast();
   const queryClient = useQueryClient();
   const createBusiness = useAdminCreateBusiness();
+  const { data: categoryOptions = [] } = useGetCategories({ query: { queryKey: getGetCategoriesQueryKey() } });
   const [selectedCategories, setSelectedCategories] = useState<string[]>([]);
 
   const form = useForm<AddStoreForm>({
@@ -590,18 +600,18 @@ function AddStoreTab() {
           <div>
             <p className="font-bold uppercase text-xs tracking-wider mb-2 text-foreground">Categories</p>
             <div className="flex flex-wrap gap-2">
-              {ALL_CATEGORIES.map((cat) => (
+              {categoryOptions.map((cat) => (
                 <button
-                  key={cat}
+                  key={cat.name}
                   type="button"
-                  onClick={() => toggleCategory(cat)}
+                  onClick={() => toggleCategory(cat.name)}
                   className={`text-xs font-bold px-3 py-1.5 rounded-full border-2 transition-all ${
-                    selectedCategories.includes(cat)
+                    selectedCategories.includes(cat.name)
                       ? "bg-[#99CC66]/20 border-[#99CC66] text-[#99CC66]"
                       : "border-border text-muted-foreground hover:border-[#99CC66]/50"
                   }`}
                 >
-                  {cat}
+                  {cat.name}
                 </button>
               ))}
             </div>
@@ -1544,12 +1554,217 @@ function ImagesTab() {
   );
 }
 
+function NameListTab({
+  title,
+  singularLabel,
+  items,
+  isLoading,
+  onCreate,
+  onRename,
+  onDelete,
+  isPendingCreate,
+  isPendingRename,
+  isPendingDelete,
+}: {
+  title: string;
+  singularLabel: string;
+  items: { id: number; name: string }[];
+  isLoading: boolean;
+  onCreate: (name: string) => void;
+  onRename: (id: number, name: string) => void;
+  onDelete: (id: number, name: string) => void;
+  isPendingCreate: boolean;
+  isPendingRename: boolean;
+  isPendingDelete: boolean;
+}) {
+  const [newName, setNewName] = useState("");
+  const [editingId, setEditingId] = useState<number | null>(null);
+  const [editingName, setEditingName] = useState("");
+
+  const handleAdd = () => {
+    const trimmed = newName.trim();
+    if (!trimmed) return;
+    onCreate(trimmed);
+    setNewName("");
+  };
+
+  const startEdit = (id: number, name: string) => { setEditingId(id); setEditingName(name); };
+  const cancelEdit = () => { setEditingId(null); setEditingName(""); };
+  const saveEdit = () => {
+    if (!editingName.trim() || editingId === null) return;
+    onRename(editingId, editingName.trim());
+    setEditingId(null);
+    setEditingName("");
+  };
+
+  return (
+    <div className="space-y-6">
+      <div className="flex gap-3 items-end">
+        <div className="flex-1">
+          <p className="font-bold uppercase text-xs tracking-wider mb-2">{`Add ${singularLabel}`}</p>
+          <Input
+            value={newName}
+            onChange={(e) => setNewName(e.target.value)}
+            onKeyDown={(e) => { if (e.key === "Enter") handleAdd(); }}
+            className="border-2"
+            placeholder={`${singularLabel} name`}
+          />
+        </div>
+        <Button className="font-bold" onClick={handleAdd} disabled={isPendingCreate || !newName.trim()}>
+          <Plus className="h-4 w-4 mr-1" /> Add
+        </Button>
+      </div>
+
+      {isLoading ? (
+        <div className="animate-pulse font-bold">Loading {title.toLowerCase()}...</div>
+      ) : items.length === 0 ? (
+        <p className="text-muted-foreground font-bold text-center py-8">No {title.toLowerCase()} yet.</p>
+      ) : (
+        <div className="space-y-2">
+          {items.map((item) => (
+            <div
+              key={item.id}
+              className="flex items-center justify-between p-3 bg-card border-2 border-border rounded-2xl shadow-[0_2px_12px_rgba(0,0,0,0.2)]"
+            >
+              {editingId === item.id ? (
+                <div className="flex items-center gap-2 flex-1 min-w-0">
+                  <input
+                    autoFocus
+                    value={editingName}
+                    onChange={(e) => setEditingName(e.target.value)}
+                    onKeyDown={(e) => { if (e.key === "Enter") saveEdit(); if (e.key === "Escape") cancelEdit(); }}
+                    className="flex-1 min-w-0 bg-background border-2 border-[#84C7D0] rounded-lg px-3 py-1 text-sm font-bold focus:outline-none"
+                  />
+                  <Button size="icon" variant="ghost" className="h-7 w-7 text-[#99CC66] hover:text-[#99CC66]" onClick={saveEdit} disabled={isPendingRename}>
+                    <Check className="h-4 w-4" />
+                  </Button>
+                  <Button size="icon" variant="ghost" className="h-7 w-7 text-muted-foreground" onClick={cancelEdit}>
+                    <XIcon className="h-4 w-4" />
+                  </Button>
+                </div>
+              ) : (
+                <span className="font-bold text-sm">{item.name}</span>
+              )}
+              {editingId !== item.id && (
+                <div className="flex gap-1 shrink-0">
+                  <Button
+                    size="icon"
+                    variant="ghost"
+                    className="h-7 w-7 text-muted-foreground hover:text-foreground"
+                    onClick={() => startEdit(item.id, item.name)}
+                  >
+                    <Pencil className="h-3.5 w-3.5" />
+                  </Button>
+                  <Button
+                    size="icon"
+                    variant="ghost"
+                    className="h-7 w-7 text-destructive hover:text-destructive"
+                    disabled={isPendingDelete}
+                    onClick={() => {
+                      if (!confirm(`Delete "${item.name}"? This cannot be undone.`)) return;
+                      onDelete(item.id, item.name);
+                    }}
+                  >
+                    <Trash2 className="h-3.5 w-3.5" />
+                  </Button>
+                </div>
+              )}
+            </div>
+          ))}
+        </div>
+      )}
+    </div>
+  );
+}
+
+function CategoriesTab() {
+  const { toast } = useToast();
+  const queryClient = useQueryClient();
+  const { data: categories = [], isLoading } = useGetCategories({ query: { queryKey: getGetCategoriesQueryKey() } });
+  const create = useCreateCategory();
+  const rename = useRenameCategory();
+  const remove = useDeleteCategory();
+  const invalidate = () => queryClient.invalidateQueries({ queryKey: getGetCategoriesQueryKey() });
+
+  return (
+    <NameListTab
+      title="Products"
+      singularLabel="Product"
+      items={categories}
+      isLoading={isLoading}
+      isPendingCreate={create.isPending}
+      isPendingRename={rename.isPending}
+      isPendingDelete={remove.isPending}
+      onCreate={(name) =>
+        create.mutate({ data: { name } }, {
+          onSuccess: () => { toast({ title: "Product category added" }); invalidate(); },
+          onError: () => toast({ title: "Category already exists", variant: "destructive" }),
+        })
+      }
+      onRename={(id, name) =>
+        rename.mutate({ id, data: { name } }, {
+          onSuccess: () => { toast({ title: "Category renamed" }); invalidate(); },
+          onError: () => toast({ title: "Name already in use", variant: "destructive" }),
+        })
+      }
+      onDelete={(id) =>
+        remove.mutate({ id }, {
+          onSuccess: () => { toast({ title: "Category deleted" }); invalidate(); },
+          onError: () => toast({ title: "Failed to delete", variant: "destructive" }),
+        })
+      }
+    />
+  );
+}
+
+function CitiesTab() {
+  const { toast } = useToast();
+  const queryClient = useQueryClient();
+  const { data: cities = [], isLoading } = useGetCities({ query: { queryKey: getGetCitiesQueryKey() } });
+  const create = useCreateCity();
+  const rename = useRenameCity();
+  const remove = useDeleteCity();
+  const invalidate = () => queryClient.invalidateQueries({ queryKey: getGetCitiesQueryKey() });
+
+  return (
+    <NameListTab
+      title="Cities"
+      singularLabel="City"
+      items={cities}
+      isLoading={isLoading}
+      isPendingCreate={create.isPending}
+      isPendingRename={rename.isPending}
+      isPendingDelete={remove.isPending}
+      onCreate={(name) =>
+        create.mutate({ data: { name } }, {
+          onSuccess: () => { toast({ title: "City added" }); invalidate(); },
+          onError: () => toast({ title: "City already exists", variant: "destructive" }),
+        })
+      }
+      onRename={(id, name) =>
+        rename.mutate({ id, data: { name } }, {
+          onSuccess: () => { toast({ title: "City renamed" }); invalidate(); },
+          onError: () => toast({ title: "Name already in use", variant: "destructive" }),
+        })
+      }
+      onDelete={(id) =>
+        remove.mutate({ id }, {
+          onSuccess: () => { toast({ title: "City deleted" }); invalidate(); },
+          onError: () => toast({ title: "Failed to delete", variant: "destructive" }),
+        })
+      }
+    />
+  );
+}
+
 const TABS: { id: Tab; label: string; icon: React.ElementType }[] = [
   { id: "pending", label: "Pending", icon: Clock },
   { id: "all", label: "All Listings", icon: Building },
   { id: "add-store", label: "Add Store", icon: MapPin },
   { id: "claims", label: "Claims", icon: Flag },
   { id: "brands", label: "Brands", icon: Tag },
+  { id: "categories", label: "Products", icon: Briefcase },
+  { id: "cities", label: "Cities", icon: MapPin },
   { id: "map-banner-d", label: "Map Banner · Desktop", icon: Monitor },
   { id: "map-banner-m", label: "Map Banner · Mobile", icon: Smartphone },
   { id: "map-popup-d", label: "Map Popup · Desktop", icon: Megaphone },
@@ -1623,6 +1838,8 @@ export default function Admin() {
         {activeTab === "add-store" && <AddStoreTab />}
         {activeTab === "claims" && <ClaimsTab />}
         {activeTab === "brands" && <BrandsTab />}
+        {activeTab === "categories" && <CategoriesTab />}
+        {activeTab === "cities" && <CitiesTab />}
         {activeTab === "map-banner-d" && <MapBannerDesktopTab />}
         {activeTab === "map-banner-m" && <MapBannerMobileTab />}
         {activeTab === "map-popup-d" && <MapPopupDesktopTab />}

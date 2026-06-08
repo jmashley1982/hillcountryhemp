@@ -32,6 +32,8 @@ import type {
   BusinessStats,
   BusinessUpdate,
   BusinessWithOwner,
+  Category,
+  City,
   ClaimStatusUpdate,
   ClaimWithDetails,
   ErrorResponse,
@@ -40,6 +42,7 @@ import type {
   GetBusinessesParams,
   HealthStatus,
   LoginInput,
+  NameInput,
   PopupAd,
   RegisterInput,
   RejectInput,
@@ -2558,6 +2561,586 @@ export const useForceDeleteAdminImage = <TError = ErrorType<unknown>,
         TContext
       > => {
       return useMutation(getForceDeleteAdminImageMutationOptions(options));
+    }
+
+export const getGetCategoriesUrl = () => {
+
+
+
+
+  return `/api/categories`
+}
+
+/**
+ * @summary List all product categories (public)
+ */
+export const getCategories = async ( options?: RequestInit): Promise<Category[]> => {
+
+  return customFetch<Category[]>(getGetCategoriesUrl(),
+  {
+    ...options,
+    method: 'GET'
+
+
+  }
+);}
+
+
+
+
+
+export const getGetCategoriesQueryKey = () => {
+    return [
+    `/api/categories`
+    ] as const;
+    }
+
+
+export const getGetCategoriesQueryOptions = <TData = Awaited<ReturnType<typeof getCategories>>, TError = ErrorType<unknown>>( options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof getCategories>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+) => {
+
+const {query: queryOptions, request: requestOptions} = options ?? {};
+
+  const queryKey =  queryOptions?.queryKey ?? getGetCategoriesQueryKey();
+
+
+
+    const queryFn: QueryFunction<Awaited<ReturnType<typeof getCategories>>> = ({ signal }) => getCategories({ signal, ...requestOptions });
+
+
+
+
+
+   return  { queryKey, queryFn, ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof getCategories>>, TError, TData> & { queryKey: QueryKey }
+}
+
+export type GetCategoriesQueryResult = NonNullable<Awaited<ReturnType<typeof getCategories>>>
+export type GetCategoriesQueryError = ErrorType<unknown>
+
+
+/**
+ * @summary List all product categories (public)
+ */
+
+export function useGetCategories<TData = Awaited<ReturnType<typeof getCategories>>, TError = ErrorType<unknown>>(
+  options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof getCategories>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+
+ ):  UseQueryResult<TData, TError> & { queryKey: QueryKey } {
+
+  const queryOptions = getGetCategoriesQueryOptions(options)
+
+  const query = useQuery(queryOptions) as  UseQueryResult<TData, TError> & { queryKey: QueryKey };
+
+  return { ...query, queryKey: queryOptions.queryKey };
+}
+
+
+
+
+
+
+
+export const getCreateCategoryUrl = () => {
+
+
+
+
+  return `/api/admin/categories`
+}
+
+/**
+ * @summary Add a product category (admin)
+ */
+export const createCategory = async (nameInput: NameInput, options?: RequestInit): Promise<SuccessResponse> => {
+
+  return customFetch<SuccessResponse>(getCreateCategoryUrl(),
+  {
+    ...options,
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json', ...options?.headers },
+    body: JSON.stringify(
+      nameInput,)
+  }
+);}
+
+
+
+
+export const getCreateCategoryMutationOptions = <TError = ErrorType<ErrorResponse>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof createCategory>>, TError,{data: BodyType<NameInput>}, TContext>, request?: SecondParameter<typeof customFetch>}
+): UseMutationOptions<Awaited<ReturnType<typeof createCategory>>, TError,{data: BodyType<NameInput>}, TContext> => {
+
+const mutationKey = ['createCategory'];
+const {mutation: mutationOptions, request: requestOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, request: undefined};
+
+
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof createCategory>>, {data: BodyType<NameInput>}> = (props) => {
+          const {data} = props ?? {};
+
+          return  createCategory(data,requestOptions)
+        }
+
+
+
+
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type CreateCategoryMutationResult = NonNullable<Awaited<ReturnType<typeof createCategory>>>
+    export type CreateCategoryMutationBody = BodyType<NameInput>
+    export type CreateCategoryMutationError = ErrorType<ErrorResponse>
+
+    /**
+ * @summary Add a product category (admin)
+ */
+export const useCreateCategory = <TError = ErrorType<ErrorResponse>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof createCategory>>, TError,{data: BodyType<NameInput>}, TContext>, request?: SecondParameter<typeof customFetch>}
+ ): UseMutationResult<
+        Awaited<ReturnType<typeof createCategory>>,
+        TError,
+        {data: BodyType<NameInput>},
+        TContext
+      > => {
+      return useMutation(getCreateCategoryMutationOptions(options));
+    }
+
+export const getRenameCategoryUrl = (id: number,) => {
+
+
+
+
+  return `/api/admin/categories/${id}`
+}
+
+/**
+ * @summary Rename a product category (admin)
+ */
+export const renameCategory = async (id: number,
+    nameInput: NameInput, options?: RequestInit): Promise<SuccessResponse> => {
+
+  return customFetch<SuccessResponse>(getRenameCategoryUrl(id),
+  {
+    ...options,
+    method: 'PATCH',
+    headers: { 'Content-Type': 'application/json', ...options?.headers },
+    body: JSON.stringify(
+      nameInput,)
+  }
+);}
+
+
+
+
+export const getRenameCategoryMutationOptions = <TError = ErrorType<unknown>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof renameCategory>>, TError,{id: number;data: BodyType<NameInput>}, TContext>, request?: SecondParameter<typeof customFetch>}
+): UseMutationOptions<Awaited<ReturnType<typeof renameCategory>>, TError,{id: number;data: BodyType<NameInput>}, TContext> => {
+
+const mutationKey = ['renameCategory'];
+const {mutation: mutationOptions, request: requestOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, request: undefined};
+
+
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof renameCategory>>, {id: number;data: BodyType<NameInput>}> = (props) => {
+          const {id,data} = props ?? {};
+
+          return  renameCategory(id,data,requestOptions)
+        }
+
+
+
+
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type RenameCategoryMutationResult = NonNullable<Awaited<ReturnType<typeof renameCategory>>>
+    export type RenameCategoryMutationBody = BodyType<NameInput>
+    export type RenameCategoryMutationError = ErrorType<unknown>
+
+    /**
+ * @summary Rename a product category (admin)
+ */
+export const useRenameCategory = <TError = ErrorType<unknown>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof renameCategory>>, TError,{id: number;data: BodyType<NameInput>}, TContext>, request?: SecondParameter<typeof customFetch>}
+ ): UseMutationResult<
+        Awaited<ReturnType<typeof renameCategory>>,
+        TError,
+        {id: number;data: BodyType<NameInput>},
+        TContext
+      > => {
+      return useMutation(getRenameCategoryMutationOptions(options));
+    }
+
+export const getDeleteCategoryUrl = (id: number,) => {
+
+
+
+
+  return `/api/admin/categories/${id}`
+}
+
+/**
+ * @summary Delete a product category (admin)
+ */
+export const deleteCategory = async (id: number, options?: RequestInit): Promise<SuccessResponse> => {
+
+  return customFetch<SuccessResponse>(getDeleteCategoryUrl(id),
+  {
+    ...options,
+    method: 'DELETE'
+
+
+  }
+);}
+
+
+
+
+export const getDeleteCategoryMutationOptions = <TError = ErrorType<unknown>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof deleteCategory>>, TError,{id: number}, TContext>, request?: SecondParameter<typeof customFetch>}
+): UseMutationOptions<Awaited<ReturnType<typeof deleteCategory>>, TError,{id: number}, TContext> => {
+
+const mutationKey = ['deleteCategory'];
+const {mutation: mutationOptions, request: requestOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, request: undefined};
+
+
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof deleteCategory>>, {id: number}> = (props) => {
+          const {id} = props ?? {};
+
+          return  deleteCategory(id,requestOptions)
+        }
+
+
+
+
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type DeleteCategoryMutationResult = NonNullable<Awaited<ReturnType<typeof deleteCategory>>>
+
+    export type DeleteCategoryMutationError = ErrorType<unknown>
+
+    /**
+ * @summary Delete a product category (admin)
+ */
+export const useDeleteCategory = <TError = ErrorType<unknown>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof deleteCategory>>, TError,{id: number}, TContext>, request?: SecondParameter<typeof customFetch>}
+ ): UseMutationResult<
+        Awaited<ReturnType<typeof deleteCategory>>,
+        TError,
+        {id: number},
+        TContext
+      > => {
+      return useMutation(getDeleteCategoryMutationOptions(options));
+    }
+
+export const getGetCitiesUrl = () => {
+
+
+
+
+  return `/api/cities`
+}
+
+/**
+ * @summary List all cities (public)
+ */
+export const getCities = async ( options?: RequestInit): Promise<City[]> => {
+
+  return customFetch<City[]>(getGetCitiesUrl(),
+  {
+    ...options,
+    method: 'GET'
+
+
+  }
+);}
+
+
+
+
+
+export const getGetCitiesQueryKey = () => {
+    return [
+    `/api/cities`
+    ] as const;
+    }
+
+
+export const getGetCitiesQueryOptions = <TData = Awaited<ReturnType<typeof getCities>>, TError = ErrorType<unknown>>( options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof getCities>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+) => {
+
+const {query: queryOptions, request: requestOptions} = options ?? {};
+
+  const queryKey =  queryOptions?.queryKey ?? getGetCitiesQueryKey();
+
+
+
+    const queryFn: QueryFunction<Awaited<ReturnType<typeof getCities>>> = ({ signal }) => getCities({ signal, ...requestOptions });
+
+
+
+
+
+   return  { queryKey, queryFn, ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof getCities>>, TError, TData> & { queryKey: QueryKey }
+}
+
+export type GetCitiesQueryResult = NonNullable<Awaited<ReturnType<typeof getCities>>>
+export type GetCitiesQueryError = ErrorType<unknown>
+
+
+/**
+ * @summary List all cities (public)
+ */
+
+export function useGetCities<TData = Awaited<ReturnType<typeof getCities>>, TError = ErrorType<unknown>>(
+  options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof getCities>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+
+ ):  UseQueryResult<TData, TError> & { queryKey: QueryKey } {
+
+  const queryOptions = getGetCitiesQueryOptions(options)
+
+  const query = useQuery(queryOptions) as  UseQueryResult<TData, TError> & { queryKey: QueryKey };
+
+  return { ...query, queryKey: queryOptions.queryKey };
+}
+
+
+
+
+
+
+
+export const getCreateCityUrl = () => {
+
+
+
+
+  return `/api/admin/cities`
+}
+
+/**
+ * @summary Add a city (admin)
+ */
+export const createCity = async (nameInput: NameInput, options?: RequestInit): Promise<SuccessResponse> => {
+
+  return customFetch<SuccessResponse>(getCreateCityUrl(),
+  {
+    ...options,
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json', ...options?.headers },
+    body: JSON.stringify(
+      nameInput,)
+  }
+);}
+
+
+
+
+export const getCreateCityMutationOptions = <TError = ErrorType<ErrorResponse>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof createCity>>, TError,{data: BodyType<NameInput>}, TContext>, request?: SecondParameter<typeof customFetch>}
+): UseMutationOptions<Awaited<ReturnType<typeof createCity>>, TError,{data: BodyType<NameInput>}, TContext> => {
+
+const mutationKey = ['createCity'];
+const {mutation: mutationOptions, request: requestOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, request: undefined};
+
+
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof createCity>>, {data: BodyType<NameInput>}> = (props) => {
+          const {data} = props ?? {};
+
+          return  createCity(data,requestOptions)
+        }
+
+
+
+
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type CreateCityMutationResult = NonNullable<Awaited<ReturnType<typeof createCity>>>
+    export type CreateCityMutationBody = BodyType<NameInput>
+    export type CreateCityMutationError = ErrorType<ErrorResponse>
+
+    /**
+ * @summary Add a city (admin)
+ */
+export const useCreateCity = <TError = ErrorType<ErrorResponse>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof createCity>>, TError,{data: BodyType<NameInput>}, TContext>, request?: SecondParameter<typeof customFetch>}
+ ): UseMutationResult<
+        Awaited<ReturnType<typeof createCity>>,
+        TError,
+        {data: BodyType<NameInput>},
+        TContext
+      > => {
+      return useMutation(getCreateCityMutationOptions(options));
+    }
+
+export const getRenameCityUrl = (id: number,) => {
+
+
+
+
+  return `/api/admin/cities/${id}`
+}
+
+/**
+ * @summary Rename a city (admin)
+ */
+export const renameCity = async (id: number,
+    nameInput: NameInput, options?: RequestInit): Promise<SuccessResponse> => {
+
+  return customFetch<SuccessResponse>(getRenameCityUrl(id),
+  {
+    ...options,
+    method: 'PATCH',
+    headers: { 'Content-Type': 'application/json', ...options?.headers },
+    body: JSON.stringify(
+      nameInput,)
+  }
+);}
+
+
+
+
+export const getRenameCityMutationOptions = <TError = ErrorType<unknown>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof renameCity>>, TError,{id: number;data: BodyType<NameInput>}, TContext>, request?: SecondParameter<typeof customFetch>}
+): UseMutationOptions<Awaited<ReturnType<typeof renameCity>>, TError,{id: number;data: BodyType<NameInput>}, TContext> => {
+
+const mutationKey = ['renameCity'];
+const {mutation: mutationOptions, request: requestOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, request: undefined};
+
+
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof renameCity>>, {id: number;data: BodyType<NameInput>}> = (props) => {
+          const {id,data} = props ?? {};
+
+          return  renameCity(id,data,requestOptions)
+        }
+
+
+
+
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type RenameCityMutationResult = NonNullable<Awaited<ReturnType<typeof renameCity>>>
+    export type RenameCityMutationBody = BodyType<NameInput>
+    export type RenameCityMutationError = ErrorType<unknown>
+
+    /**
+ * @summary Rename a city (admin)
+ */
+export const useRenameCity = <TError = ErrorType<unknown>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof renameCity>>, TError,{id: number;data: BodyType<NameInput>}, TContext>, request?: SecondParameter<typeof customFetch>}
+ ): UseMutationResult<
+        Awaited<ReturnType<typeof renameCity>>,
+        TError,
+        {id: number;data: BodyType<NameInput>},
+        TContext
+      > => {
+      return useMutation(getRenameCityMutationOptions(options));
+    }
+
+export const getDeleteCityUrl = (id: number,) => {
+
+
+
+
+  return `/api/admin/cities/${id}`
+}
+
+/**
+ * @summary Delete a city (admin)
+ */
+export const deleteCity = async (id: number, options?: RequestInit): Promise<SuccessResponse> => {
+
+  return customFetch<SuccessResponse>(getDeleteCityUrl(id),
+  {
+    ...options,
+    method: 'DELETE'
+
+
+  }
+);}
+
+
+
+
+export const getDeleteCityMutationOptions = <TError = ErrorType<unknown>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof deleteCity>>, TError,{id: number}, TContext>, request?: SecondParameter<typeof customFetch>}
+): UseMutationOptions<Awaited<ReturnType<typeof deleteCity>>, TError,{id: number}, TContext> => {
+
+const mutationKey = ['deleteCity'];
+const {mutation: mutationOptions, request: requestOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, request: undefined};
+
+
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof deleteCity>>, {id: number}> = (props) => {
+          const {id} = props ?? {};
+
+          return  deleteCity(id,requestOptions)
+        }
+
+
+
+
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type DeleteCityMutationResult = NonNullable<Awaited<ReturnType<typeof deleteCity>>>
+
+    export type DeleteCityMutationError = ErrorType<unknown>
+
+    /**
+ * @summary Delete a city (admin)
+ */
+export const useDeleteCity = <TError = ErrorType<unknown>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof deleteCity>>, TError,{id: number}, TContext>, request?: SecondParameter<typeof customFetch>}
+ ): UseMutationResult<
+        Awaited<ReturnType<typeof deleteCity>>,
+        TError,
+        {id: number},
+        TContext
+      > => {
+      return useMutation(getDeleteCityMutationOptions(options));
     }
 
 export const getGetBrandsUrl = () => {

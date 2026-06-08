@@ -138,6 +138,16 @@ export const popupAdTable = pgTable("popup_ad", {
   brandFilter: text("brand_filter"),
 });
 
+export const categoriesTable = pgTable("categories", {
+  id: serial("id").primaryKey(),
+  name: text("name").unique().notNull(),
+});
+
+export const citiesTable = pgTable("cities", {
+  id: serial("id").primaryKey(),
+  name: text("name").unique().notNull(),
+});
+
 export const sessionsTable = pgTable("session", {
   sid: text("sid").primaryKey(),
   sess: text("sess").notNull(),
@@ -164,3 +174,5 @@ export type B2BBannerAd = typeof b2bBannerAdTable.$inferSelect;
 export type PopupAd = typeof popupAdTable.$inferSelect;
 export type PasswordResetToken = typeof passwordResetTokensTable.$inferSelect;
 export type Claim = typeof claimsTable.$inferSelect;
+export type Category = typeof categoriesTable.$inferSelect;
+export type City = typeof citiesTable.$inferSelect;

@@ -1,6 +1,5 @@
-import { useGetBusinesses, useGetBrands } from "@workspace/api-client-react";
+import { useGetBusinesses, useGetBrands, useGetCategories, useGetCities } from "@workspace/api-client-react";
 import { useSearch } from "wouter";
-import { ALL_CATEGORIES } from "@/lib/categories";
 import { useState, useEffect, useRef, useMemo } from "react";
 import { Input } from "@/components/ui/input";
 import {
@@ -19,34 +18,6 @@ import {
 import { BusinessMap } from "@/components/map";
 import { ShopOverlay } from "@/components/shop-overlay";
 import { SuggestBrandModal } from "@/components/suggest-brand-modal";
-
-const ALL_CITIES = [
-  "Austin",
-  "Boerne",
-  "Buda",
-  "Bulverde",
-  "Canyon Lake",
-  "Cedar Park",
-  "Cibolo",
-  "Converse",
-  "Dripping Springs",
-  "Fredericksburg",
-  "Garden Ridge",
-  "Georgetown",
-  "Kerrville",
-  "Kyle",
-  "Live Oak",
-  "Marble Falls",
-  "New Braunfels",
-  "Pflugerville",
-  "Round Rock",
-  "San Antonio",
-  "San Marcos",
-  "Schertz",
-  "Seguin",
-  "Universal City",
-  "Wimberley",
-];
 
 // ── Synonym map: word → category name ─────────────────────────────
 const SYNONYMS: Record<string, string> = {
@@ -79,6 +50,8 @@ type SuggestionItem =
 function getSuggestions(
   query: string,
   brands: { name: string }[],
+  categories: { name: string }[],
+  cities: { name: string }[],
   selBrand: string,
   selCat: string,
   selCity: string,
@@ -95,7 +68,7 @@ function getSuggestions(
       results.push({ kind: "category", value: cat });
     }
   }
-  for (const cat of ALL_CATEGORIES) {
+  for (const { name: cat } of categories) {
     if (!addedCats.has(cat) && selCat !== cat && cat.toLowerCase().includes(q)) {
       addedCats.add(cat);
       results.push({ kind: "category", value: cat });
@@ -106,7 +79,7 @@ function getSuggestions(
       results.push({ kind: "brand", value: brand.name });
     }
   }
-  for (const city of ALL_CITIES) {
+  for (const { name: city } of cities) {
     if (selCity !== city && city.toLowerCase().includes(q)) {
       results.push({ kind: "city", value: city });
     }
@@ -277,6 +250,8 @@ export default function Home() {
   }, []);
 
   const { data: allBrands = [] } = useGetBrands();
+  const { data: allCategories = [] } = useGetCategories();
+  const { data: allCities = [] } = useGetCities();
 
   const { data: allBusinesses = [], isLoading } = useGetBusinesses({
     search: search || undefined,
@@ -304,8 +279,8 @@ export default function Home() {
   const hasFilters = !!selectedBrand || !!selectedCat || !!selectedCity;
 
   const suggestions = useMemo(
-    () => getSuggestions(search, allBrands, selectedBrand, selectedCat, selectedCity),
-    [search, allBrands, selectedBrand, selectedCat, selectedCity],
+    () => getSuggestions(search, allBrands, allCategories, allCities, selectedBrand, selectedCat, selectedCity),
+    [search, allBrands, allCategories, allCities, selectedBrand, selectedCat, selectedCity],
   );
 
   const showDropdown = searchFocused && search.trim().length > 0 && suggestions.length > 0;
@@ -335,8 +310,8 @@ export default function Home() {
       <div className="bg-muted/30 border-b-2 border-border px-3 py-2 flex-none">
         <div className="flex items-center gap-2">
           <SingleFilterSelect value={selectedBrand} onChange={setSelectedBrand} placeholder="Brands" options={allBrands.map((b) => b.name)} testId="select-brand" />
-          <SingleFilterSelect value={selectedCat} onChange={setSelectedCat} placeholder="Products" options={ALL_CATEGORIES} testId="select-category" />
-          <SingleFilterSelect value={selectedCity} onChange={setSelectedCity} placeholder="Cities" options={ALL_CITIES} testId="select-city" />
+          <SingleFilterSelect value={selectedCat} onChange={setSelectedCat} placeholder="Products" options={allCategories.map((c) => c.name)} testId="select-category" />
+          <SingleFilterSelect value={selectedCity} onChange={setSelectedCity} placeholder="Cities" options={allCities.map((c) => c.name)} testId="select-city" />
           <button
             onClick={() => { setSelectedBrand(""); setSelectedCat(""); setSelectedCity(""); }}
             disabled={!hasFilters}
