@@ -185,7 +185,7 @@ function SingleFilterSelect({
       </button>
       <ChevronDown className="pointer-events-none absolute right-2 top-1/2 -translate-y-1/2 h-3.5 w-3.5 text-muted-foreground" />
       {open && (
-        <div className="absolute top-full left-0 mt-1 min-w-[160px] max-h-52 overflow-y-auto bg-card border-2 border-border rounded-xl shadow-2xl z-50 py-1">
+        <div className="absolute top-full left-0 mt-1 min-w-[160px] max-h-52 overflow-y-auto bg-card border-2 border-border rounded-xl shadow-2xl z-[1100] py-1">
           {options.map((opt) => (
             <button
               key={opt}
