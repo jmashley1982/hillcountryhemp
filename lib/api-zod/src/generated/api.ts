@@ -614,6 +614,18 @@ export const CreateCategoryBody = zod.object({
 
 
 /**
+ * @summary Update the display order of product categories (admin)
+ */
+export const ReorderCategoriesBody = zod.object({
+  "ids": zod.array(zod.number())
+})
+
+export const ReorderCategoriesResponse = zod.object({
+  "success": zod.boolean()
+})
+
+
+/**
  * @summary Rename a product category (admin)
  */
 export const RenameCategoryParams = zod.object({

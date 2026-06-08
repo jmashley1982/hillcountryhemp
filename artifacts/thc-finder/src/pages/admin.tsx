@@ -1,5 +1,21 @@
 import { useState, useRef } from "react";
 import {
+  DndContext,
+  closestCenter,
+  PointerSensor,
+  TouchSensor,
+  useSensor,
+  useSensors,
+  type DragEndEvent,
+} from "@dnd-kit/core";
+import {
+  SortableContext,
+  verticalListSortingStrategy,
+  useSortable,
+  arrayMove,
+} from "@dnd-kit/sortable";
+import { CSS } from "@dnd-kit/utilities";
+import {
   useGetMe,
   useGetPendingBusinesses,
   useGetAllBusinesses,
@@ -27,6 +43,7 @@ import {
   useCreateCategory,
   useRenameCategory,
   useDeleteCategory,
+  useReorderCategories,
   useGetCities,
   useCreateCity,
   useRenameCity,
@@ -85,6 +102,7 @@ import {
   Pencil,
   Check,
   X as XIcon,
+  GripVertical,
 } from "lucide-react";
 
 type Tab = "pending" | "all" | "brands" | "add-store" | "claims" | "categories" | "cities" | "map-banner-d" | "map-banner-m" | "map-popup-d" | "map-popup-m" | "dash-banner-d" | "dash-banner-m" | "images";
@@ -1554,6 +1572,27 @@ function ImagesTab() {
   );
 }
 
+function SortableRow({ id, children }: { id: number; children: React.ReactNode }) {
+  const { attributes, listeners, setNodeRef, transform, transition, isDragging } = useSortable({ id });
+  return (
+    <div
+      ref={setNodeRef}
+      style={{ transform: CSS.Transform.toString(transform), transition }}
+      className={`flex items-center gap-1 ${isDragging ? "opacity-40" : ""}`}
+    >
+      <button
+        type="button"
+        {...attributes}
+        {...listeners}
+        className="p-1 cursor-grab active:cursor-grabbing text-muted-foreground hover:text-foreground shrink-0 touch-none"
+      >
+        <GripVertical className="h-4 w-4" />
+      </button>
+      <div className="flex-1 min-w-0">{children}</div>
+    </div>
+  );
+}
+
 function NameListTab({
   title,
   singularLabel,
@@ -1565,6 +1604,8 @@ function NameListTab({
   isPendingCreate,
   isPendingRename,
   isPendingDelete,
+  sortable,
+  onReorder,
 }: {
   title: string;
   singularLabel: string;
@@ -1576,10 +1617,31 @@ function NameListTab({
   isPendingCreate: boolean;
   isPendingRename: boolean;
   isPendingDelete: boolean;
+  sortable?: boolean;
+  onReorder?: (ids: number[]) => void;
 }) {
   const [newName, setNewName] = useState("");
   const [editingId, setEditingId] = useState<number | null>(null);
   const [editingName, setEditingName] = useState("");
+  const [localItems, setLocalItems] = useState(items);
+  useEffect(() => { setLocalItems(items); }, [items]);
+
+  const sensors = useSensors(
+    useSensor(PointerSensor, { activationConstraint: { distance: 5 } }),
+    useSensor(TouchSensor, { activationConstraint: { delay: 200, tolerance: 5 } }),
+  );
+
+  const handleDragEnd = (event: DragEndEvent) => {
+    const { active, over } = event;
+    if (!over || active.id === over.id) return;
+    setLocalItems((prev) => {
+      const oldIdx = prev.findIndex((i) => i.id === active.id);
+      const newIdx = prev.findIndex((i) => i.id === over.id);
+      const reordered = arrayMove(prev, oldIdx, newIdx);
+      onReorder?.(reordered.map((i) => i.id));
+      return reordered;
+    });
+  };
 
   const handleAdd = () => {
     const trimmed = newName.trim();
@@ -1596,6 +1658,59 @@ function NameListTab({
     setEditingId(null);
     setEditingName("");
   };
+
+  const displayItems = sortable ? localItems : items;
+
+  const renderRow = (item: { id: number; name: string }) => (
+    <div
+      key={item.id}
+      className="flex items-center justify-between p-3 bg-card border-2 border-border rounded-2xl shadow-[0_2px_12px_rgba(0,0,0,0.2)]"
+    >
+      {editingId === item.id ? (
+        <div className="flex items-center gap-2 flex-1 min-w-0">
+          <input
+            autoFocus
+            value={editingName}
+            onChange={(e) => setEditingName(e.target.value)}
+            onKeyDown={(e) => { if (e.key === "Enter") saveEdit(); if (e.key === "Escape") cancelEdit(); }}
+            className="flex-1 min-w-0 bg-background border-2 border-[#84C7D0] rounded-lg px-3 py-1 text-sm font-bold focus:outline-none"
+          />
+          <Button size="icon" variant="ghost" className="h-7 w-7 text-[#99CC66] hover:text-[#99CC66]" onClick={saveEdit} disabled={isPendingRename}>
+            <Check className="h-4 w-4" />
+          </Button>
+          <Button size="icon" variant="ghost" className="h-7 w-7 text-muted-foreground" onClick={cancelEdit}>
+            <XIcon className="h-4 w-4" />
+          </Button>
+        </div>
+      ) : (
+        <span className="font-bold text-sm">{item.name}</span>
+      )}
+      {editingId !== item.id && (
+        <div className="flex gap-1 shrink-0">
+          <Button
+            size="icon"
+            variant="ghost"
+            className="h-7 w-7 text-muted-foreground hover:text-foreground"
+            onClick={() => startEdit(item.id, item.name)}
+          >
+            <Pencil className="h-3.5 w-3.5" />
+          </Button>
+          <Button
+            size="icon"
+            variant="ghost"
+            className="h-7 w-7 text-destructive hover:text-destructive"
+            disabled={isPendingDelete}
+            onClick={() => {
+              if (!confirm(`Delete "${item.name}"? This cannot be undone.`)) return;
+              onDelete(item.id, item.name);
+            }}
+          >
+            <Trash2 className="h-3.5 w-3.5" />
+          </Button>
+        </div>
+      )}
+    </div>
+  );
 
   return (
     <div className="space-y-6">
@@ -1617,60 +1732,23 @@ function NameListTab({
 
       {isLoading ? (
         <div className="animate-pulse font-bold">Loading {title.toLowerCase()}...</div>
-      ) : items.length === 0 ? (
+      ) : displayItems.length === 0 ? (
         <p className="text-muted-foreground font-bold text-center py-8">No {title.toLowerCase()} yet.</p>
+      ) : sortable ? (
+        <DndContext sensors={sensors} collisionDetection={closestCenter} onDragEnd={handleDragEnd}>
+          <SortableContext items={displayItems.map((i) => i.id)} strategy={verticalListSortingStrategy}>
+            <div className="space-y-2">
+              {displayItems.map((item) => (
+                <SortableRow key={item.id} id={item.id}>
+                  {renderRow(item)}
+                </SortableRow>
+              ))}
+            </div>
+          </SortableContext>
+        </DndContext>
       ) : (
         <div className="space-y-2">
-          {items.map((item) => (
-            <div
-              key={item.id}
-              className="flex items-center justify-between p-3 bg-card border-2 border-border rounded-2xl shadow-[0_2px_12px_rgba(0,0,0,0.2)]"
-            >
-              {editingId === item.id ? (
-                <div className="flex items-center gap-2 flex-1 min-w-0">
-                  <input
-                    autoFocus
-                    value={editingName}
-                    onChange={(e) => setEditingName(e.target.value)}
-                    onKeyDown={(e) => { if (e.key === "Enter") saveEdit(); if (e.key === "Escape") cancelEdit(); }}
-                    className="flex-1 min-w-0 bg-background border-2 border-[#84C7D0] rounded-lg px-3 py-1 text-sm font-bold focus:outline-none"
-                  />
-                  <Button size="icon" variant="ghost" className="h-7 w-7 text-[#99CC66] hover:text-[#99CC66]" onClick={saveEdit} disabled={isPendingRename}>
-                    <Check className="h-4 w-4" />
-                  </Button>
-                  <Button size="icon" variant="ghost" className="h-7 w-7 text-muted-foreground" onClick={cancelEdit}>
-                    <XIcon className="h-4 w-4" />
-                  </Button>
-                </div>
-              ) : (
-                <span className="font-bold text-sm">{item.name}</span>
-              )}
-              {editingId !== item.id && (
-                <div className="flex gap-1 shrink-0">
-                  <Button
-                    size="icon"
-                    variant="ghost"
-                    className="h-7 w-7 text-muted-foreground hover:text-foreground"
-                    onClick={() => startEdit(item.id, item.name)}
-                  >
-                    <Pencil className="h-3.5 w-3.5" />
-                  </Button>
-                  <Button
-                    size="icon"
-                    variant="ghost"
-                    className="h-7 w-7 text-destructive hover:text-destructive"
-                    disabled={isPendingDelete}
-                    onClick={() => {
-                      if (!confirm(`Delete "${item.name}"? This cannot be undone.`)) return;
-                      onDelete(item.id, item.name);
-                    }}
-                  >
-                    <Trash2 className="h-3.5 w-3.5" />
-                  </Button>
-                </div>
-              )}
-            </div>
-          ))}
+          {displayItems.map((item) => renderRow(item))}
         </div>
       )}
     </div>
@@ -1684,6 +1762,7 @@ function CategoriesTab() {
   const create = useCreateCategory();
   const rename = useRenameCategory();
   const remove = useDeleteCategory();
+  const reorder = useReorderCategories();
   const invalidate = () => queryClient.invalidateQueries({ queryKey: getGetCategoriesQueryKey() });
 
   return (
@@ -1695,6 +1774,12 @@ function CategoriesTab() {
       isPendingCreate={create.isPending}
       isPendingRename={rename.isPending}
       isPendingDelete={remove.isPending}
+      sortable
+      onReorder={(ids) =>
+        reorder.mutate({ data: { ids } }, {
+          onError: () => { toast({ title: "Reorder failed", variant: "destructive" }); invalidate(); },
+        })
+      }
       onCreate={(name) =>
         create.mutate({ data: { name } }, {
           onSuccess: () => { toast({ title: "Product category added" }); invalidate(); },

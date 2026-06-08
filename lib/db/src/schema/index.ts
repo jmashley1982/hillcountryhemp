@@ -141,6 +141,7 @@ export const popupAdTable = pgTable("popup_ad", {
 export const categoriesTable = pgTable("categories", {
   id: serial("id").primaryKey(),
   name: text("name").unique().notNull(),
+  sortOrder: integer("sort_order").notNull().default(0),
 });
 
 export const citiesTable = pgTable("cities", {

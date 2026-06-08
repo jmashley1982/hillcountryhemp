@@ -75,6 +75,10 @@ export interface NameInput {
   name: string;
 }
 
+export interface ReorderInput {
+  ids: number[];
+}
+
 export interface Brand {
   id: number;
   name: string;

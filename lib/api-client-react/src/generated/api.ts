@@ -46,6 +46,7 @@ import type {
   PopupAd,
   RegisterInput,
   RejectInput,
+  ReorderInput,
   ResetPasswordInput,
   StorageImage,
   SuccessResponse,
@@ -2709,6 +2710,77 @@ export const useCreateCategory = <TError = ErrorType<ErrorResponse>,
         TContext
       > => {
       return useMutation(getCreateCategoryMutationOptions(options));
+    }
+
+export const getReorderCategoriesUrl = () => {
+
+
+
+
+  return `/api/admin/categories/reorder`
+}
+
+/**
+ * @summary Update the display order of product categories (admin)
+ */
+export const reorderCategories = async (reorderInput: ReorderInput, options?: RequestInit): Promise<SuccessResponse> => {
+
+  return customFetch<SuccessResponse>(getReorderCategoriesUrl(),
+  {
+    ...options,
+    method: 'PUT',
+    headers: { 'Content-Type': 'application/json', ...options?.headers },
+    body: JSON.stringify(
+      reorderInput,)
+  }
+);}
+
+
+
+
+export const getReorderCategoriesMutationOptions = <TError = ErrorType<unknown>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof reorderCategories>>, TError,{data: BodyType<ReorderInput>}, TContext>, request?: SecondParameter<typeof customFetch>}
+): UseMutationOptions<Awaited<ReturnType<typeof reorderCategories>>, TError,{data: BodyType<ReorderInput>}, TContext> => {
+
+const mutationKey = ['reorderCategories'];
+const {mutation: mutationOptions, request: requestOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, request: undefined};
+
+
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof reorderCategories>>, {data: BodyType<ReorderInput>}> = (props) => {
+          const {data} = props ?? {};
+
+          return  reorderCategories(data,requestOptions)
+        }
+
+
+
+
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type ReorderCategoriesMutationResult = NonNullable<Awaited<ReturnType<typeof reorderCategories>>>
+    export type ReorderCategoriesMutationBody = BodyType<ReorderInput>
+    export type ReorderCategoriesMutationError = ErrorType<unknown>
+
+    /**
+ * @summary Update the display order of product categories (admin)
+ */
+export const useReorderCategories = <TError = ErrorType<unknown>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof reorderCategories>>, TError,{data: BodyType<ReorderInput>}, TContext>, request?: SecondParameter<typeof customFetch>}
+ ): UseMutationResult<
+        Awaited<ReturnType<typeof reorderCategories>>,
+        TError,
+        {data: BodyType<ReorderInput>},
+        TContext
+      > => {
+      return useMutation(getReorderCategoriesMutationOptions(options));
     }
 
 export const getRenameCategoryUrl = (id: number,) => {

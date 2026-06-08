@@ -35,6 +35,7 @@ export * from './photo';
 export * from './popupAd';
 export * from './registerInput';
 export * from './rejectInput';
+export * from './reorderInput';
 export * from './resetPasswordInput';
 export * from './storageImage';
 export * from './successResponse';

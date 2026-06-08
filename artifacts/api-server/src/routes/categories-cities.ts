@@ -9,9 +9,35 @@ const router: IRouter = Router();
 // ── Categories ────────────────────────────────────────────────────────────────
 
 router.get("/categories", async (_req, res): Promise<void> => {
-  const rows = await db.select().from(categoriesTable).orderBy(categoriesTable.name);
+  const rows = await db
+    .select()
+    .from(categoriesTable)
+    .orderBy(categoriesTable.sortOrder, categoriesTable.name);
   res.json(rows);
 });
+
+// Must be before /:id to avoid "reorder" matching as an id
+router.put(
+  "/admin/categories/reorder",
+  requireLogin,
+  requireAdmin,
+  async (req, res): Promise<void> => {
+    const { ids } = req.body as { ids?: unknown };
+    if (!Array.isArray(ids) || ids.length === 0) {
+      res.status(400).json({ error: "ids array required" });
+      return;
+    }
+    await Promise.all(
+      (ids as number[]).map((id, index) =>
+        db
+          .update(categoriesTable)
+          .set({ sortOrder: index })
+          .where(eq(categoriesTable.id, id)),
+      ),
+    );
+    res.json({ success: true });
+  },
+);
 
 router.post(
   "/admin/categories",

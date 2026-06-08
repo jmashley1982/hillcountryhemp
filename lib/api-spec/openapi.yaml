@@ -729,6 +729,24 @@ paths:
               schema:
                 $ref: "#/components/schemas/ErrorResponse"
 
+  /admin/categories/reorder:
+    put:
+      operationId: reorderCategories
+      summary: Update the display order of product categories (admin)
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/ReorderInput"
+      responses:
+        "200":
+          description: Reordered
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/SuccessResponse"
+
   /admin/categories/{id}:
     patch:
       operationId: renameCategory
@@ -1132,6 +1150,15 @@ components:
       properties:
         name:
           type: string
+
+    ReorderInput:
+      type: object
+      required: [ids]
+      properties:
+        ids:
+          type: array
+          items:
+            type: integer
 
     Brand:
       type: object

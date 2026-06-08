@@ -148,13 +148,14 @@ function isOpenNow(hoursJson: unknown): "open" | "closed" | "unknown" {
 
 // ── SingleFilterSelect ────────────────────────────────────────────
 function SingleFilterSelect({
-  value, onChange, placeholder, options, testId,
+  value, onChange, placeholder, options, testId, featuredValues,
 }: {
   value: string;
   onChange: (v: string) => void;
   placeholder: string;
   options: string[];
   testId?: string;
+  featuredValues?: Set<string>;
 }) {
   const [open, setOpen] = useState(false);
   const ref = useRef<HTMLDivElement>(null);
@@ -169,6 +170,25 @@ function SingleFilterSelect({
     onChange(value === opt ? "" : opt);
     setOpen(false);
   };
+
+  const featured = featuredValues ? options.filter((o) => featuredValues.has(o)) : [];
+  const regular = featuredValues ? options.filter((o) => !featuredValues.has(o)) : options;
+  const hasDivider = featured.length > 0 && regular.length > 0;
+
+  const renderOption = (opt: string, starred: boolean) => (
+    <button
+      key={opt}
+      type="button"
+      onClick={() => select(opt)}
+      className={`flex items-center gap-2 px-3 py-1.5 w-full text-left text-xs font-bold hover:bg-muted/60 transition-colors ${
+        value === opt ? "text-[#84C7D0]" : "text-foreground"
+      }`}
+    >
+      <span className={`w-2 h-2 rounded-full shrink-0 border ${value === opt ? "bg-[#84C7D0] border-[#84C7D0]" : "border-muted-foreground/40"}`} />
+      <span className="flex-1 truncate">{opt}</span>
+      {starred && <Star className="h-3 w-3 fill-[#D4AF37] text-[#D4AF37] shrink-0" />}
+    </button>
+  );
 
   return (
     <div ref={ref} className="relative flex-1 min-w-0" data-testid={testId}>
@@ -186,19 +206,9 @@ function SingleFilterSelect({
       <ChevronDown className="pointer-events-none absolute right-2 top-1/2 -translate-y-1/2 h-3.5 w-3.5 text-muted-foreground" />
       {open && (
         <div className="absolute top-full left-0 mt-1 min-w-[160px] max-h-52 overflow-y-auto bg-card border-2 border-border rounded-xl shadow-2xl z-[1100] py-1">
-          {options.map((opt) => (
-            <button
-              key={opt}
-              type="button"
-              onClick={() => select(opt)}
-              className={`flex items-center gap-2 px-3 py-1.5 w-full text-left text-xs font-bold hover:bg-muted/60 transition-colors ${
-                value === opt ? "text-[#84C7D0]" : "text-foreground"
-              }`}
-            >
-              <span className={`w-2 h-2 rounded-full shrink-0 border ${value === opt ? "bg-[#84C7D0] border-[#84C7D0]" : "border-muted-foreground/40"}`} />
-              {opt}
-            </button>
-          ))}
+          {featured.map((opt) => renderOption(opt, true))}
+          {hasDivider && <div className="my-1 border-t border-border/50" />}
+          {regular.map((opt) => renderOption(opt, false))}
         </div>
       )}
     </div>
@@ -252,6 +262,13 @@ export default function Home() {
   const { data: allBrands = [] } = useGetBrands();
   const { data: allCategories = [] } = useGetCategories();
   const { data: allCities = [] } = useGetCities();
+
+  const sortedBrandNames = useMemo(() => {
+    const feat = allBrands.filter((b) => b.is_featured === 1).map((b) => b.name).sort((a, z) => a.localeCompare(z));
+    const rest = allBrands.filter((b) => b.is_featured !== 1).map((b) => b.name).sort((a, z) => a.localeCompare(z));
+    return [...feat, ...rest];
+  }, [allBrands]);
+  const featuredBrandNames = useMemo(() => new Set(allBrands.filter((b) => b.is_featured === 1).map((b) => b.name)), [allBrands]);
 
   const { data: allBusinesses = [], isLoading } = useGetBusinesses({
     search: search || undefined,
@@ -309,7 +326,7 @@ export default function Home() {
       {/* ── Filter bar ── */}
       <div className="bg-muted/30 border-b-2 border-border px-3 py-2 flex-none">
         <div className="flex items-center gap-2">
-          <SingleFilterSelect value={selectedBrand} onChange={setSelectedBrand} placeholder="Brands" options={allBrands.map((b) => b.name)} testId="select-brand" />
+          <SingleFilterSelect value={selectedBrand} onChange={setSelectedBrand} placeholder="Brands" options={sortedBrandNames} featuredValues={featuredBrandNames} testId="select-brand" />
           <SingleFilterSelect value={selectedCat} onChange={setSelectedCat} placeholder="Products" options={allCategories.map((c) => c.name)} testId="select-category" />
           <SingleFilterSelect value={selectedCity} onChange={setSelectedCity} placeholder="Cities" options={allCities.map((c) => c.name)} testId="select-city" />
           <button
