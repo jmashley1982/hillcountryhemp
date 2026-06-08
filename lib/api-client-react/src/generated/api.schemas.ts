@@ -165,6 +165,8 @@ export interface BusinessDetail {
   /** @nullable */
   phone?: string | null;
   /** @nullable */
+  email?: string | null;
+  /** @nullable */
   website?: string | null;
   /** @nullable */
   hours?: string | null;
@@ -228,6 +230,7 @@ export interface BusinessInput {
   state?: string;
   zip?: string;
   phone?: string;
+  email?: string;
   website?: string;
   hours?: string;
   hours_json?: string;
@@ -249,6 +252,7 @@ export interface AdminBusinessInput {
   state?: string;
   zip?: string;
   phone?: string;
+  email?: string;
   website?: string;
   hours_json?: string;
   description?: string;
@@ -268,6 +272,7 @@ export interface BusinessUpdate {
   state?: string;
   zip?: string;
   phone?: string;
+  email?: string;
   website?: string;
   hours?: string;
   hours_json?: string;

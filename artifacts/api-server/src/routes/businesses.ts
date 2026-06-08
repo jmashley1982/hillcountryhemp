@@ -80,6 +80,7 @@ async function enrichBusiness(b: {
   lat: number | null;
   lng: number | null;
   phone: string | null;
+  email: string | null;
   website: string | null;
   hours: string | null;
   hoursJson: string | null;
@@ -125,6 +126,7 @@ async function enrichBusiness(b: {
     lat: b.lat,
     lng: b.lng,
     phone: b.phone,
+    email: b.email,
     website: b.website,
     hours: composeHoursDisplay(b.hoursJson),
     hours_json: b.hoursJson,
@@ -397,7 +399,7 @@ router.post(
   requireLogin,
   requireBusiness,
   async (req, res): Promise<void> => {
-    const { name, address, street, city, state, zip, phone, website, hours_json, description, instagram, facebook, google_reviews_url, categories, brand_ids, on_site_smoking_area, owner_authorized } =
+    const { name, address, street, city, state, zip, phone, email, website, hours_json, description, instagram, facebook, google_reviews_url, categories, brand_ids, on_site_smoking_area, owner_authorized } =
       req.body as {
         name: string;
         address?: string;
@@ -406,6 +408,7 @@ router.post(
         state?: string;
         zip?: string;
         phone?: string;
+        email?: string;
         website?: string;
         hours_json?: string;
         description?: string;
@@ -436,6 +439,7 @@ router.post(
         lat: coords?.lat ?? null,
         lng: coords?.lng ?? null,
         phone: phone ?? null,
+        email: email ?? null,
         website: website ?? null,
         hours: composeHoursDisplay(hours_json),
         hoursJson: hours_json ?? null,
@@ -464,6 +468,7 @@ router.post(
         lat: coords?.lat ?? null,
         lng: coords?.lng ?? null,
         phone: phone ?? null,
+        email: email ?? null,
         website: website ?? null,
         hours: composeHoursDisplay(hours_json),
         hoursJson: hours_json ?? null,
@@ -517,7 +522,7 @@ router.put(
       return;
     }
 
-    const { name, street, city, state, zip, phone, website, hours_json, description, instagram, facebook, google_reviews_url, categories, brand_ids, on_site_smoking_area } =
+    const { name, street, city, state, zip, phone, email, website, hours_json, description, instagram, facebook, google_reviews_url, categories, brand_ids, on_site_smoking_area } =
       req.body as {
         name?: string;
         street?: string;
@@ -525,6 +530,7 @@ router.put(
         state?: string;
         zip?: string;
         phone?: string;
+        email?: string;
         website?: string;
         hours_json?: string;
         description?: string;
@@ -574,6 +580,7 @@ router.put(
       lat: newLat,
       lng: newLng,
       phone: phone !== undefined ? phone : b.phone,
+      email: email !== undefined ? email : b.email,
       website: website !== undefined ? website : b.website,
       hours: hours_json !== undefined ? composeHoursDisplay(hours_json) : b.hours,
       hoursJson: hours_json !== undefined ? hours_json : b.hoursJson,

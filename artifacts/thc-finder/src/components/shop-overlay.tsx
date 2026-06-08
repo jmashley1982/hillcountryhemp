@@ -5,6 +5,7 @@ import {
   X,
   MapPin,
   Phone,
+  Mail,
   Globe,
   Clock,
   Star,
@@ -40,7 +41,7 @@ function formatPhone(raw: string): string {
   return raw;
 }
 
-type BrandWithLogo = { id: number; name: string; logo_path?: string | null };
+type BrandWithLogo = { id: number; name: string; logo_path?: string | null; is_featured?: number };
 
 interface ShopOverlayProps {
   businessId: number;
@@ -137,7 +138,7 @@ export function ShopOverlay({ businessId, onClose }: ShopOverlayProps) {
                   <h2 className="text-2xl md:text-3xl text-[#99CC66] leading-tight flex items-center gap-2">
                     <span className="break-words">{biz.name}</span>
                     {biz.is_featured === 1 && (
-                      <Star className="h-6 w-6 fill-[#99CC66] text-[#99CC66] shrink-0" />
+                      <Star className="h-6 w-6 fill-[#D4AF37] text-[#D4AF37] shrink-0" />
                     )}
                   </h2>
                   {(biz as { owner_id?: number | null }).owner_id == null && (
@@ -202,6 +203,17 @@ export function ShopOverlay({ businessId, onClose }: ShopOverlayProps) {
                       className="hover:text-[#99CC66] transition-colors line-clamp-1 text-sm"
                     >
                       {biz.website.replace(/^https?:\/\//, "")}
+                    </a>
+                  </div>
+                )}
+                {(biz as { email?: string | null }).email && (
+                  <div className="flex items-center gap-3">
+                    <Mail className="h-5 w-5 text-primary shrink-0" />
+                    <a
+                      href={`mailto:${(biz as { email?: string | null }).email}`}
+                      className="hover:text-[#99CC66] transition-colors line-clamp-1 text-sm"
+                    >
+                      {(biz as { email?: string | null }).email}
                     </a>
                   </div>
                 )}
@@ -282,11 +294,13 @@ export function ShopOverlay({ businessId, onClose }: ShopOverlayProps) {
                     Featured Brands
                   </h3>
                   <div className="flex flex-wrap gap-2.5">
-                    {[...(biz.brands as BrandWithLogo[])].sort((a, b) => a.name.localeCompare(b.name)).map((brand) => (
+                    {[...(biz.brands as BrandWithLogo[])].sort((a, b) => (b.is_featured ?? 0) - (a.is_featured ?? 0) || a.name.localeCompare(b.name)).map((brand) => (
                       <div
                         key={brand.id}
                         className={`flex items-center gap-2 px-3.5 py-2 rounded-2xl font-bold border-2 shadow-md transition-all ${
-                          brand.logo_path
+                          brand.is_featured
+                            ? "bg-card border-[#D4AF37]/40"
+                            : brand.logo_path
                             ? "bg-card border-[#99CC66]/30"
                             : "bg-card border-border"
                         }`}
@@ -299,6 +313,9 @@ export function ShopOverlay({ businessId, onClose }: ShopOverlayProps) {
                           />
                         )}
                         <span className="text-sm">{brand.name}</span>
+                        {!!brand.is_featured && (
+                          <Star className="h-3 w-3 fill-[#D4AF37] text-[#D4AF37] shrink-0" />
+                        )}
                       </div>
                     ))}
                   </div>

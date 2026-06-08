@@ -1,6 +1,6 @@
 import { useGetBusiness, useClaimBusiness } from "@workspace/api-client-react";
 import { useParams, Link } from "wouter";
-import { MapPin, Phone, Globe, Clock, Star, ArrowLeft, RefreshCw, Wind, ExternalLink, Ticket, Flag, Loader2, Pencil } from "lucide-react";
+import { MapPin, Phone, Mail, Globe, Clock, Star, ArrowLeft, RefreshCw, Wind, ExternalLink, Ticket, Flag, Loader2, Pencil } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { ALL_CATEGORIES } from "@/lib/categories";
 import { Button } from "@/components/ui/button";
@@ -27,7 +27,7 @@ function formatPhone(raw: string): string {
   return raw;
 }
 
-type BrandWithLogo = { id: number; name: string; logo_path?: string | null };
+type BrandWithLogo = { id: number; name: string; logo_path?: string | null; is_featured?: number };
 
 export default function BusinessDetail() {
   const params = useParams<{ id: string }>();
@@ -102,7 +102,7 @@ export default function BusinessDetail() {
             <div>
               <h1 className="text-4xl md:text-5xl text-[#99CC66] mb-2 flex items-center gap-3">
                 {biz.name}
-                {biz.is_featured === 1 && <Star className="h-8 w-8 fill-[#99CC66] text-[#99CC66]" />}
+                {biz.is_featured === 1 && <Star className="h-8 w-8 fill-[#D4AF37] text-[#D4AF37]" />}
               </h1>
               {isUnclaimed && (
                 <button
@@ -159,11 +159,13 @@ export default function BusinessDetail() {
             <div className="space-y-4">
               <h3 className="text-2xl text-[#99CC66]">Featured Brands</h3>
               <div className="flex flex-wrap gap-3">
-                {[...(biz.brands as BrandWithLogo[])].sort((a, b) => a.name.localeCompare(b.name)).map(brand => (
+                {[...(biz.brands as BrandWithLogo[])].sort((a, b) => (b.is_featured ?? 0) - (a.is_featured ?? 0) || a.name.localeCompare(b.name)).map(brand => (
                   <div
                     key={brand.id}
                     className={`flex items-center gap-2 px-4 py-2.5 rounded-2xl font-bold border-2 shadow-[0_4px_20px_rgba(0,0,0,0.25)] transition-all hover:border-[#99CC66]/50 ${
-                      brand.logo_path ? "bg-card border-[#99CC66]/30" : "bg-card border-border"
+                      brand.is_featured
+                        ? "bg-card border-[#D4AF37]/40"
+                        : brand.logo_path ? "bg-card border-[#99CC66]/30" : "bg-card border-border"
                     }`}
                   >
                     {brand.logo_path && (
@@ -174,6 +176,9 @@ export default function BusinessDetail() {
                       />
                     )}
                     <span className="text-sm">{brand.name}</span>
+                    {!!brand.is_featured && (
+                      <Star className="h-3 w-3 fill-[#D4AF37] text-[#D4AF37] shrink-0" />
+                    )}
                   </div>
                 ))}
               </div>
@@ -181,7 +186,7 @@ export default function BusinessDetail() {
           )}
         </div>
 
-        <div className="space-y-6">
+        <div className="space-y-6 self-start sticky top-8">
           <div className="bg-card border-2 border-border rounded-2xl p-6 shadow-[0_4px_20px_rgba(0,0,0,0.25)]">
             <h3 className="text-xl text-[#99CC66] mb-4 pb-3 border-b-2 border-border font-heading">Store Info</h3>
 
@@ -213,6 +218,25 @@ export default function BusinessDetail() {
                 <span className="text-sm">{biz.address}</span>
               </div>
 
+              {biz.lat != null && biz.lng != null && (
+                <a
+                  href={`https://www.google.com/maps/dir/?api=1&destination=${encodeURIComponent(biz.address)}`}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="block rounded-xl overflow-hidden border-2 border-border h-36 hover:opacity-90 transition-opacity"
+                >
+                  <img
+                    src={`https://staticmap.openstreetmap.de/staticmap.php?center=${biz.lat},${biz.lng}&zoom=15&size=400x144&markers=${biz.lat},${biz.lng},red-pushpin`}
+                    alt={`Map for ${biz.name}`}
+                    className="w-full h-full object-cover"
+                    loading="lazy"
+                    onError={(e) => {
+                      e.currentTarget.parentElement!.style.display = "none";
+                    }}
+                  />
+                </a>
+              )}
+
               {biz.phone && (
                 <div className="flex items-center gap-3">
                   <Phone className="h-5 w-5 text-primary shrink-0" />
@@ -224,6 +248,13 @@ export default function BusinessDetail() {
                 <div className="flex items-center gap-3">
                   <Globe className="h-5 w-5 text-primary shrink-0" />
                   <a href={biz.website} target="_blank" rel="noopener noreferrer" className="hover:text-[#99CC66] transition-colors line-clamp-1 text-sm">{biz.website.replace(/^https?:\/\//, "")}</a>
+                </div>
+              )}
+
+              {(biz as { email?: string | null }).email && (
+                <div className="flex items-center gap-3">
+                  <Mail className="h-5 w-5 text-primary shrink-0" />
+                  <a href={`mailto:${(biz as { email?: string | null }).email}`} className="hover:text-[#99CC66] transition-colors line-clamp-1 text-sm">{(biz as { email?: string | null }).email}</a>
                 </div>
               )}
 

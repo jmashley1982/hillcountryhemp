@@ -30,6 +30,7 @@ export const businessesTable = pgTable("businesses", {
   lat: real("lat"),
   lng: real("lng"),
   phone: text("phone"),
+  email: text("email"),
   website: text("website"),
   hours: text("hours"),
   hoursJson: text("hours_json"),

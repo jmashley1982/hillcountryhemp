@@ -13,6 +13,7 @@ export interface AdminBusinessInput {
   state?: string;
   zip?: string;
   phone?: string;
+  email?: string;
   website?: string;
   hours_json?: string;
   description?: string;

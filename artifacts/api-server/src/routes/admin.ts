@@ -196,7 +196,7 @@ router.post(
   requireAdmin,
   async (req, res): Promise<void> => {
     const {
-      name, address, street, city, state, zip, phone, website,
+      name, address, street, city, state, zip, phone, email, website,
       hours_json, description, instagram, facebook, google_reviews_url,
       categories, brand_ids, on_site_smoking_area,
     } = req.body as {
@@ -207,6 +207,7 @@ router.post(
       state?: string;
       zip?: string;
       phone?: string;
+      email?: string;
       website?: string;
       hours_json?: string;
       description?: string;
@@ -239,6 +240,7 @@ router.post(
         lat: coords?.lat ?? null,
         lng: coords?.lng ?? null,
         phone: phone ?? null,
+        email: email ?? null,
         website: website ?? null,
         hours: composeHoursDisplay(hours_json),
         hoursJson: hours_json ?? null,

@@ -456,6 +456,7 @@ const addStoreSchema = z.object({
   state: z.string().optional(),
   zip: z.string().optional(),
   phone: z.string().optional(),
+  email: z.string().optional(),
   website: z.string().optional(),
   description: z.string().optional(),
 });
@@ -470,7 +471,7 @@ function AddStoreTab() {
 
   const form = useForm<AddStoreForm>({
     resolver: zodResolver(addStoreSchema),
-    defaultValues: { name: "", street: "", city: "", state: "TX", zip: "", phone: "", website: "", description: "" },
+    defaultValues: { name: "", street: "", city: "", state: "TX", zip: "", phone: "", email: "", website: "", description: "" },
   });
 
   const toggleCategory = (cat: string) => {
@@ -590,9 +591,21 @@ function AddStoreTab() {
             />
             <FormField
               control={form.control}
-              name="website"
+              name="email"
               render={({ field }) => (
                 <FormItem>
+                  <FormLabel className="font-bold uppercase text-xs tracking-wider">Email</FormLabel>
+                  <FormControl>
+                    <Input {...field} className="border-2" type="email" placeholder="hello@store.com" />
+                  </FormControl>
+                </FormItem>
+              )}
+            />
+            <FormField
+              control={form.control}
+              name="website"
+              render={({ field }) => (
+                <FormItem className="sm:col-span-2">
                   <FormLabel className="font-bold uppercase text-xs tracking-wider">Website</FormLabel>
                   <FormControl>
                     <Input {...field} className="border-2" placeholder="https://..." />

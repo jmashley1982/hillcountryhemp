@@ -29,6 +29,8 @@ export interface BusinessDetail {
   /** @nullable */
   phone?: string | null;
   /** @nullable */
+  email?: string | null;
+  /** @nullable */
   website?: string | null;
   /** @nullable */
   hours?: string | null;

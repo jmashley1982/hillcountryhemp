@@ -1288,6 +1288,8 @@ components:
           type: ["number", "null"]
         phone:
           type: ["string", "null"]
+        email:
+          type: ["string", "null"]
         website:
           type: ["string", "null"]
         hours:
@@ -1384,6 +1386,8 @@ components:
           type: string
         phone:
           type: string
+        email:
+          type: string
         website:
           type: string
         hours:
@@ -1428,6 +1432,8 @@ components:
           type: string
         phone:
           type: string
+        email:
+          type: string
         website:
           type: string
         hours_json:
@@ -1467,6 +1473,8 @@ components:
         zip:
           type: string
         phone:
+          type: string
+        email:
           type: string
         website:
           type: string
