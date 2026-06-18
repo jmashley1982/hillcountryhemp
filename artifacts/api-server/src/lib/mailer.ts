@@ -128,6 +128,75 @@ export async function sendAdminAlert(opts: {
   await sendEmail({ to: adminEmail, subject: opts.subject, text, html });
 }
 
+export async function sendListingApprovedEmail(
+  toEmail: string,
+  businessName: string,
+): Promise<void> {
+  const dashboardUrl = (() => {
+    const domains = process.env.REPLIT_DOMAINS?.split(",")[0] ?? "localhost:80";
+    const proto = domains.includes("localhost") ? "http" : "https";
+    const basePath = process.env.BASE_PATH ?? "";
+    return `${proto}://${domains}${basePath}/dashboard`;
+  })();
+
+  const text = `Great news — your listing for ${businessName} has been approved!\n\nYour shop is now live on the Hill Country Hemp Finder map and hemp shoppers across Texas Hill Country can find you.\n\nVisit your dashboard to upload photos, add coupons, and keep your listing up to date:\n${dashboardUrl}\n\nQuestions? Email us at ${CONTACT} — we actually respond.\n\nThanks for being part of the community,\nHill Country Hemp Finder`;
+
+  const html = `
+    <div style="font-family:sans-serif;max-width:480px;margin:auto;padding:32px 24px;background:#1a2226;color:#e5e7eb;border-radius:12px">
+      <h2 style="color:#99CC66;margin-bottom:4px">You're on the map! 🌿</h2>
+      <p style="color:#9ca3af;font-size:13px;margin-top:4px">Hill Country Hemp Finder — Listing Approved</p>
+      <p style="color:#d1d5db;margin:16px 0">Great news — <strong style="color:#e5e7eb">${businessName}</strong> has been approved and is now live on the Hill Country Hemp Finder map.</p>
+      <p style="color:#d1d5db;margin:0 0 16px">Hemp shoppers across Texas Hill Country can now find your store. Head to your dashboard to add photos, coupons, and keep your details current.</p>
+      <a href="${dashboardUrl}" style="display:inline-block;margin:8px 0 24px;padding:12px 24px;background:#99CC66;color:#000;font-weight:bold;border-radius:8px;text-decoration:none">Go to My Dashboard</a>
+      <hr style="border-color:#2d3748;margin:24px 0"/>
+      <p style="font-size:12px;color:#6b7280">Questions? Email <a href="mailto:${CONTACT}" style="color:#99CC66">${CONTACT}</a> — we actually respond.</p>
+    </div>`;
+
+  await sendEmail({
+    to: toEmail,
+    subject: `Your listing "${businessName}" is approved — Hill Country Hemp Finder`,
+    text,
+    html,
+  });
+}
+
+export async function sendListingRejectedEmail(
+  toEmail: string,
+  businessName: string,
+  reason: string,
+): Promise<void> {
+  const dashboardUrl = (() => {
+    const domains = process.env.REPLIT_DOMAINS?.split(",")[0] ?? "localhost:80";
+    const proto = domains.includes("localhost") ? "http" : "https";
+    const basePath = process.env.BASE_PATH ?? "";
+    return `${proto}://${domains}${basePath}/dashboard`;
+  })();
+
+  const text = `We've reviewed your listing for ${businessName} and unfortunately it wasn't approved at this time.\n\nReason: ${reason}\n\nYou can edit your listing and resubmit it for review at any time from your dashboard:\n${dashboardUrl}\n\nIf you have questions or think this was a mistake, please reach out at ${CONTACT}.\n\nHill Country Hemp Finder`;
+
+  const html = `
+    <div style="font-family:sans-serif;max-width:480px;margin:auto;padding:32px 24px;background:#1a2226;color:#e5e7eb;border-radius:12px">
+      <h2 style="color:#e5e7eb;margin-bottom:4px">Listing Not Approved</h2>
+      <p style="color:#9ca3af;font-size:13px;margin-top:4px">Hill Country Hemp Finder — Listing Review</p>
+      <p style="color:#d1d5db;margin:16px 0">We've reviewed <strong style="color:#e5e7eb">${businessName}</strong> and unfortunately we weren't able to approve it at this time.</p>
+      <div style="background:#2d3748;border-left:3px solid #e53e3e;border-radius:4px;padding:12px 16px;margin:0 0 20px">
+        <p style="margin:0;font-size:13px;color:#9ca3af;text-transform:uppercase;letter-spacing:.05em;font-weight:600">Reason</p>
+        <p style="margin:6px 0 0;color:#e5e7eb">${reason}</p>
+      </div>
+      <p style="color:#d1d5db;margin:0 0 16px">You can update your listing and resubmit it for review at any time from your dashboard.</p>
+      <a href="${dashboardUrl}" style="display:inline-block;margin:8px 0 24px;padding:12px 24px;background:#99CC66;color:#000;font-weight:bold;border-radius:8px;text-decoration:none">Edit My Listing</a>
+      <hr style="border-color:#2d3748;margin:24px 0"/>
+      <p style="font-size:12px;color:#6b7280">Questions? Email <a href="mailto:${CONTACT}" style="color:#99CC66">${CONTACT}</a></p>
+    </div>`;
+
+  await sendEmail({
+    to: toEmail,
+    subject: `Your listing "${businessName}" — update required`,
+    text,
+    html,
+  });
+}
+
 export async function sendWelcomeEmail(toEmail: string): Promise<void> {
   const dashboardUrl = (() => {
     const domains = process.env.REPLIT_DOMAINS?.split(",")[0] ?? "localhost:80";

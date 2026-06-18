@@ -19,6 +19,7 @@ import {
   popupAdTable,
 } from "@workspace/db";
 import { requireLogin, requireAdmin } from "../middlewares/auth.js";
+import { sendListingApprovedEmail, sendListingRejectedEmail } from "../lib/mailer.js";
 
 const upload = multer({
   storage: multer.memoryStorage(),
@@ -301,10 +302,30 @@ router.put(
   requireAdmin,
   async (req, res): Promise<void> => {
     const raw = Array.isArray(req.params.id) ? req.params.id[0] : req.params.id;
+    const id = parseInt(raw, 10);
+
+    const [business] = await db
+      .select({ name: businessesTable.name, ownerId: businessesTable.ownerId })
+      .from(businessesTable)
+      .where(eq(businessesTable.id, id));
+
     await db
       .update(businessesTable)
       .set({ status: "approved", rejectionReason: null })
-      .where(eq(businessesTable.id, parseInt(raw, 10)));
+      .where(eq(businessesTable.id, id));
+
+    if (business?.ownerId) {
+      const [owner] = await db
+        .select({ email: usersTable.email })
+        .from(usersTable)
+        .where(eq(usersTable.id, business.ownerId));
+      if (owner?.email) {
+        sendListingApprovedEmail(owner.email, business.name).catch((err: unknown) => {
+          req.log.warn({ err }, "Failed to send listing approved email");
+        });
+      }
+    }
+
     res.json({ success: true });
   },
 );
@@ -316,12 +337,32 @@ router.put(
   requireAdmin,
   async (req, res): Promise<void> => {
     const raw = Array.isArray(req.params.id) ? req.params.id[0] : req.params.id;
+    const id = parseInt(raw, 10);
     const { reason } = req.body as { reason?: string };
     const rejectionReason = reason?.trim() || "Your listing did not meet our requirements. Please review and resubmit.";
+
+    const [business] = await db
+      .select({ name: businessesTable.name, ownerId: businessesTable.ownerId })
+      .from(businessesTable)
+      .where(eq(businessesTable.id, id));
+
     await db
       .update(businessesTable)
       .set({ status: "rejected", rejectionReason })
-      .where(eq(businessesTable.id, parseInt(raw, 10)));
+      .where(eq(businessesTable.id, id));
+
+    if (business?.ownerId) {
+      const [owner] = await db
+        .select({ email: usersTable.email })
+        .from(usersTable)
+        .where(eq(usersTable.id, business.ownerId));
+      if (owner?.email) {
+        sendListingRejectedEmail(owner.email, business.name, rejectionReason).catch((err: unknown) => {
+          req.log.warn({ err }, "Failed to send listing rejected email");
+        });
+      }
+    }
+
     res.json({ success: true });
   },
 );
