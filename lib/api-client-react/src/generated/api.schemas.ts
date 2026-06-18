@@ -288,6 +288,32 @@ export interface RejectInput {
   reason?: string;
 }
 
+export interface OwnerContestClaim {
+  id?: number;
+  businessId?: number;
+  businessName?: string | null;
+  claimantEmail?: string | null;
+  contestDeadline?: string | null;
+  createdAt?: string;
+}
+
+export type OwnerClaimDecisionDecision = typeof OwnerClaimDecisionDecision[keyof typeof OwnerClaimDecisionDecision];
+
+
+export const OwnerClaimDecisionDecision = {
+  approve: 'approve',
+  contest: 'contest',
+} as const;
+
+export interface OwnerClaimDecision {
+  decision: OwnerClaimDecisionDecision;
+}
+
+export interface OwnerClaimDecisionResponse {
+  success?: boolean;
+  status?: string;
+}
+
 export interface ClaimInitiateInput {
   email: string;
   phone?: string;

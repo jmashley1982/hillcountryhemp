@@ -400,6 +400,37 @@ export const UploadClaimDocumentResponse = zod.object({
 
 
 /**
+ * @summary Get PENDING_OWNER_REVIEW claims filed against the current owner's businesses
+ */
+export const GetOwnerContestClaimsResponseItem = zod.object({
+  "id": zod.number().optional(),
+  "businessId": zod.number().optional(),
+  "businessName": zod.string().nullish(),
+  "claimantEmail": zod.string().nullish(),
+  "contestDeadline": zod.coerce.date().nullish(),
+  "createdAt": zod.coerce.date().optional()
+})
+export const GetOwnerContestClaimsResponse = zod.array(GetOwnerContestClaimsResponseItem)
+
+
+/**
+ * @summary Current owner approve or contest a PENDING_OWNER_REVIEW claim
+ */
+export const RespondToClaimAsOwnerParams = zod.object({
+  "id": zod.coerce.number()
+})
+
+export const RespondToClaimAsOwnerBody = zod.object({
+  "decision": zod.enum(['approve', 'contest'])
+})
+
+export const RespondToClaimAsOwnerResponse = zod.object({
+  "success": zod.boolean().optional(),
+  "status": zod.string().optional()
+})
+
+
+/**
  * @summary Get the current claim state for the authenticated user on this business
  */
 export const GetClaimStatusParams = zod.object({

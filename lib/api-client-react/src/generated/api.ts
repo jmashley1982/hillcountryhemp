@@ -50,6 +50,9 @@ import type {
   HealthStatus,
   LoginInput,
   NameInput,
+  OwnerClaimDecision,
+  OwnerClaimDecisionResponse,
+  OwnerContestClaim,
   PopupAd,
   RegisterInput,
   RejectInput,
@@ -1608,6 +1611,155 @@ export const useUploadClaimDocument = <TError = ErrorType<ErrorResponse>,
         TContext
       > => {
       return useMutation(getUploadClaimDocumentMutationOptions(options));
+    }
+
+export const getGetOwnerContestClaimsUrl = () => {
+
+
+
+
+  return `/api/businesses/owner-contest-claims`
+}
+
+/**
+ * @summary Get PENDING_OWNER_REVIEW claims filed against the current owner's businesses
+ */
+export const getOwnerContestClaims = async ( options?: RequestInit): Promise<OwnerContestClaim[]> => {
+
+  return customFetch<OwnerContestClaim[]>(getGetOwnerContestClaimsUrl(),
+  {
+    ...options,
+    method: 'GET'
+
+
+  }
+);}
+
+
+
+
+
+export const getGetOwnerContestClaimsQueryKey = () => {
+    return [
+    `/api/businesses/owner-contest-claims`
+    ] as const;
+    }
+
+
+export const getGetOwnerContestClaimsQueryOptions = <TData = Awaited<ReturnType<typeof getOwnerContestClaims>>, TError = ErrorType<unknown>>( options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof getOwnerContestClaims>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+) => {
+
+const {query: queryOptions, request: requestOptions} = options ?? {};
+
+  const queryKey =  queryOptions?.queryKey ?? getGetOwnerContestClaimsQueryKey();
+
+
+
+    const queryFn: QueryFunction<Awaited<ReturnType<typeof getOwnerContestClaims>>> = ({ signal }) => getOwnerContestClaims({ signal, ...requestOptions });
+
+
+
+
+
+   return  { queryKey, queryFn, ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof getOwnerContestClaims>>, TError, TData> & { queryKey: QueryKey }
+}
+
+export type GetOwnerContestClaimsQueryResult = NonNullable<Awaited<ReturnType<typeof getOwnerContestClaims>>>
+export type GetOwnerContestClaimsQueryError = ErrorType<unknown>
+
+
+/**
+ * @summary Get PENDING_OWNER_REVIEW claims filed against the current owner's businesses
+ */
+
+export function useGetOwnerContestClaims<TData = Awaited<ReturnType<typeof getOwnerContestClaims>>, TError = ErrorType<unknown>>(
+  options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof getOwnerContestClaims>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+
+ ):  UseQueryResult<TData, TError> & { queryKey: QueryKey } {
+
+  const queryOptions = getGetOwnerContestClaimsQueryOptions(options)
+
+  const query = useQuery(queryOptions) as  UseQueryResult<TData, TError> & { queryKey: QueryKey };
+
+  return { ...query, queryKey: queryOptions.queryKey };
+}
+
+
+
+
+
+
+
+export const getRespondToClaimAsOwnerUrl = (id: number,) => {
+
+
+
+
+  return `/api/businesses/${id}/claim/owner-decision`
+}
+
+/**
+ * @summary Current owner approve or contest a PENDING_OWNER_REVIEW claim
+ */
+export const respondToClaimAsOwner = async (id: number,
+    ownerClaimDecision: OwnerClaimDecision, options?: RequestInit): Promise<OwnerClaimDecisionResponse> => {
+
+  return customFetch<OwnerClaimDecisionResponse>(getRespondToClaimAsOwnerUrl(id),
+  {
+    ...options,
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json', ...options?.headers },
+    body: JSON.stringify(
+      ownerClaimDecision,)
+  }
+);}
+
+
+
+
+export const getRespondToClaimAsOwnerMutationOptions = <TError = ErrorType<ErrorResponse>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof respondToClaimAsOwner>>, TError,{id: number;data: BodyType<OwnerClaimDecision>}, TContext>, request?: SecondParameter<typeof customFetch>}
+): UseMutationOptions<Awaited<ReturnType<typeof respondToClaimAsOwner>>, TError,{id: number;data: BodyType<OwnerClaimDecision>}, TContext> => {
+
+const mutationKey = ['respondToClaimAsOwner'];
+const {mutation: mutationOptions, request: requestOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, request: undefined};
+
+
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof respondToClaimAsOwner>>, {id: number;data: BodyType<OwnerClaimDecision>}> = (props) => {
+          const {id,data} = props ?? {};
+
+          return  respondToClaimAsOwner(id,data,requestOptions)
+        }
+
+
+
+
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type RespondToClaimAsOwnerMutationResult = NonNullable<Awaited<ReturnType<typeof respondToClaimAsOwner>>>
+    export type RespondToClaimAsOwnerMutationBody = BodyType<OwnerClaimDecision>
+    export type RespondToClaimAsOwnerMutationError = ErrorType<ErrorResponse>
+
+    /**
+ * @summary Current owner approve or contest a PENDING_OWNER_REVIEW claim
+ */
+export const useRespondToClaimAsOwner = <TError = ErrorType<ErrorResponse>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof respondToClaimAsOwner>>, TError,{id: number;data: BodyType<OwnerClaimDecision>}, TContext>, request?: SecondParameter<typeof customFetch>}
+ ): UseMutationResult<
+        Awaited<ReturnType<typeof respondToClaimAsOwner>>,
+        TError,
+        {id: number;data: BodyType<OwnerClaimDecision>},
+        TContext
+      > => {
+      return useMutation(getRespondToClaimAsOwnerMutationOptions(options));
     }
 
 export const getGetClaimStatusUrl = (id: number,) => {

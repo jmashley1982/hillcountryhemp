@@ -526,11 +526,12 @@ router.patch(
     const normalizedStatus = (status ?? "").toUpperCase();
 
     // ── 72-hour owner-contest gate ─────────────────────────────────────
-    // When a claim is in PENDING_OWNER_REVIEW the existing owner has 72 hours
-    // to approve or contest. Block admin resolution until the window expires
+    // Any contested claim (whether in PENDING_OWNER_REVIEW after OTP success,
+    // or PENDING_MANUAL_REVIEW after document upload against an existing owner)
+    // carries a contestDeadline.  Block admin resolution on *any* contested
+    // claim while the deadline is still in the future, regardless of status,
     // unless the admin explicitly passes override:true (which gets audited).
     if (
-      row.status === "PENDING_OWNER_REVIEW" &&
       row.contestDeadline &&
       row.contestDeadline > new Date() &&
       !override

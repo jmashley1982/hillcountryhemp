@@ -109,9 +109,10 @@ export async function checkUserRateLimit(userId: number): Promise<boolean> {
   return rows.length < USER_QUOTA;
 }
 
-// Block on the IP_QUOTA-th attempt: allow (IP_QUOTA - 1) prior attempts,
-// then block when rows.length reaches IP_QUOTA - 1 (i.e. the next would be
-// the IP_QUOTA-th) — satisfying "lockout at 50+ attempts."
+// The handler logs "claim_attempt" BEFORE calling this function so
+// rows.length already includes the current request.  Block when the count
+// (including the current attempt) hits IP_QUOTA — i.e. the IP_QUOTA-th
+// attempt is the first rejected.  Satisfies "lockout at 50+ attempts."
 const IP_QUOTA = 50;
 const IP_WINDOW_MS = 10 * 60 * 1000;
 
@@ -123,13 +124,14 @@ export async function checkIpRateLimit(ip: string): Promise<boolean> {
     .where(
       and(
         eq(claimAuditLogsTable.clientIp, ip),
-        eq(claimAuditLogsTable.actionType, "claim_initiated"),
+        // Count "claim_attempt" rows — written at the START of each request
+        // (including failures), so this reflects all real attempts.
+        eq(claimAuditLogsTable.actionType, "claim_attempt"),
         gte(claimAuditLogsTable.timestamp, windowStart),
       ),
     );
-  // rows.length is the count of PRIOR attempts; block when already at IP_QUOTA - 1
-  // so the IP_QUOTA-th attempt is the first rejected.
-  return rows.length < IP_QUOTA - 1;
+  // rows.length already includes the current attempt (logged before this call)
+  return rows.length < IP_QUOTA;
 }
 
 export async function isIpCurrentlyFlagged(ip: string): Promise<boolean> {

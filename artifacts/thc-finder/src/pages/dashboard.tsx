@@ -1,8 +1,16 @@
-import { useGetMe, useGetOwnedBusinesses, getGetOwnedBusinessesQueryKey } from "@workspace/api-client-react";
+import {
+  useGetMe,
+  useGetOwnedBusinesses,
+  getGetOwnedBusinessesQueryKey,
+  useGetOwnerContestClaims,
+  getGetOwnerContestClaimsQueryKey,
+  useRespondToClaimAsOwner,
+} from "@workspace/api-client-react";
 import { useLocation, Link } from "wouter";
 import { useEffect, useState } from "react";
+import { useQueryClient } from "@tanstack/react-query";
 import { Button } from "@/components/ui/button";
-import { Plus, Edit, Clock, CheckCircle, XCircle, Building2, Sparkles, ImagePlus, Settings, RefreshCw, AlertTriangle } from "lucide-react";
+import { Plus, Edit, Clock, CheckCircle, XCircle, Building2, Sparkles, ImagePlus, Settings, RefreshCw, AlertTriangle, Flag } from "lucide-react";
 import { SuggestBrandModal } from "@/components/suggest-brand-modal";
 
 const statusConfig = {
@@ -22,10 +30,16 @@ function formatDate(dateStr: string) {
 export default function Dashboard() {
   const [, setLocation] = useLocation();
   const [suggestOpen, setSuggestOpen] = useState(false);
+  const [decisionLoading, setDecisionLoading] = useState<number | null>(null);
+  const queryClient = useQueryClient();
   const { data: user, isLoading: userLoading } = useGetMe();
   const { data: businesses = [], isLoading } = useGetOwnedBusinesses({
     query: { queryKey: getGetOwnedBusinessesQueryKey() },
   });
+  const { data: contestClaims = [] } = useGetOwnerContestClaims({
+    query: { queryKey: getGetOwnerContestClaimsQueryKey(), enabled: !!user },
+  });
+  const { mutateAsync: respondToClaimAsOwner } = useRespondToClaimAsOwner();
 
   useEffect(() => {
     if (!userLoading && !user) {
@@ -35,6 +49,18 @@ export default function Dashboard() {
       setLocation("/admin");
     }
   }, [user, userLoading, setLocation]);
+
+  async function handleOwnerDecision(businessId: number, claimId: number, decision: "approve" | "contest") {
+    setDecisionLoading(claimId);
+    try {
+      await respondToClaimAsOwner({ id: businessId, data: { decision } });
+      await queryClient.invalidateQueries({ queryKey: getGetOwnerContestClaimsQueryKey() });
+    } catch {
+      // noop — errors are non-fatal; UI will re-render with fresh data
+    } finally {
+      setDecisionLoading(null);
+    }
+  }
 
   if (userLoading || isLoading) {
     return (
@@ -63,6 +89,65 @@ export default function Dashboard() {
             </Button>
           </Link>
         </div>
+
+        {/* ── Pending ownership-claim decisions ──────────────────────────── */}
+        {contestClaims.length > 0 && (
+          <div className="mb-6 space-y-3">
+            <h2 className="text-lg font-bold text-orange-300 flex items-center gap-2">
+              <Flag className="h-4 w-4" />
+              Action Required: Ownership Claims
+            </h2>
+            {contestClaims.map((claim) => {
+              const deadline = claim.contestDeadline ? new Date(claim.contestDeadline) : null;
+              const hoursLeft = deadline
+                ? Math.max(0, Math.ceil((deadline.getTime() - Date.now()) / 3_600_000))
+                : null;
+              const isLoading = decisionLoading === claim.id;
+              return (
+                <div
+                  key={claim.id}
+                  className="bg-orange-950/30 border-2 border-orange-800/60 rounded-2xl p-5"
+                  data-testid={`owner-claim-${claim.id}`}
+                >
+                  <p className="font-bold text-orange-200 text-sm mb-1">
+                    Someone is claiming <span className="text-white">{claim.businessName}</span>
+                  </p>
+                  <p className="text-xs text-orange-300/80 mb-3">
+                    Claimant: {claim.claimantEmail ?? "unknown"}
+                    {hoursLeft !== null && ` · ${hoursLeft}h left to respond`}
+                  </p>
+                  <p className="text-xs text-muted-foreground mb-4">
+                    If you approve, ownership transfers to the claimant. If you contest, the claim
+                    goes to admin review.
+                  </p>
+                  <div className="flex gap-2 flex-wrap">
+                    <Button
+                      size="sm"
+                      className="bg-green-700 hover:bg-green-600 text-white font-bold border-0"
+                      disabled={isLoading}
+                      onClick={() => handleOwnerDecision(claim.businessId!, claim.id!, "approve")}
+                      data-testid={`btn-approve-claim-${claim.id}`}
+                    >
+                      <CheckCircle className="h-3.5 w-3.5 mr-1.5" />
+                      {isLoading ? "Processing…" : "Approve Transfer"}
+                    </Button>
+                    <Button
+                      size="sm"
+                      variant="outline"
+                      className="border-2 border-orange-700 text-orange-300 hover:bg-orange-950 font-bold"
+                      disabled={isLoading}
+                      onClick={() => handleOwnerDecision(claim.businessId!, claim.id!, "contest")}
+                      data-testid={`btn-contest-claim-${claim.id}`}
+                    >
+                      <XCircle className="h-3.5 w-3.5 mr-1.5" />
+                      {isLoading ? "Processing…" : "Contest Claim"}
+                    </Button>
+                  </div>
+                </div>
+              );
+            })}
+          </div>
+        )}
 
         {businesses.length === 0 ? (
           <div className="bg-card border-2 border-dashed border-border rounded-2xl p-12 text-center">

@@ -415,6 +415,46 @@ router.get(
   },
 );
 
+// ── List PENDING_OWNER_REVIEW claims against the current owner's businesses ─
+// Must be registered BEFORE /businesses/:id so Express doesn't consume
+// "owner-contest-claims" as the :id parameter value.
+router.get(
+  "/businesses/owner-contest-claims",
+  requireLogin,
+  requireBusiness,
+  async (req, res): Promise<void> => {
+    const rows = await db
+      .select({
+        id: claimsTable.id,
+        businessId: claimsTable.businessId,
+        businessName: businessesTable.name,
+        claimantEmail: claimsTable.claimantEmail,
+        contestDeadline: claimsTable.contestDeadline,
+        createdAt: claimsTable.createdAt,
+      })
+      .from(claimsTable)
+      .innerJoin(businessesTable, eq(businessesTable.id, claimsTable.businessId))
+      .where(
+        and(
+          eq(businessesTable.ownerId, req.session.userId!),
+          eq(claimsTable.status, "PENDING_OWNER_REVIEW"),
+        ),
+      )
+      .orderBy(claimsTable.createdAt);
+
+    res.json(
+      rows.map((r) => ({
+        id: r.id,
+        businessId: r.businessId,
+        businessName: r.businessName,
+        claimantEmail: r.claimantEmail,
+        contestDeadline: r.contestDeadline?.toISOString() ?? null,
+        createdAt: r.createdAt.toISOString(),
+      })),
+    );
+  },
+);
+
 // Single business (public/owner/admin)
 router.get("/businesses/:id", async (req, res): Promise<void> => {
   const raw = Array.isArray(req.params.id) ? req.params.id[0] : req.params.id;
@@ -984,6 +1024,15 @@ router.post(
     if (isNaN(id)) { res.status(400).json({ error: "Invalid id" }); return; }
 
     const clientIp = getClientIp(req as Parameters<typeof getClientIp>[0]);
+
+    // Log EVERY request (including pre-insert failures) so the rate-limit
+    // counter reflects all real claim attempts, not just successful inserts.
+    await appendAuditLog({
+      clientIp,
+      actionType: "claim_attempt",
+      actorUserId: req.session.userId,
+      metadata: { businessId: id },
+    });
 
     const [flagged, ipOk] = await Promise.all([
       isIpCurrentlyFlagged(clientIp),

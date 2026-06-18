@@ -504,6 +504,62 @@ paths:
               schema:
                 $ref: "#/components/schemas/ErrorResponse"
 
+  /businesses/owner-contest-claims:
+    get:
+      operationId: getOwnerContestClaims
+      summary: Get PENDING_OWNER_REVIEW claims filed against the current owner's businesses
+      responses:
+        "200":
+          description: List of owner-review claims
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/OwnerContestClaim"
+
+  /businesses/{id}/claim/owner-decision:
+    post:
+      operationId: respondToClaimAsOwner
+      summary: Current owner approve or contest a PENDING_OWNER_REVIEW claim
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/OwnerClaimDecision"
+      responses:
+        "200":
+          description: Decision recorded
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/OwnerClaimDecisionResponse"
+        "400":
+          description: Invalid decision value
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+        "403":
+          description: Not the current owner
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+        "404":
+          description: No active owner-review claim found
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+
   /businesses/{id}/claim/status:
     get:
       operationId: getClaimStatus
@@ -1663,6 +1719,43 @@ components:
       type: object
       properties:
         reason:
+          type: string
+
+    OwnerContestClaim:
+      type: object
+      properties:
+        id:
+          type: integer
+        businessId:
+          type: integer
+        businessName:
+          type: string
+          nullable: true
+        claimantEmail:
+          type: string
+          nullable: true
+        contestDeadline:
+          type: string
+          format: date-time
+          nullable: true
+        createdAt:
+          type: string
+          format: date-time
+
+    OwnerClaimDecision:
+      type: object
+      required: [decision]
+      properties:
+        decision:
+          type: string
+          enum: [approve, contest]
+
+    OwnerClaimDecisionResponse:
+      type: object
+      properties:
+        success:
+          type: boolean
+        status:
           type: string
 
     ClaimInitiateInput:
