@@ -808,7 +808,8 @@ function ClaimsTab() {
           claims.map((claim) => {
             const badge = STATUS_BADGE[claim.status ?? "pending"] ?? { label: claim.status ?? "Unknown", cls: "bg-muted text-muted-foreground border-border" };
             const isContested = !!claim.contest_deadline;
-            const documentUrl = claim.document_path ? `/api/uploads/${claim.document_path}` : null;
+            // Use the protected admin endpoint — /api/uploads/ blocks claim-doc-* files
+            const documentUrl = claim.document_path ? `/api/admin/claims/${claim.id}/document` : null;
             const isRejecting = rejectingId === claim.id;
             const isShowingAudit = viewingAuditBiz === claim.business_id;
 

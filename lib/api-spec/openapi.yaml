@@ -490,6 +490,18 @@ paths:
           required: true
           schema:
             type: integer
+      requestBody:
+        required: true
+        content:
+          multipart/form-data:
+            schema:
+              type: object
+              required: [document]
+              properties:
+                document:
+                  type: string
+                  format: binary
+                  description: Verification document (PDF, JPG, or PNG, max 5 MB)
       responses:
         "200":
           description: Document uploaded, claim moved to manual review
