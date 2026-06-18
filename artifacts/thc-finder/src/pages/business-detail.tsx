@@ -1,4 +1,4 @@
-import { useGetBusiness, useClaimBusiness } from "@workspace/api-client-react";
+import { useGetBusiness, useClaimBusiness, useVerifyClaimOtp } from "@workspace/api-client-react";
 import { useParams, Link } from "wouter";
 import { MapPin, Phone, Mail, Globe, Clock, Star, ArrowLeft, RefreshCw, Wind, ExternalLink, Ticket, Flag, Loader2, Pencil } from "lucide-react";
 import { MapContainer, TileLayer, Marker } from "react-leaflet";
@@ -69,8 +69,16 @@ export default function BusinessDetail() {
   const { data: biz, isLoading, error } = useGetBusiness(Number(params.id));
   const { toast } = useToast();
   const claimBusiness = useClaimBusiness();
+  const verifyOtp = useVerifyClaimOtp();
   const [currentUser, setCurrentUser] = useState<{ role?: string } | null>(null);
-  const [claimSubmitted, setClaimSubmitted] = useState(false);
+  const [claimStep, setClaimStep] = useState<"idle" | "email" | "otp" | "document" | "done">("idle");
+  const [claimEmail, setClaimEmail] = useState("");
+  const [claimPhone, setClaimPhone] = useState("");
+  const [otpCode, setOtpCode] = useState("");
+  const [otpError, setOtpError] = useState("");
+  const [docFile, setDocFile] = useState<File | null>(null);
+  const [docUploading, setDocUploading] = useState(false);
+  const [doneStatus, setDoneStatus] = useState<string>("");
 
   useEffect(() => {
     fetch("/api/auth/me")
@@ -91,7 +99,7 @@ export default function BusinessDetail() {
   const onSiteSmokingArea = (biz as { on_site_smoking_area?: number }).on_site_smoking_area;
   const ownerId = (biz as { owner_id?: number | null }).owner_id;
   const isUnclaimed = ownerId == null;
-  const canClaim = isUnclaimed && currentUser?.role === "business" && !claimSubmitted;
+  const showClaimSection = currentUser?.role === "business";
 
   const socialUrl = (handle: string | null | undefined, host: string) => {
     if (!handle) return null;
@@ -108,21 +116,68 @@ export default function BusinessDetail() {
   );
   const googleReviewsUrl = (biz as { google_reviews_url?: string | null }).google_reviews_url;
 
-  const handleClaim = () => {
+  const handleInitiateClaim = () => {
     claimBusiness.mutate(
-      { id: Number(params.id) },
+      { id: Number(params.id), data: { email: claimEmail.trim(), phone: claimPhone.trim() || undefined } },
       {
-        onSuccess: () => {
-          toast({ title: "Claim submitted! The admin will review your request." });
-          setClaimSubmitted(true);
+        onSuccess: (data) => {
+          setDoneStatus("");
+          if (data.method === "otp") {
+            setClaimStep("otp");
+          } else {
+            setClaimStep("document");
+          }
         },
         onError: (err: unknown) => {
-          const msg = (err as { response?: { data?: { error?: string } } })?.response?.data?.error
-            ?? "Failed to submit claim";
-          toast({ title: msg, variant: "destructive" });
+          const resp = (err as { response?: { data?: { error?: string; status?: string; claimId?: number } } })?.response?.data;
+          if (resp?.status === "AWAITING_OTP") { setClaimStep("otp"); }
+          else if (resp?.status === "AWAITING_DOCUMENT") { setClaimStep("document"); }
+          else { toast({ title: resp?.error ?? "Failed to initiate claim", variant: "destructive" }); }
         },
       },
     );
+  };
+
+  const handleVerifyOtp = () => {
+    setOtpError("");
+    verifyOtp.mutate(
+      { id: Number(params.id), data: { code: otpCode.trim() } },
+      {
+        onSuccess: (data) => {
+          setDoneStatus(data.status ?? "APPROVED");
+          setClaimStep("done");
+        },
+        onError: (err: unknown) => {
+          const msg = (err as { response?: { data?: { error?: string } } })?.response?.data?.error;
+          setOtpError(msg ?? "Invalid code. Please try again.");
+        },
+      },
+    );
+  };
+
+  const handleDocUpload = async () => {
+    if (!docFile) return;
+    setDocUploading(true);
+    try {
+      const fd = new FormData();
+      fd.append("document", docFile);
+      const r = await fetch(`/api/businesses/${params.id}/claim/upload-document`, {
+        method: "POST",
+        body: fd,
+        credentials: "include",
+      });
+      if (!r.ok) {
+        const body = await r.json().catch(() => ({})) as { error?: string };
+        toast({ title: body.error ?? "Upload failed", variant: "destructive" });
+      } else {
+        setDoneStatus("PENDING_MANUAL_REVIEW");
+        setClaimStep("done");
+      }
+    } catch {
+      toast({ title: "Upload failed. Please try again.", variant: "destructive" });
+    } finally {
+      setDocUploading(false);
+    }
   };
 
   return (
@@ -355,38 +410,189 @@ export default function BusinessDetail() {
             </div>
           </div>
 
-          {isUnclaimed && (
+          {(isUnclaimed || showClaimSection) && (
             <div id="claim-section" className="bg-orange-950/30 border-2 border-orange-700/40 rounded-2xl p-5 space-y-3">
               <div className="flex items-center gap-2">
                 <Flag className="h-5 w-5 text-orange-400 shrink-0" />
-                <h3 className="font-heading text-lg text-orange-300">Is this your business?</h3>
+                <h3 className="font-heading text-lg text-orange-300">
+                  {isUnclaimed ? "Is this your business?" : "Contest Ownership"}
+                </h3>
               </div>
-              <p className="text-sm text-muted-foreground">
-                This listing hasn't been claimed yet. If you own this business, submit a claim and an admin will verify and link it to your account.
-              </p>
-              {currentUser?.role === "business" ? (
-                claimSubmitted ? (
-                  <div className="text-sm font-bold text-orange-300 flex items-center gap-2">
-                    <CheckCircle className="h-4 w-4" />
-                    Claim submitted — pending admin review
+
+              {/* Idle — show start button */}
+              {claimStep === "idle" && (
+                <>
+                  <p className="text-sm text-muted-foreground">
+                    {isUnclaimed
+                      ? "This listing hasn't been claimed yet. If you own this business, start a verification — we'll either send a code to your business email or ask for a supporting document."
+                      : "Think you own this business? Start a verification to contest the current owner listing."}
+                  </p>
+                  {currentUser?.role === "business" ? (
+                    <Button
+                      className="w-full font-bold bg-orange-600 hover:bg-orange-700 text-white"
+                      onClick={() => setClaimStep("email")}
+                      data-testid="button-claim-business"
+                    >
+                      <Flag className="h-4 w-4 mr-2" />
+                      {isUnclaimed ? "Claim This Business" : "Contest Ownership"}
+                    </Button>
+                  ) : (
+                    <p className="text-xs text-muted-foreground">
+                      <Link href="/login" className="text-[#99CC66] hover:underline font-bold">Log in</Link> with a business account to claim this listing.
+                    </p>
+                  )}
+                </>
+              )}
+
+              {/* Step 1 — email + phone form */}
+              {claimStep === "email" && (
+                <div className="space-y-3">
+                  <p className="text-sm text-muted-foreground">
+                    Enter your business email. If it matches the business's domain we'll send a verification code; otherwise we'll ask for a supporting document.
+                  </p>
+                  <div>
+                    <label className="text-xs font-bold text-muted-foreground uppercase tracking-wider mb-1 block">Business Email *</label>
+                    <input
+                      type="email"
+                      value={claimEmail}
+                      onChange={(e) => setClaimEmail(e.target.value)}
+                      placeholder="owner@yourbusiness.com"
+                      className="w-full bg-background border-2 border-border rounded-xl px-3 py-2 text-sm focus:outline-none focus:border-[#99CC66]"
+                    />
                   </div>
-                ) : (
+                  <div>
+                    <label className="text-xs font-bold text-muted-foreground uppercase tracking-wider mb-1 block">Phone (optional)</label>
+                    <input
+                      type="tel"
+                      value={claimPhone}
+                      onChange={(e) => setClaimPhone(e.target.value)}
+                      placeholder="(555) 555-5555"
+                      className="w-full bg-background border-2 border-border rounded-xl px-3 py-2 text-sm focus:outline-none focus:border-[#99CC66]"
+                    />
+                  </div>
+                  <div className="flex gap-2">
+                    <Button
+                      className="flex-1 font-bold bg-orange-600 hover:bg-orange-700 text-white"
+                      onClick={handleInitiateClaim}
+                      disabled={claimBusiness.isPending || !claimEmail.trim()}
+                    >
+                      {claimBusiness.isPending
+                        ? <><Loader2 className="h-4 w-4 mr-2 animate-spin" />Checking...</>
+                        : "Continue"}
+                    </Button>
+                    <Button variant="outline" onClick={() => setClaimStep("idle")} disabled={claimBusiness.isPending}>Cancel</Button>
+                  </div>
+                </div>
+              )}
+
+              {/* Step 2a — OTP entry */}
+              {claimStep === "otp" && (
+                <div className="space-y-3">
+                  <p className="text-sm text-muted-foreground">
+                    A 6-digit verification code was sent to <strong className="text-foreground">{claimEmail}</strong>. Enter it below — it expires in 15 minutes.
+                  </p>
+                  {otpError && (
+                    <p className="text-sm font-bold text-destructive bg-destructive/10 border border-destructive/30 rounded-xl px-3 py-2">{otpError}</p>
+                  )}
+                  <input
+                    type="text"
+                    inputMode="numeric"
+                    maxLength={6}
+                    value={otpCode}
+                    onChange={(e) => setOtpCode(e.target.value.replace(/\D/g, "").slice(0, 6))}
+                    placeholder="000000"
+                    className="w-full text-center text-2xl font-mono bg-background border-2 border-border rounded-xl px-3 py-3 focus:outline-none focus:border-[#99CC66] tracking-[0.5em]"
+                    data-testid="otp-input"
+                  />
                   <Button
                     className="w-full font-bold bg-orange-600 hover:bg-orange-700 text-white"
-                    onClick={handleClaim}
-                    disabled={claimBusiness.isPending}
-                    data-testid="button-claim-business"
+                    onClick={handleVerifyOtp}
+                    disabled={verifyOtp.isPending || otpCode.length !== 6}
                   >
-                    {claimBusiness.isPending
-                      ? <><Loader2 className="h-4 w-4 mr-2 animate-spin" /> Submitting...</>
-                      : <><Flag className="h-4 w-4 mr-2" /> Claim This Business</>
-                    }
+                    {verifyOtp.isPending
+                      ? <><Loader2 className="h-4 w-4 mr-2 animate-spin" />Verifying...</>
+                      : "Verify Code"}
                   </Button>
-                )
-              ) : (
-                <p className="text-xs text-muted-foreground">
-                  <Link href="/login" className="text-[#99CC66] hover:underline font-bold">Log in</Link> with a business account to claim this listing.
-                </p>
+                  <p className="text-xs text-muted-foreground text-center">
+                    Didn't receive the code? Check your spam folder or{" "}
+                    <button className="text-[#99CC66] hover:underline font-bold" onClick={() => setClaimStep("email")}>go back</button>{" "}
+                    to re-enter your email.
+                  </p>
+                </div>
+              )}
+
+              {/* Step 2b — document upload */}
+              {claimStep === "document" && (
+                <div className="space-y-3">
+                  <p className="text-sm text-muted-foreground">
+                    Your email domain doesn't match this business's website. Please upload a document proving ownership — a business license, utility bill, or official correspondence showing your name and business address.
+                  </p>
+                  <div className="border-2 border-dashed border-orange-700/40 rounded-xl p-4 text-center">
+                    <input
+                      type="file"
+                      accept="image/*,application/pdf"
+                      onChange={(e) => setDocFile(e.target.files?.[0] ?? null)}
+                      className="hidden"
+                      id="claim-doc-input"
+                    />
+                    <label htmlFor="claim-doc-input" className="cursor-pointer block">
+                      {docFile ? (
+                        <span className="text-sm font-bold text-[#99CC66]">
+                          {docFile.name} ({(docFile.size / 1024).toFixed(0)} KB)
+                        </span>
+                      ) : (
+                        <>
+                          <div className="text-2xl mb-1">📎</div>
+                          <div className="text-sm font-bold text-muted-foreground">Tap to choose a file</div>
+                          <div className="text-xs text-muted-foreground mt-0.5">Image or PDF · max 5 MB</div>
+                        </>
+                      )}
+                    </label>
+                  </div>
+                  <Button
+                    className="w-full font-bold bg-orange-600 hover:bg-orange-700 text-white"
+                    onClick={handleDocUpload}
+                    disabled={!docFile || docUploading}
+                  >
+                    {docUploading
+                      ? <><Loader2 className="h-4 w-4 mr-2 animate-spin" />Uploading...</>
+                      : "Submit Document"}
+                  </Button>
+                </div>
+              )}
+
+              {/* Step 3 — done */}
+              {claimStep === "done" && (
+                <div className="space-y-2">
+                  {doneStatus === "APPROVED" && (
+                    <div className="flex items-center gap-2 text-sm font-bold text-green-400">
+                      <CheckCircle className="h-4 w-4" />
+                      Ownership verified — this business is now linked to your account.
+                    </div>
+                  )}
+                  {doneStatus === "PENDING_OWNER_REVIEW" && (
+                    <div className="space-y-1.5">
+                      <div className="flex items-center gap-2 text-sm font-bold text-orange-300">
+                        <CheckCircle className="h-4 w-4" />
+                        Identity verified
+                      </div>
+                      <p className="text-xs text-muted-foreground">
+                        The current owner has been notified and has 72 hours to respond. An admin will reach out once the review is complete.
+                      </p>
+                    </div>
+                  )}
+                  {(doneStatus === "PENDING_MANUAL_REVIEW" || (!["APPROVED","PENDING_OWNER_REVIEW"].includes(doneStatus) && doneStatus)) && (
+                    <div className="space-y-1.5">
+                      <div className="flex items-center gap-2 text-sm font-bold text-orange-300">
+                        <CheckCircle className="h-4 w-4" />
+                        Document received
+                      </div>
+                      <p className="text-xs text-muted-foreground">
+                        Our team will review your document and reach out within 2–3 business days.
+                      </p>
+                    </div>
+                  )}
+                </div>
               )}
             </div>
           )}

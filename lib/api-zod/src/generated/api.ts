@@ -357,10 +357,64 @@ export const DeleteCouponResponse = zod.object({
 
 
 /**
- * @summary Submit a claim request for an unclaimed business (requires login, business role)
+ * @summary Initiate a multi-step claim verification for a business listing (requires login, business role)
  */
 export const ClaimBusinessParams = zod.object({
   "id": zod.coerce.number()
+})
+
+export const ClaimBusinessBody = zod.object({
+  "email": zod.string(),
+  "phone": zod.string().optional()
+})
+
+
+/**
+ * @summary Submit a 6-digit OTP to verify a business claim
+ */
+export const VerifyClaimOtpParams = zod.object({
+  "id": zod.coerce.number()
+})
+
+export const VerifyClaimOtpBody = zod.object({
+  "code": zod.string()
+})
+
+export const VerifyClaimOtpResponse = zod.object({
+  "success": zod.boolean(),
+  "status": zod.string(),
+  "message": zod.string().optional()
+})
+
+
+/**
+ * @summary Upload a supporting document to proceed with a document-path claim
+ */
+export const UploadClaimDocumentParams = zod.object({
+  "id": zod.coerce.number()
+})
+
+export const UploadClaimDocumentResponse = zod.object({
+  "success": zod.boolean()
+})
+
+
+/**
+ * @summary Get the current claim state for the authenticated user on this business
+ */
+export const GetClaimStatusParams = zod.object({
+  "id": zod.coerce.number()
+})
+
+export const GetClaimStatusResponse = zod.object({
+  "id": zod.number(),
+  "status": zod.string(),
+  "method": zod.string().nullish(),
+  "otp_locked": zod.boolean().optional(),
+  "otp_locked_until": zod.string().nullish(),
+  "otp_expires_at": zod.string().nullish(),
+  "contest_deadline": zod.string().nullish(),
+  "claimant_email": zod.string().nullish()
 })
 
 
@@ -486,23 +540,76 @@ export const GetAdminClaimsResponseItem = zod.object({
   "user_id": zod.number(),
   "user_email": zod.string(),
   "status": zod.string(),
-  "created_at": zod.string()
+  "created_at": zod.string(),
+  "claimant_email": zod.string().nullish(),
+  "verification_method": zod.string().nullish(),
+  "document_path": zod.string().nullish(),
+  "contest_deadline": zod.string().nullish(),
+  "otp_attempts": zod.number().optional(),
+  "otp_locked_until": zod.string().nullish(),
+  "rejection_reason": zod.string().nullish()
 })
 export const GetAdminClaimsResponse = zod.array(GetAdminClaimsResponseItem)
 
 
 /**
- * @summary Approve or reject a claim request (admin)
+ * @summary Approve or reject a claim request — rejection requires a reason (admin)
  */
 export const ResolveAdminClaimParams = zod.object({
   "id": zod.coerce.number()
 })
 
 export const ResolveAdminClaimBody = zod.object({
-  "status": zod.string()
+  "status": zod.string(),
+  "reason": zod.string().optional()
 })
 
 export const ResolveAdminClaimResponse = zod.object({
+  "success": zod.boolean()
+})
+
+
+/**
+ * @summary Get claim audit log entries for a business (admin)
+ */
+export const GetAdminAuditLogParams = zod.object({
+  "businessId": zod.coerce.number()
+})
+
+export const GetAdminAuditLogResponseItem = zod.object({
+  "id": zod.number(),
+  "claim_id": zod.number().nullish(),
+  "actor_user_id": zod.number().nullish(),
+  "client_ip": zod.string().nullish(),
+  "timestamp": zod.string(),
+  "action_type": zod.string(),
+  "metadata": zod.string().nullish()
+})
+export const GetAdminAuditLogResponse = zod.array(GetAdminAuditLogResponseItem)
+
+
+/**
+ * @summary List all flagged IP addresses (admin)
+ */
+export const GetFlaggedIpsResponseItem = zod.object({
+  "id": zod.number(),
+  "ip": zod.string(),
+  "flagged_reason": zod.string(),
+  "flagged_at": zod.string(),
+  "cleared_at": zod.string().nullish(),
+  "cleared_by_user_id": zod.number().nullish()
+})
+export const GetFlaggedIpsResponse = zod.array(GetFlaggedIpsResponseItem)
+
+
+/**
+ * @summary Clear a flagged IP address (admin)
+ */
+export const ClearFlaggedIpParams = zod.object({
+  "id": zod.coerce.number()
+})
+
+export const ClearFlaggedIpResponse = zod.object({
   "success": zod.boolean()
 })
 

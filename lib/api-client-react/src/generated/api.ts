@@ -20,6 +20,7 @@ import type {
 
 import type {
   AdminBusinessInput,
+  AuditLogEntry,
   AuthResult,
   BannerAd,
   Brand,
@@ -34,10 +35,16 @@ import type {
   BusinessWithOwner,
   Category,
   City,
+  ClaimInitiateInput,
+  ClaimInitiateResponse,
+  ClaimOtpInput,
+  ClaimOtpResponse,
+  ClaimStatusResponse,
   ClaimStatusUpdate,
   ClaimWithDetails,
   ErrorResponse,
   FeatureResult,
+  FlaggedIp,
   ForgotPasswordInput,
   GetBusinessesParams,
   HealthStatus,
@@ -1398,16 +1405,18 @@ export const getClaimBusinessUrl = (id: number,) => {
 }
 
 /**
- * @summary Submit a claim request for an unclaimed business (requires login, business role)
+ * @summary Initiate a multi-step claim verification for a business listing (requires login, business role)
  */
-export const claimBusiness = async (id: number, options?: RequestInit): Promise<SuccessResponse> => {
+export const claimBusiness = async (id: number,
+    claimInitiateInput: ClaimInitiateInput, options?: RequestInit): Promise<ClaimInitiateResponse> => {
 
-  return customFetch<SuccessResponse>(getClaimBusinessUrl(id),
+  return customFetch<ClaimInitiateResponse>(getClaimBusinessUrl(id),
   {
     ...options,
-    method: 'POST'
-
-
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json', ...options?.headers },
+    body: JSON.stringify(
+      claimInitiateInput,)
   }
 );}
 
@@ -1415,8 +1424,8 @@ export const claimBusiness = async (id: number, options?: RequestInit): Promise<
 
 
 export const getClaimBusinessMutationOptions = <TError = ErrorType<ErrorResponse>,
-    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof claimBusiness>>, TError,{id: number}, TContext>, request?: SecondParameter<typeof customFetch>}
-): UseMutationOptions<Awaited<ReturnType<typeof claimBusiness>>, TError,{id: number}, TContext> => {
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof claimBusiness>>, TError,{id: number;data: BodyType<ClaimInitiateInput>}, TContext>, request?: SecondParameter<typeof customFetch>}
+): UseMutationOptions<Awaited<ReturnType<typeof claimBusiness>>, TError,{id: number;data: BodyType<ClaimInitiateInput>}, TContext> => {
 
 const mutationKey = ['claimBusiness'];
 const {mutation: mutationOptions, request: requestOptions} = options ?
@@ -1428,10 +1437,10 @@ const {mutation: mutationOptions, request: requestOptions} = options ?
 
 
 
-      const mutationFn: MutationFunction<Awaited<ReturnType<typeof claimBusiness>>, {id: number}> = (props) => {
-          const {id} = props ?? {};
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof claimBusiness>>, {id: number;data: BodyType<ClaimInitiateInput>}> = (props) => {
+          const {id,data} = props ?? {};
 
-          return  claimBusiness(id,requestOptions)
+          return  claimBusiness(id,data,requestOptions)
         }
 
 
@@ -1442,22 +1451,241 @@ const {mutation: mutationOptions, request: requestOptions} = options ?
   return  { mutationFn, ...mutationOptions }}
 
     export type ClaimBusinessMutationResult = NonNullable<Awaited<ReturnType<typeof claimBusiness>>>
-
+    export type ClaimBusinessMutationBody = BodyType<ClaimInitiateInput>
     export type ClaimBusinessMutationError = ErrorType<ErrorResponse>
 
     /**
- * @summary Submit a claim request for an unclaimed business (requires login, business role)
+ * @summary Initiate a multi-step claim verification for a business listing (requires login, business role)
  */
 export const useClaimBusiness = <TError = ErrorType<ErrorResponse>,
-    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof claimBusiness>>, TError,{id: number}, TContext>, request?: SecondParameter<typeof customFetch>}
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof claimBusiness>>, TError,{id: number;data: BodyType<ClaimInitiateInput>}, TContext>, request?: SecondParameter<typeof customFetch>}
  ): UseMutationResult<
         Awaited<ReturnType<typeof claimBusiness>>,
         TError,
-        {id: number},
+        {id: number;data: BodyType<ClaimInitiateInput>},
         TContext
       > => {
       return useMutation(getClaimBusinessMutationOptions(options));
     }
+
+export const getVerifyClaimOtpUrl = (id: number,) => {
+
+
+
+
+  return `/api/businesses/${id}/claim/verify-otp`
+}
+
+/**
+ * @summary Submit a 6-digit OTP to verify a business claim
+ */
+export const verifyClaimOtp = async (id: number,
+    claimOtpInput: ClaimOtpInput, options?: RequestInit): Promise<ClaimOtpResponse> => {
+
+  return customFetch<ClaimOtpResponse>(getVerifyClaimOtpUrl(id),
+  {
+    ...options,
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json', ...options?.headers },
+    body: JSON.stringify(
+      claimOtpInput,)
+  }
+);}
+
+
+
+
+export const getVerifyClaimOtpMutationOptions = <TError = ErrorType<ErrorResponse>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof verifyClaimOtp>>, TError,{id: number;data: BodyType<ClaimOtpInput>}, TContext>, request?: SecondParameter<typeof customFetch>}
+): UseMutationOptions<Awaited<ReturnType<typeof verifyClaimOtp>>, TError,{id: number;data: BodyType<ClaimOtpInput>}, TContext> => {
+
+const mutationKey = ['verifyClaimOtp'];
+const {mutation: mutationOptions, request: requestOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, request: undefined};
+
+
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof verifyClaimOtp>>, {id: number;data: BodyType<ClaimOtpInput>}> = (props) => {
+          const {id,data} = props ?? {};
+
+          return  verifyClaimOtp(id,data,requestOptions)
+        }
+
+
+
+
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type VerifyClaimOtpMutationResult = NonNullable<Awaited<ReturnType<typeof verifyClaimOtp>>>
+    export type VerifyClaimOtpMutationBody = BodyType<ClaimOtpInput>
+    export type VerifyClaimOtpMutationError = ErrorType<ErrorResponse>
+
+    /**
+ * @summary Submit a 6-digit OTP to verify a business claim
+ */
+export const useVerifyClaimOtp = <TError = ErrorType<ErrorResponse>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof verifyClaimOtp>>, TError,{id: number;data: BodyType<ClaimOtpInput>}, TContext>, request?: SecondParameter<typeof customFetch>}
+ ): UseMutationResult<
+        Awaited<ReturnType<typeof verifyClaimOtp>>,
+        TError,
+        {id: number;data: BodyType<ClaimOtpInput>},
+        TContext
+      > => {
+      return useMutation(getVerifyClaimOtpMutationOptions(options));
+    }
+
+export const getUploadClaimDocumentUrl = (id: number,) => {
+
+
+
+
+  return `/api/businesses/${id}/claim/upload-document`
+}
+
+/**
+ * @summary Upload a supporting document to proceed with a document-path claim
+ */
+export const uploadClaimDocument = async (id: number, options?: RequestInit): Promise<SuccessResponse> => {
+
+  return customFetch<SuccessResponse>(getUploadClaimDocumentUrl(id),
+  {
+    ...options,
+    method: 'POST'
+
+
+  }
+);}
+
+
+
+
+export const getUploadClaimDocumentMutationOptions = <TError = ErrorType<ErrorResponse>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof uploadClaimDocument>>, TError,{id: number}, TContext>, request?: SecondParameter<typeof customFetch>}
+): UseMutationOptions<Awaited<ReturnType<typeof uploadClaimDocument>>, TError,{id: number}, TContext> => {
+
+const mutationKey = ['uploadClaimDocument'];
+const {mutation: mutationOptions, request: requestOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, request: undefined};
+
+
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof uploadClaimDocument>>, {id: number}> = (props) => {
+          const {id} = props ?? {};
+
+          return  uploadClaimDocument(id,requestOptions)
+        }
+
+
+
+
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type UploadClaimDocumentMutationResult = NonNullable<Awaited<ReturnType<typeof uploadClaimDocument>>>
+
+    export type UploadClaimDocumentMutationError = ErrorType<ErrorResponse>
+
+    /**
+ * @summary Upload a supporting document to proceed with a document-path claim
+ */
+export const useUploadClaimDocument = <TError = ErrorType<ErrorResponse>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof uploadClaimDocument>>, TError,{id: number}, TContext>, request?: SecondParameter<typeof customFetch>}
+ ): UseMutationResult<
+        Awaited<ReturnType<typeof uploadClaimDocument>>,
+        TError,
+        {id: number},
+        TContext
+      > => {
+      return useMutation(getUploadClaimDocumentMutationOptions(options));
+    }
+
+export const getGetClaimStatusUrl = (id: number,) => {
+
+
+
+
+  return `/api/businesses/${id}/claim/status`
+}
+
+/**
+ * @summary Get the current claim state for the authenticated user on this business
+ */
+export const getClaimStatus = async (id: number, options?: RequestInit): Promise<ClaimStatusResponse> => {
+
+  return customFetch<ClaimStatusResponse>(getGetClaimStatusUrl(id),
+  {
+    ...options,
+    method: 'GET'
+
+
+  }
+);}
+
+
+
+
+
+export const getGetClaimStatusQueryKey = (id: number,) => {
+    return [
+    `/api/businesses/${id}/claim/status`
+    ] as const;
+    }
+
+
+export const getGetClaimStatusQueryOptions = <TData = Awaited<ReturnType<typeof getClaimStatus>>, TError = ErrorType<ErrorResponse>>(id: number, options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof getClaimStatus>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+) => {
+
+const {query: queryOptions, request: requestOptions} = options ?? {};
+
+  const queryKey =  queryOptions?.queryKey ?? getGetClaimStatusQueryKey(id);
+
+
+
+    const queryFn: QueryFunction<Awaited<ReturnType<typeof getClaimStatus>>> = ({ signal }) => getClaimStatus(id, { signal, ...requestOptions });
+
+
+
+
+
+   return  { queryKey, queryFn, enabled: !!(id), ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof getClaimStatus>>, TError, TData> & { queryKey: QueryKey }
+}
+
+export type GetClaimStatusQueryResult = NonNullable<Awaited<ReturnType<typeof getClaimStatus>>>
+export type GetClaimStatusQueryError = ErrorType<ErrorResponse>
+
+
+/**
+ * @summary Get the current claim state for the authenticated user on this business
+ */
+
+export function useGetClaimStatus<TData = Awaited<ReturnType<typeof getClaimStatus>>, TError = ErrorType<ErrorResponse>>(
+ id: number, options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof getClaimStatus>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+
+ ):  UseQueryResult<TData, TError> & { queryKey: QueryKey } {
+
+  const queryOptions = getGetClaimStatusQueryOptions(id,options)
+
+  const query = useQuery(queryOptions) as  UseQueryResult<TData, TError> & { queryKey: QueryKey };
+
+  return { ...query, queryKey: queryOptions.queryKey };
+}
+
+
+
+
+
+
 
 export const getGetPendingBusinessesUrl = () => {
 
@@ -1982,7 +2210,7 @@ export const getResolveAdminClaimUrl = (id: number,) => {
 }
 
 /**
- * @summary Approve or reject a claim request (admin)
+ * @summary Approve or reject a claim request — rejection requires a reason (admin)
  */
 export const resolveAdminClaim = async (id: number,
     claimStatusUpdate: ClaimStatusUpdate, options?: RequestInit): Promise<SuccessResponse> => {
@@ -2032,7 +2260,7 @@ const {mutation: mutationOptions, request: requestOptions} = options ?
     export type ResolveAdminClaimMutationError = ErrorType<ErrorResponse>
 
     /**
- * @summary Approve or reject a claim request (admin)
+ * @summary Approve or reject a claim request — rejection requires a reason (admin)
  */
 export const useResolveAdminClaim = <TError = ErrorType<ErrorResponse>,
     TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof resolveAdminClaim>>, TError,{id: number;data: BodyType<ClaimStatusUpdate>}, TContext>, request?: SecondParameter<typeof customFetch>}
@@ -2043,6 +2271,230 @@ export const useResolveAdminClaim = <TError = ErrorType<ErrorResponse>,
         TContext
       > => {
       return useMutation(getResolveAdminClaimMutationOptions(options));
+    }
+
+export const getGetAdminAuditLogUrl = (businessId: number,) => {
+
+
+
+
+  return `/api/admin/audit-log/business/${businessId}`
+}
+
+/**
+ * @summary Get claim audit log entries for a business (admin)
+ */
+export const getAdminAuditLog = async (businessId: number, options?: RequestInit): Promise<AuditLogEntry[]> => {
+
+  return customFetch<AuditLogEntry[]>(getGetAdminAuditLogUrl(businessId),
+  {
+    ...options,
+    method: 'GET'
+
+
+  }
+);}
+
+
+
+
+
+export const getGetAdminAuditLogQueryKey = (businessId: number,) => {
+    return [
+    `/api/admin/audit-log/business/${businessId}`
+    ] as const;
+    }
+
+
+export const getGetAdminAuditLogQueryOptions = <TData = Awaited<ReturnType<typeof getAdminAuditLog>>, TError = ErrorType<unknown>>(businessId: number, options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof getAdminAuditLog>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+) => {
+
+const {query: queryOptions, request: requestOptions} = options ?? {};
+
+  const queryKey =  queryOptions?.queryKey ?? getGetAdminAuditLogQueryKey(businessId);
+
+
+
+    const queryFn: QueryFunction<Awaited<ReturnType<typeof getAdminAuditLog>>> = ({ signal }) => getAdminAuditLog(businessId, { signal, ...requestOptions });
+
+
+
+
+
+   return  { queryKey, queryFn, enabled: !!(businessId), ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof getAdminAuditLog>>, TError, TData> & { queryKey: QueryKey }
+}
+
+export type GetAdminAuditLogQueryResult = NonNullable<Awaited<ReturnType<typeof getAdminAuditLog>>>
+export type GetAdminAuditLogQueryError = ErrorType<unknown>
+
+
+/**
+ * @summary Get claim audit log entries for a business (admin)
+ */
+
+export function useGetAdminAuditLog<TData = Awaited<ReturnType<typeof getAdminAuditLog>>, TError = ErrorType<unknown>>(
+ businessId: number, options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof getAdminAuditLog>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+
+ ):  UseQueryResult<TData, TError> & { queryKey: QueryKey } {
+
+  const queryOptions = getGetAdminAuditLogQueryOptions(businessId,options)
+
+  const query = useQuery(queryOptions) as  UseQueryResult<TData, TError> & { queryKey: QueryKey };
+
+  return { ...query, queryKey: queryOptions.queryKey };
+}
+
+
+
+
+
+
+
+export const getGetFlaggedIpsUrl = () => {
+
+
+
+
+  return `/api/admin/flagged-ips`
+}
+
+/**
+ * @summary List all flagged IP addresses (admin)
+ */
+export const getFlaggedIps = async ( options?: RequestInit): Promise<FlaggedIp[]> => {
+
+  return customFetch<FlaggedIp[]>(getGetFlaggedIpsUrl(),
+  {
+    ...options,
+    method: 'GET'
+
+
+  }
+);}
+
+
+
+
+
+export const getGetFlaggedIpsQueryKey = () => {
+    return [
+    `/api/admin/flagged-ips`
+    ] as const;
+    }
+
+
+export const getGetFlaggedIpsQueryOptions = <TData = Awaited<ReturnType<typeof getFlaggedIps>>, TError = ErrorType<unknown>>( options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof getFlaggedIps>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+) => {
+
+const {query: queryOptions, request: requestOptions} = options ?? {};
+
+  const queryKey =  queryOptions?.queryKey ?? getGetFlaggedIpsQueryKey();
+
+
+
+    const queryFn: QueryFunction<Awaited<ReturnType<typeof getFlaggedIps>>> = ({ signal }) => getFlaggedIps({ signal, ...requestOptions });
+
+
+
+
+
+   return  { queryKey, queryFn, ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof getFlaggedIps>>, TError, TData> & { queryKey: QueryKey }
+}
+
+export type GetFlaggedIpsQueryResult = NonNullable<Awaited<ReturnType<typeof getFlaggedIps>>>
+export type GetFlaggedIpsQueryError = ErrorType<unknown>
+
+
+/**
+ * @summary List all flagged IP addresses (admin)
+ */
+
+export function useGetFlaggedIps<TData = Awaited<ReturnType<typeof getFlaggedIps>>, TError = ErrorType<unknown>>(
+  options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof getFlaggedIps>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+
+ ):  UseQueryResult<TData, TError> & { queryKey: QueryKey } {
+
+  const queryOptions = getGetFlaggedIpsQueryOptions(options)
+
+  const query = useQuery(queryOptions) as  UseQueryResult<TData, TError> & { queryKey: QueryKey };
+
+  return { ...query, queryKey: queryOptions.queryKey };
+}
+
+
+
+
+
+
+
+export const getClearFlaggedIpUrl = (id: number,) => {
+
+
+
+
+  return `/api/admin/flagged-ips/${id}/clear`
+}
+
+/**
+ * @summary Clear a flagged IP address (admin)
+ */
+export const clearFlaggedIp = async (id: number, options?: RequestInit): Promise<SuccessResponse> => {
+
+  return customFetch<SuccessResponse>(getClearFlaggedIpUrl(id),
+  {
+    ...options,
+    method: 'PATCH'
+
+
+  }
+);}
+
+
+
+
+export const getClearFlaggedIpMutationOptions = <TError = ErrorType<ErrorResponse>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof clearFlaggedIp>>, TError,{id: number}, TContext>, request?: SecondParameter<typeof customFetch>}
+): UseMutationOptions<Awaited<ReturnType<typeof clearFlaggedIp>>, TError,{id: number}, TContext> => {
+
+const mutationKey = ['clearFlaggedIp'];
+const {mutation: mutationOptions, request: requestOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, request: undefined};
+
+
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof clearFlaggedIp>>, {id: number}> = (props) => {
+          const {id} = props ?? {};
+
+          return  clearFlaggedIp(id,requestOptions)
+        }
+
+
+
+
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type ClearFlaggedIpMutationResult = NonNullable<Awaited<ReturnType<typeof clearFlaggedIp>>>
+
+    export type ClearFlaggedIpMutationError = ErrorType<ErrorResponse>
+
+    /**
+ * @summary Clear a flagged IP address (admin)
+ */
+export const useClearFlaggedIp = <TError = ErrorType<ErrorResponse>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof clearFlaggedIp>>, TError,{id: number}, TContext>, request?: SecondParameter<typeof customFetch>}
+ ): UseMutationResult<
+        Awaited<ReturnType<typeof clearFlaggedIp>>,
+        TError,
+        {id: number},
+        TContext
+      > => {
+      return useMutation(getClearFlaggedIpMutationOptions(options));
     }
 
 export const getGetBannerUrl = () => {

@@ -253,6 +253,112 @@ export async function sendListingRejectedEmail(
   });
 }
 
+export async function sendClaimOtpEmail(
+  toEmail: string,
+  businessName: string,
+  code: string,
+): Promise<void> {
+  const text = `You requested to claim the listing for ${businessName} on Hill Country Hemp Finder.\n\nYour verification code is: ${code}\n\nThis code expires in 15 minutes. Enter it on the claim page to complete verification.\n\nIf you did not request this, ignore this email.\n\nQuestions? Email us at ${CONTACT}`;
+
+  const html = `
+    <div style="font-family:sans-serif;max-width:480px;margin:auto;padding:32px 24px;background:#1a2226;color:#e5e7eb;border-radius:12px">
+      <h2 style="color:#99CC66;margin-bottom:8px">Verify your business claim</h2>
+      <p style="color:#9ca3af">You requested to claim <strong style="color:#e5e7eb">${businessName}</strong> on Hill Country Hemp Finder.</p>
+      <p style="color:#d1d5db;margin:16px 0">Enter this code on the claim page:</p>
+      <div style="text-align:center;margin:24px 0">
+        <span style="display:inline-block;font-size:36px;font-weight:bold;letter-spacing:10px;color:#99CC66;background:#0d1a1f;padding:16px 24px;border-radius:10px;border:2px solid #99CC66">${code}</span>
+      </div>
+      <p style="font-size:12px;color:#6b7280;text-align:center">This code expires in 15 minutes.</p>
+      <hr style="border-color:#2d3748;margin:24px 0"/>
+      <p style="font-size:11px;color:#6b7280">Questions? Reach us at <a href="mailto:${CONTACT}" style="color:#99CC66">${CONTACT}</a></p>
+    </div>`;
+
+  await sendEmail({
+    to: toEmail,
+    subject: `${code} is your Hill Country Hemp Finder verification code`,
+    text,
+    html,
+  });
+}
+
+export async function sendOwnerContestNotification(
+  ownerEmail: string,
+  businessName: string,
+  contestDeadline: Date,
+  newClaimantEmail: string,
+): Promise<void> {
+  const deadline = contestDeadline.toLocaleDateString("en-US", { month: "long", day: "numeric", year: "numeric", hour: "2-digit", minute: "2-digit" });
+  const text = `Someone is trying to claim your listing for ${businessName} on Hill Country Hemp Finder.\n\nClaimant email: ${newClaimantEmail}\n\nIf this is unauthorized, contact us at ${CONTACT} before ${deadline} to contest this claim. If we don't hear from you within 72 hours, the claim may proceed to admin review.\n\nIf you authorized this, no action is needed.\n\nHill Country Hemp Finder`;
+
+  const html = `
+    <div style="font-family:sans-serif;max-width:480px;margin:auto;padding:32px 24px;background:#1a2226;color:#e5e7eb;border-radius:12px">
+      <h2 style="color:#e5e7eb;margin-bottom:8px">Someone is claiming your listing</h2>
+      <p style="color:#9ca3af;font-size:13px;margin-top:4px">Hill Country Hemp Finder — Action Required</p>
+      <p style="color:#d1d5db;margin:16px 0">A new claim has been submitted for <strong style="color:#e5e7eb">${businessName}</strong>.</p>
+      <div style="background:#2d3748;border-left:3px solid #f59e0b;border-radius:4px;padding:12px 16px;margin:0 0 20px">
+        <p style="margin:0;font-size:13px;color:#9ca3af;text-transform:uppercase;letter-spacing:.05em;font-weight:600">Claimant</p>
+        <p style="margin:6px 0 0;color:#e5e7eb">${newClaimantEmail}</p>
+      </div>
+      <p style="color:#d1d5db;margin:0 0 16px">If this is unauthorized, contact us at <a href="mailto:${CONTACT}" style="color:#99CC66">${CONTACT}</a> <strong>before ${deadline}</strong> to contest it.</p>
+      <p style="color:#9ca3af;font-size:12px">If you authorized this transfer, no action is needed.</p>
+      <hr style="border-color:#2d3748;margin:24px 0"/>
+      <p style="font-size:11px;color:#6b7280">Questions? Email <a href="mailto:${CONTACT}" style="color:#99CC66">${CONTACT}</a></p>
+    </div>`;
+
+  await sendEmail({
+    to: ownerEmail,
+    subject: `Someone is claiming your listing "${businessName}" — Hill Country Hemp Finder`,
+    text,
+    html,
+  });
+}
+
+export async function sendClaimApprovedEmail(
+  toEmail: string,
+  businessName: string,
+): Promise<void> {
+  const dashboardUrl = (() => {
+    const domains = process.env.REPLIT_DOMAINS?.split(",")[0] ?? "localhost:80";
+    const proto = domains.includes("localhost") ? "http" : "https";
+    const basePath = process.env.BASE_PATH ?? "";
+    return `${proto}://${domains}${basePath}/dashboard`;
+  })();
+
+  const text = `Great news — your claim for ${businessName} has been approved!\n\nThe listing is now linked to your account. Visit your dashboard to manage it:\n${dashboardUrl}\n\nQuestions? Email us at ${CONTACT}`;
+
+  const html = `
+    <div style="font-family:sans-serif;max-width:480px;margin:auto;padding:32px 24px;background:#1a2226;color:#e5e7eb;border-radius:12px">
+      <h2 style="color:#99CC66;margin-bottom:8px">Claim approved! 🎉</h2>
+      <p style="color:#d1d5db;margin:16px 0">Your claim for <strong style="color:#e5e7eb">${businessName}</strong> has been approved. The listing is now linked to your account.</p>
+      <a href="${dashboardUrl}" style="display:inline-block;margin:8px 0 24px;padding:12px 24px;background:#99CC66;color:#000;font-weight:bold;border-radius:8px;text-decoration:none">Go to Dashboard</a>
+      <hr style="border-color:#2d3748;margin:24px 0"/>
+      <p style="font-size:11px;color:#6b7280">Questions? <a href="mailto:${CONTACT}" style="color:#99CC66">${CONTACT}</a></p>
+    </div>`;
+
+  await sendEmail({ to: toEmail, subject: `Your claim for "${businessName}" is approved — Hill Country Hemp Finder`, text, html });
+}
+
+export async function sendClaimRejectedEmail(
+  toEmail: string,
+  businessName: string,
+  reason: string,
+): Promise<void> {
+  const text = `Your claim for ${businessName} on Hill Country Hemp Finder was not approved.\n\nReason: ${reason}\n\nIf you believe this is an error, contact us at ${CONTACT}.\n\nHill Country Hemp Finder`;
+
+  const html = `
+    <div style="font-family:sans-serif;max-width:480px;margin:auto;padding:32px 24px;background:#1a2226;color:#e5e7eb;border-radius:12px">
+      <h2 style="color:#e5e7eb;margin-bottom:8px">Claim Not Approved</h2>
+      <p style="color:#d1d5db;margin:16px 0">Your claim for <strong style="color:#e5e7eb">${businessName}</strong> was not approved.</p>
+      <div style="background:#2d3748;border-left:3px solid #e53e3e;border-radius:4px;padding:12px 16px;margin:0 0 20px">
+        <p style="margin:0;font-size:13px;color:#9ca3af;text-transform:uppercase;letter-spacing:.05em;font-weight:600">Reason</p>
+        <p style="margin:6px 0 0;color:#e5e7eb">${reason}</p>
+      </div>
+      <p style="font-size:12px;color:#6b7280">Questions? <a href="mailto:${CONTACT}" style="color:#99CC66">${CONTACT}</a></p>
+    </div>`;
+
+  await sendEmail({ to: toEmail, subject: `Your claim for "${businessName}" — Hill Country Hemp Finder`, text, html });
+}
+
 export async function sendWelcomeEmail(toEmail: string): Promise<void> {
   const dashboardUrl = (() => {
     const domains = process.env.REPLIT_DOMAINS?.split(",")[0] ?? "localhost:80";

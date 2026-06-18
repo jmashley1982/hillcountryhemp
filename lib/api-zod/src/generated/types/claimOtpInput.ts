@@ -5,7 +5,6 @@
  * OpenAPI spec version: 1.0.0
  */
 
-export interface ClaimStatusUpdate {
-  status: string;
-  reason?: string;
+export interface ClaimOtpInput {
+  code: string;
 }

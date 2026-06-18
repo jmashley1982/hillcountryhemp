@@ -6,6 +6,7 @@
  */
 
 export * from './adminBusinessInput';
+export * from './auditLogEntry';
 export * from './authResult';
 export * from './bannerAd';
 export * from './brand';
@@ -21,11 +22,18 @@ export * from './businessUpdate';
 export * from './businessWithOwner';
 export * from './category';
 export * from './city';
+export * from './claimInitiateInput';
+export * from './claimInitiateResponse';
+export * from './claimInitiateResponseMethod';
+export * from './claimOtpInput';
+export * from './claimOtpResponse';
+export * from './claimStatusResponse';
 export * from './claimStatusUpdate';
 export * from './claimWithDetails';
 export * from './coupon';
 export * from './errorResponse';
 export * from './featureResult';
+export * from './flaggedIp';
 export * from './forgotPasswordInput';
 export * from './getBusinessesParams';
 export * from './healthStatus';

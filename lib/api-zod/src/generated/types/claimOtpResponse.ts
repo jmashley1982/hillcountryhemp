@@ -5,7 +5,8 @@
  * OpenAPI spec version: 1.0.0
  */
 
-export interface ClaimStatusUpdate {
+export interface ClaimOtpResponse {
+  success: boolean;
   status: string;
-  reason?: string;
+  message?: string;
 }

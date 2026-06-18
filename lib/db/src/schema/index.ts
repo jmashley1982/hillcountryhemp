@@ -57,6 +57,17 @@ export const claimsTable = pgTable("claims", {
     .references(() => usersTable.id, { onDelete: "cascade" }),
   status: text("status").notNull().default("pending"),
   createdAt: timestamp("created_at").defaultNow().notNull(),
+  claimantEmail: text("claimant_email"),
+  claimantPhone: text("claimant_phone"),
+  verificationMethod: text("verification_method"),
+  otpHash: text("otp_hash"),
+  otpExpiresAt: timestamp("otp_expires_at"),
+  otpAttempts: integer("otp_attempts").notNull().default(0),
+  otpLockedUntil: timestamp("otp_locked_until"),
+  documentPath: text("document_path"),
+  claimRejectionReason: text("claim_rejection_reason"),
+  contestDeadline: timestamp("contest_deadline"),
+  clientIp: text("client_ip"),
 });
 
 export const businessCategoriesTable = pgTable(
@@ -156,6 +167,26 @@ export const sessionsTable = pgTable("session", {
   expire: timestamp("expire", { precision: 6 }).notNull(),
 });
 
+export const claimAuditLogsTable = pgTable("claim_audit_logs", {
+  id: serial("id").primaryKey(),
+  claimId: integer("claim_id").references(() => claimsTable.id, { onDelete: "cascade" }),
+  actorUserId: integer("actor_user_id").references(() => usersTable.id, { onDelete: "set null" }),
+  actorSessionId: text("actor_session_id"),
+  clientIp: text("client_ip"),
+  timestamp: timestamp("timestamp").defaultNow().notNull(),
+  actionType: text("action_type").notNull(),
+  metadata: text("metadata"),
+});
+
+export const flaggedIpsTable = pgTable("flagged_ips", {
+  id: serial("id").primaryKey(),
+  ip: text("ip").unique().notNull(),
+  flaggedAt: timestamp("flagged_at").defaultNow().notNull(),
+  flaggedReason: text("flagged_reason").notNull(),
+  clearedAt: timestamp("cleared_at"),
+  clearedByUserId: integer("cleared_by_user_id").references(() => usersTable.id, { onDelete: "set null" }),
+});
+
 export const passwordResetTokensTable = pgTable("password_reset_tokens", {
   id: serial("id").primaryKey(),
   userId: integer("user_id")
@@ -176,5 +207,7 @@ export type B2BBannerAd = typeof b2bBannerAdTable.$inferSelect;
 export type PopupAd = typeof popupAdTable.$inferSelect;
 export type PasswordResetToken = typeof passwordResetTokensTable.$inferSelect;
 export type Claim = typeof claimsTable.$inferSelect;
+export type ClaimAuditLog = typeof claimAuditLogsTable.$inferSelect;
+export type FlaggedIp = typeof flaggedIpsTable.$inferSelect;
 export type Category = typeof categoriesTable.$inferSelect;
 export type City = typeof citiesTable.$inferSelect;

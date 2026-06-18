@@ -13,4 +13,17 @@ export interface ClaimWithDetails {
   user_email: string;
   status: string;
   created_at: string;
+  /** @nullable */
+  claimant_email?: string | null;
+  /** @nullable */
+  verification_method?: string | null;
+  /** @nullable */
+  document_path?: string | null;
+  /** @nullable */
+  contest_deadline?: string | null;
+  otp_attempts?: number;
+  /** @nullable */
+  otp_locked_until?: string | null;
+  /** @nullable */
+  rejection_reason?: string | null;
 }

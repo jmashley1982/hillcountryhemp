@@ -1,6 +1,6 @@
 import { Router } from "express";
 import multer from "multer";
-import { eq, and, isNull } from "drizzle-orm";
+import { eq, and, isNull, inArray } from "drizzle-orm";
 import {
   db,
   usersTable,
@@ -13,8 +13,26 @@ import {
   claimsTable,
 } from "@workspace/db";
 import { requireLogin, requireBusiness } from "../middlewares/auth.js";
-import { sendAdminAlert } from "../lib/mailer.js";
+import {
+  sendAdminAlert,
+  sendClaimOtpEmail,
+  sendOwnerContestNotification,
+} from "../lib/mailer.js";
 import { logger } from "../lib/logger.js";
+import {
+  appendAuditLog,
+  checkUserRateLimit,
+  checkIpRateLimit,
+  isIpCurrentlyFlagged,
+  flagIp,
+  getClientIp,
+  extractEmailDomain,
+  extractWebsiteDomain,
+  isHighTrustMatch,
+  generateOtp,
+  hashOtp,
+  verifyOtp,
+} from "../lib/claim-helpers.js";
 import { uploadBufferToGCS, makeUploadFilename, deleteFromGCS } from "../lib/gcs.js";
 import { ACCEPTED_IMAGE_MIMES, compressImage } from "../lib/compress.js";
 
@@ -33,6 +51,15 @@ const uploadCoupon = multer({
     if (ACCEPTED_IMAGE_MIMES.has(file.mimetype) || file.mimetype === "application/pdf")
       cb(null, true);
     else cb(new Error("Only image or PDF files are allowed"));
+  },
+});
+const uploadDocument = multer({
+  storage: multer.memoryStorage(),
+  limits: { fileSize: 5 * 1024 * 1024 },
+  fileFilter: (_req, file, cb) => {
+    if (ACCEPTED_IMAGE_MIMES.has(file.mimetype) || file.mimetype === "application/pdf")
+      cb(null, true);
+    else cb(new Error("Only image or PDF files are allowed for claim documents"));
   },
 });
 
@@ -933,7 +960,18 @@ router.delete(
   },
 );
 
-// Claim a business (logged-in business user only)
+// ─── Claim verification state machine ──────────────────────────────────────
+
+const ACTIVE_CLAIM_STATUSES = [
+  "PENDING_EMAIL_CHECK",
+  "AWAITING_OTP",
+  "AWAITING_DOCUMENT",
+  "PENDING_MANUAL_REVIEW",
+  "PENDING_OWNER_REVIEW",
+  "pending",
+];
+
+// Initiate a claim — starts the multi-step verification flow
 router.post(
   "/businesses/:id/claim",
   requireLogin,
@@ -943,54 +981,307 @@ router.post(
     const id = parseInt(raw, 10);
     if (isNaN(id)) { res.status(400).json({ error: "Invalid id" }); return; }
 
+    const clientIp = getClientIp(req as Parameters<typeof getClientIp>[0]);
+
+    const [flagged, ipOk] = await Promise.all([
+      isIpCurrentlyFlagged(clientIp),
+      checkIpRateLimit(clientIp),
+    ]);
+    if (flagged) {
+      res.status(429).json({ error: "Access temporarily restricted. Contact support if this is an error." });
+      return;
+    }
+    if (!ipOk) {
+      await flagIp(clientIp, "IP rate limit exceeded on claim initiation");
+      await appendAuditLog({ clientIp, actionType: "ip_flagged", actorUserId: req.session.userId, metadata: { reason: "IP_QUOTA_EXCEEDED" } });
+      res.status(429).json({ error: "Too many requests. Please try again later." });
+      return;
+    }
+
+    const userOk = await checkUserRateLimit(req.session.userId!);
+    if (!userOk) {
+      res.status(429).json({ error: "You've submitted too many claims recently. Please wait 24 hours before trying again." });
+      return;
+    }
+
+    const { email, phone } = req.body as { email?: string; phone?: string };
+    if (!email || !email.includes("@")) {
+      res.status(400).json({ error: "A valid email address is required to verify your claim." });
+      return;
+    }
+
     const [biz] = await db
       .select()
       .from(businessesTable)
       .where(eq(businessesTable.id, id));
-
     if (!biz) { res.status(404).json({ error: "Business not found" }); return; }
-    if (biz.ownerId !== null) {
-      res.status(400).json({ error: "This business has already been claimed" });
-      return;
-    }
 
-    const [existing] = await db
+    // Check for an existing in-progress claim by this user
+    const [existingActive] = await db
       .select()
       .from(claimsTable)
       .where(
         and(
           eq(claimsTable.businessId, id),
           eq(claimsTable.userId, req.session.userId!),
-          eq(claimsTable.status, "pending"),
+          inArray(claimsTable.status, ACTIVE_CLAIM_STATUSES),
         ),
       );
-    if (existing) {
-      res.status(400).json({ error: "You already have a pending claim for this business" });
+    if (existingActive) {
+      const st = existingActive.status;
+      const msg =
+        st === "AWAITING_OTP"
+          ? "A verification code was already sent to your email. Please check your inbox."
+          : st === "AWAITING_DOCUMENT"
+            ? "Please upload a supporting document to proceed with your claim."
+            : "You already have a claim in progress for this business.";
+      res.status(400).json({ error: msg, status: st, claimId: existingActive.id });
       return;
     }
 
-    await db.insert(claimsTable).values({
-      businessId: id,
-      userId: req.session.userId!,
-      status: "pending",
+    // Domain-based classification
+    const emailDomain = extractEmailDomain(email);
+    const websiteDomain = extractWebsiteDomain(biz.website);
+    const highTrust = emailDomain && websiteDomain
+      ? isHighTrustMatch(emailDomain, websiteDomain)
+      : false;
+    const method: "domain_otp" | "document" = highTrust ? "domain_otp" : "document";
+
+    const hasExistingOwner = biz.ownerId !== null;
+    const contestDeadline = hasExistingOwner ? new Date(Date.now() + 72 * 60 * 60 * 1000) : null;
+
+    const [claim] = await db
+      .insert(claimsTable)
+      .values({
+        businessId: id,
+        userId: req.session.userId!,
+        status: method === "domain_otp" ? "AWAITING_OTP" : "AWAITING_DOCUMENT",
+        claimantEmail: email.trim().toLowerCase(),
+        claimantPhone: phone?.trim() ?? null,
+        verificationMethod: method,
+        otpAttempts: 0,
+        contestDeadline,
+        clientIp,
+      })
+      .returning();
+
+    await appendAuditLog({
+      claimId: claim.id,
+      actorUserId: req.session.userId,
+      actorSessionId: req.sessionID,
+      clientIp,
+      actionType: "claim_initiated",
+      metadata: { method, businessId: id, emailDomain, websiteDomain, hasExistingOwner },
     });
 
-    res.status(201).json({ success: true });
+    // Path A: generate and email OTP
+    if (method === "domain_otp") {
+      const code = generateOtp();
+      const otpHash = await hashOtp(code);
+      const otpExpiresAt = new Date(Date.now() + 15 * 60 * 1000);
+      await db.update(claimsTable).set({ otpHash, otpExpiresAt }).where(eq(claimsTable.id, claim.id));
+      sendClaimOtpEmail(email.trim(), biz.name, code).catch((err: unknown) => {
+        logger.warn({ err, to: email }, "Failed to send OTP email");
+      });
+      await appendAuditLog({ claimId: claim.id, actorUserId: req.session.userId, clientIp, actionType: "otp_requested", metadata: { emailDomain } });
+    }
 
-    const [claimant] = await db
-      .select({ email: usersTable.email })
-      .from(usersTable)
-      .where(eq(usersTable.id, req.session.userId!));
+    // Notify existing owner of a contest
+    if (hasExistingOwner && biz.ownerId) {
+      const [ownerRow] = await db.select({ email: usersTable.email }).from(usersTable).where(eq(usersTable.id, biz.ownerId));
+      if (ownerRow) {
+        sendOwnerContestNotification(ownerRow.email, biz.name, contestDeadline!, email.trim()).catch((err: unknown) => {
+          logger.warn({ err }, "Failed to send owner contest notification");
+        });
+        await appendAuditLog({ claimId: claim.id, actorUserId: req.session.userId, clientIp, actionType: "contest_started", metadata: { contestDeadlineIso: contestDeadline?.toISOString() } });
+      }
+    }
+
     sendAdminAlert({
-      subject: "New claim submitted for a listing",
-      headline: "A user has submitted a claim on an existing listing",
+      subject: "New claim initiated on a listing",
+      headline: "A user started the multi-step claim verification flow",
       details: [
         { label: "Shop name", value: biz.name },
-        { label: "Claimant email", value: claimant?.email ?? "unknown" },
+        { label: "Claimant email", value: email.trim() },
+        { label: "Method", value: method === "domain_otp" ? "Domain OTP (fast-track)" : "Document upload" },
+        { label: "Existing owner", value: hasExistingOwner ? "Yes — owner contest notification sent" : "No" },
       ],
       adminPanelUrl: getAdminPanelUrl(),
-    }).catch((err: unknown) => {
-      logger.warn({ err }, "Failed to send admin alert for claim submission");
+    }).catch((err: unknown) => { logger.warn({ err }, "Failed to send admin alert for claim initiation"); });
+
+    res.status(201).json({ success: true, claimId: claim.id, method: method === "domain_otp" ? "otp" : "document" });
+  },
+);
+
+// Verify OTP code for a claim in AWAITING_OTP state
+router.post(
+  "/businesses/:id/claim/verify-otp",
+  requireLogin,
+  requireBusiness,
+  async (req, res): Promise<void> => {
+    const raw = Array.isArray(req.params.id) ? req.params.id[0] : req.params.id;
+    const id = parseInt(raw, 10);
+    if (isNaN(id)) { res.status(400).json({ error: "Invalid id" }); return; }
+
+    const { code } = req.body as { code?: string };
+    if (!code || !/^\d{6}$/.test(code.trim())) {
+      res.status(400).json({ error: "A 6-digit verification code is required." });
+      return;
+    }
+
+    const clientIp = getClientIp(req as Parameters<typeof getClientIp>[0]);
+
+    const [claim] = await db
+      .select()
+      .from(claimsTable)
+      .where(and(eq(claimsTable.businessId, id), eq(claimsTable.userId, req.session.userId!), eq(claimsTable.status, "AWAITING_OTP")));
+    if (!claim) { res.status(400).json({ error: "No pending OTP verification found for this business." }); return; }
+
+    if (claim.otpLockedUntil && claim.otpLockedUntil > new Date()) {
+      res.status(429).json({ error: "Too many failed attempts. Please wait 60 minutes before trying again.", locked_until: claim.otpLockedUntil.toISOString() });
+      return;
+    }
+    if (!claim.otpExpiresAt || claim.otpExpiresAt < new Date()) {
+      res.status(400).json({ error: "Your verification code has expired. Please start a new claim." });
+      return;
+    }
+
+    const valid = claim.otpHash ? await verifyOtp(code.trim(), claim.otpHash) : false;
+
+    if (valid) {
+      const [biz] = await db.select({ ownerId: businessesTable.ownerId }).from(businessesTable).where(eq(businessesTable.id, id));
+      const hasOwner = biz?.ownerId !== null;
+
+      if (hasOwner) {
+        await db.update(claimsTable).set({ status: "PENDING_OWNER_REVIEW", otpHash: null }).where(eq(claimsTable.id, claim.id));
+        await appendAuditLog({ claimId: claim.id, actorUserId: req.session.userId, clientIp, actionType: "otp_success", metadata: { outcome: "pending_owner_review" } });
+        res.json({ success: true, status: "PENDING_OWNER_REVIEW", message: "Identity verified. The current owner has been notified and has 72 hours to respond. An admin will contact you once the review is complete." });
+      } else {
+        await db.update(businessesTable).set({ ownerId: req.session.userId! }).where(eq(businessesTable.id, id));
+        await db.update(claimsTable).set({ status: "REJECTED", claimRejectionReason: "Another claim was approved" })
+          .where(and(eq(claimsTable.businessId, id), inArray(claimsTable.status, ACTIVE_CLAIM_STATUSES)));
+        await db.update(claimsTable).set({ status: "APPROVED", otpHash: null }).where(eq(claimsTable.id, claim.id));
+        await appendAuditLog({ claimId: claim.id, actorUserId: req.session.userId, clientIp, actionType: "otp_success", metadata: { outcome: "approved" } });
+        res.json({ success: true, status: "APPROVED" });
+      }
+    } else {
+      const newAttempts = (claim.otpAttempts ?? 0) + 1;
+      const lockout = newAttempts >= 3;
+      const otpLockedUntil = lockout ? new Date(Date.now() + 60 * 60 * 1000) : null;
+      await db.update(claimsTable).set({ otpAttempts: newAttempts, ...(lockout ? { otpLockedUntil } : {}) }).where(eq(claimsTable.id, claim.id));
+      await appendAuditLog({ claimId: claim.id, actorUserId: req.session.userId, clientIp, actionType: lockout ? "otp_locked" : "otp_failed", metadata: { attempts: newAttempts } });
+
+      if (lockout) {
+        res.status(429).json({ error: "Too many failed attempts. Your verification is locked for 60 minutes.", locked_until: otpLockedUntil!.toISOString() });
+      } else {
+        res.status(400).json({ error: `Invalid code. ${3 - newAttempts} attempt${3 - newAttempts !== 1 ? "s" : ""} remaining.`, attempts_remaining: 3 - newAttempts });
+      }
+    }
+  },
+);
+
+// Upload a supporting document for a claim in AWAITING_DOCUMENT state
+router.post(
+  "/businesses/:id/claim/upload-document",
+  requireLogin,
+  requireBusiness,
+  uploadDocument.single("document"),
+  async (req, res): Promise<void> => {
+    const raw = Array.isArray(req.params.id) ? req.params.id[0] : req.params.id;
+    const id = parseInt(raw, 10);
+    if (isNaN(id)) { res.status(400).json({ error: "Invalid id" }); return; }
+    if (!req.file) { res.status(400).json({ error: "A document file is required (image or PDF, max 5 MB)." }); return; }
+
+    const clientIp = getClientIp(req as Parameters<typeof getClientIp>[0]);
+
+    const [claim] = await db
+      .select()
+      .from(claimsTable)
+      .where(and(eq(claimsTable.businessId, id), eq(claimsTable.userId, req.session.userId!), eq(claimsTable.status, "AWAITING_DOCUMENT")));
+    if (!claim) { res.status(400).json({ error: "No pending document upload found for this business." }); return; }
+
+    const [biz] = await db.select({ name: businessesTable.name, ownerId: businessesTable.ownerId }).from(businessesTable).where(eq(businessesTable.id, id));
+    if (!biz) { res.status(404).json({ error: "Business not found" }); return; }
+
+    const isPdf = req.file.mimetype === "application/pdf";
+    let documentPath: string;
+    if (isPdf) {
+      documentPath = makeUploadFilename("claim-doc", req.file.originalname, ".pdf");
+      await uploadBufferToGCS(documentPath, req.file.buffer, "application/pdf");
+    } else {
+      const c = await compressImage(req.file.buffer);
+      documentPath = makeUploadFilename("claim-doc", req.file.originalname, c.ext);
+      await uploadBufferToGCS(documentPath, c.buffer, c.mimetype);
+    }
+
+    await db.update(claimsTable).set({ documentPath, status: "PENDING_MANUAL_REVIEW" }).where(eq(claimsTable.id, claim.id));
+    await appendAuditLog({ claimId: claim.id, actorUserId: req.session.userId, clientIp, actionType: "document_uploaded", metadata: { documentPath, businessId: id } });
+
+    sendAdminAlert({
+      subject: "Claim document uploaded — manual review needed",
+      headline: "A claimant has uploaded a verification document",
+      details: [
+        { label: "Shop name", value: biz.name },
+        { label: "Claimant email", value: claim.claimantEmail ?? "unknown" },
+        { label: "Contested listing", value: biz.ownerId ? "Yes (existing owner notified)" : "No" },
+      ],
+      adminPanelUrl: getAdminPanelUrl(),
+    }).catch((err: unknown) => { logger.warn({ err }, "Failed to send admin alert for claim document upload"); });
+
+    if (biz.ownerId && !claim.contestDeadline) {
+      const [ownerRow] = await db.select({ email: usersTable.email }).from(usersTable).where(eq(usersTable.id, biz.ownerId));
+      if (ownerRow) {
+        const contestDeadline = new Date(Date.now() + 72 * 60 * 60 * 1000);
+        await db.update(claimsTable).set({ contestDeadline }).where(eq(claimsTable.id, claim.id));
+        sendOwnerContestNotification(ownerRow.email, biz.name, contestDeadline, claim.claimantEmail ?? "unknown").catch((err: unknown) => {
+          logger.warn({ err }, "Failed to send owner contest notification");
+        });
+        await appendAuditLog({ claimId: claim.id, actorUserId: req.session.userId, clientIp, actionType: "contest_started", metadata: { ownerId: biz.ownerId } });
+      }
+    }
+
+    res.json({ success: true, status: "PENDING_MANUAL_REVIEW" });
+  },
+);
+
+// Get current claim status for the authenticated user + this business
+router.get(
+  "/businesses/:id/claim/status",
+  requireLogin,
+  requireBusiness,
+  async (req, res): Promise<void> => {
+    const raw = Array.isArray(req.params.id) ? req.params.id[0] : req.params.id;
+    const id = parseInt(raw, 10);
+    if (isNaN(id)) { res.status(400).json({ error: "Invalid id" }); return; }
+
+    const [claim] = await db
+      .select({
+        id: claimsTable.id,
+        status: claimsTable.status,
+        verificationMethod: claimsTable.verificationMethod,
+        otpAttempts: claimsTable.otpAttempts,
+        otpLockedUntil: claimsTable.otpLockedUntil,
+        otpExpiresAt: claimsTable.otpExpiresAt,
+        contestDeadline: claimsTable.contestDeadline,
+        claimantEmail: claimsTable.claimantEmail,
+      })
+      .from(claimsTable)
+      .where(and(eq(claimsTable.businessId, id), eq(claimsTable.userId, req.session.userId!)))
+      .orderBy(claimsTable.createdAt)
+      .limit(1);
+
+    if (!claim) { res.status(404).json({ error: "No claim found for this business." }); return; }
+
+    const now = new Date();
+    res.json({
+      id: claim.id,
+      status: claim.status,
+      method: claim.verificationMethod === "domain_otp" ? "otp" : claim.verificationMethod === "document" ? "document" : null,
+      otp_locked: !!(claim.otpLockedUntil && claim.otpLockedUntil > now),
+      otp_locked_until: claim.otpLockedUntil?.toISOString() ?? null,
+      otp_expires_at: claim.otpExpiresAt?.toISOString() ?? null,
+      contest_deadline: claim.contestDeadline?.toISOString() ?? null,
+      claimant_email: claim.claimantEmail,
     });
   },
 );

@@ -405,7 +405,85 @@ paths:
   /businesses/{id}/claim:
     post:
       operationId: claimBusiness
-      summary: Submit a claim request for an unclaimed business (requires login, business role)
+      summary: Initiate a multi-step claim verification for a business listing (requires login, business role)
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/ClaimInitiateInput"
+      responses:
+        "201":
+          description: Claim initiated
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ClaimInitiateResponse"
+        "400":
+          description: Validation error or duplicate active claim
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+        "429":
+          description: Rate limited or IP flagged
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+        "404":
+          description: Business not found
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+
+  /businesses/{id}/claim/verify-otp:
+    post:
+      operationId: verifyClaimOtp
+      summary: Submit a 6-digit OTP to verify a business claim
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/ClaimOtpInput"
+      responses:
+        "200":
+          description: OTP verified
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ClaimOtpResponse"
+        "400":
+          description: Invalid or expired code
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+        "429":
+          description: OTP locked after too many failures
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+
+  /businesses/{id}/claim/upload-document:
+    post:
+      operationId: uploadClaimDocument
+      summary: Upload a supporting document to proceed with a document-path claim
       parameters:
         - name: id
           in: path
@@ -413,20 +491,38 @@ paths:
           schema:
             type: integer
       responses:
-        "201":
-          description: Claim submitted
+        "200":
+          description: Document uploaded, claim moved to manual review
           content:
             application/json:
               schema:
                 $ref: "#/components/schemas/SuccessResponse"
         "400":
-          description: Already claimed or duplicate pending claim
+          description: No active document-path claim found or missing file
           content:
             application/json:
               schema:
                 $ref: "#/components/schemas/ErrorResponse"
+
+  /businesses/{id}/claim/status:
+    get:
+      operationId: getClaimStatus
+      summary: Get the current claim state for the authenticated user on this business
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        "200":
+          description: Current claim status
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ClaimStatusResponse"
         "404":
-          description: Business not found
+          description: No claim found
           content:
             application/json:
               schema:
@@ -554,7 +650,7 @@ paths:
   /admin/claims/{id}:
     patch:
       operationId: resolveAdminClaim
-      summary: Approve or reject a claim request (admin)
+      summary: Approve or reject a claim request — rejection requires a reason (admin)
       parameters:
         - name: id
           in: path
@@ -574,8 +670,72 @@ paths:
             application/json:
               schema:
                 $ref: "#/components/schemas/SuccessResponse"
+        "400":
+          description: Missing reason or invalid status
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
         "404":
           description: Claim not found
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+
+  /admin/audit-log/business/{businessId}:
+    get:
+      operationId: getAdminAuditLog
+      summary: Get claim audit log entries for a business (admin)
+      parameters:
+        - name: businessId
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        "200":
+          description: Audit log entries
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/AuditLogEntry"
+
+  /admin/flagged-ips:
+    get:
+      operationId: getFlaggedIps
+      summary: List all flagged IP addresses (admin)
+      responses:
+        "200":
+          description: Flagged IPs
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/FlaggedIp"
+
+  /admin/flagged-ips/{id}/clear:
+    patch:
+      operationId: clearFlaggedIp
+      summary: Clear a flagged IP address (admin)
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        "200":
+          description: Cleared
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/SuccessResponse"
+        "404":
+          description: Record not found
           content:
             application/json:
               schema:
@@ -1505,6 +1665,102 @@ components:
         reason:
           type: string
 
+    ClaimInitiateInput:
+      type: object
+      required: [email]
+      properties:
+        email:
+          type: string
+        phone:
+          type: string
+
+    ClaimInitiateResponse:
+      type: object
+      required: [success, claimId, method]
+      properties:
+        success:
+          type: boolean
+        claimId:
+          type: integer
+        method:
+          type: string
+          enum: [otp, document]
+
+    ClaimOtpInput:
+      type: object
+      required: [code]
+      properties:
+        code:
+          type: string
+
+    ClaimOtpResponse:
+      type: object
+      required: [success, status]
+      properties:
+        success:
+          type: boolean
+        status:
+          type: string
+        message:
+          type: string
+
+    ClaimStatusResponse:
+      type: object
+      required: [id, status]
+      properties:
+        id:
+          type: integer
+        status:
+          type: string
+        method:
+          type: ["string", "null"]
+        otp_locked:
+          type: boolean
+        otp_locked_until:
+          type: ["string", "null"]
+        otp_expires_at:
+          type: ["string", "null"]
+        contest_deadline:
+          type: ["string", "null"]
+        claimant_email:
+          type: ["string", "null"]
+
+    AuditLogEntry:
+      type: object
+      required: [id, action_type, timestamp]
+      properties:
+        id:
+          type: integer
+        claim_id:
+          type: ["integer", "null"]
+        actor_user_id:
+          type: ["integer", "null"]
+        client_ip:
+          type: ["string", "null"]
+        timestamp:
+          type: string
+        action_type:
+          type: string
+        metadata:
+          type: ["string", "null"]
+
+    FlaggedIp:
+      type: object
+      required: [id, ip, flagged_reason, flagged_at]
+      properties:
+        id:
+          type: integer
+        ip:
+          type: string
+        flagged_reason:
+          type: string
+        flagged_at:
+          type: string
+        cleared_at:
+          type: ["string", "null"]
+        cleared_by_user_id:
+          type: ["integer", "null"]
+
     ClaimWithDetails:
       type: object
       required: [id, business_id, business_name, user_id, user_email, status, created_at]
@@ -1523,12 +1779,28 @@ components:
           type: string
         created_at:
           type: string
+        claimant_email:
+          type: ["string", "null"]
+        verification_method:
+          type: ["string", "null"]
+        document_path:
+          type: ["string", "null"]
+        contest_deadline:
+          type: ["string", "null"]
+        otp_attempts:
+          type: integer
+        otp_locked_until:
+          type: ["string", "null"]
+        rejection_reason:
+          type: ["string", "null"]
 
     ClaimStatusUpdate:
       type: object
       required: [status]
       properties:
         status:
+          type: string
+        reason:
           type: string
 
     BannerAd:

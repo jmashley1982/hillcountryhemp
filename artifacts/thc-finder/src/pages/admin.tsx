@@ -24,6 +24,9 @@ import {
   useGetBanner,
   useGetB2bBanner,
   useGetAdminClaims,
+  useGetAdminAuditLog,
+  useGetFlaggedIps,
+  useClearFlaggedIp,
   useGetAdminImages,
   useApproveBusiness,
   useRejectBusiness,
@@ -55,6 +58,8 @@ import {
   getGetB2bBannerQueryKey,
   getGetAdminPopupQueryKey,
   getGetAdminClaimsQueryKey,
+  getGetAdminAuditLogQueryKey,
+  getGetFlaggedIpsQueryKey,
   getGetAdminImagesQueryKey,
   getGetCategoriesQueryKey,
   getGetCitiesQueryKey,
@@ -103,6 +108,7 @@ import {
   Check,
   X as XIcon,
   GripVertical,
+  Shield,
 } from "lucide-react";
 
 type Tab = "pending" | "all" | "brands" | "add-store" | "claims" | "categories" | "cities" | "map-banner-d" | "map-banner-m" | "map-popup-d" | "map-popup-m" | "dash-banner-d" | "dash-banner-m" | "images";
@@ -689,6 +695,38 @@ function AddStoreTab() {
   );
 }
 
+const STATUS_BADGE: Record<string, { label: string; cls: string }> = {
+  AWAITING_OTP:          { label: "Awaiting OTP",    cls: "bg-blue-900/40 text-blue-300 border-blue-700/40" },
+  AWAITING_DOCUMENT:     { label: "Awaiting Doc",    cls: "bg-yellow-900/40 text-yellow-300 border-yellow-700/40" },
+  PENDING_MANUAL_REVIEW: { label: "Manual Review",   cls: "bg-orange-900/40 text-orange-300 border-orange-700/40" },
+  PENDING_OWNER_REVIEW:  { label: "Owner Contest",   cls: "bg-purple-900/40 text-purple-300 border-purple-700/40" },
+  PENDING_EMAIL_CHECK:   { label: "Email Check",     cls: "bg-cyan-900/40 text-cyan-300 border-cyan-700/40" },
+  pending:               { label: "Pending",         cls: "bg-orange-900/40 text-orange-300 border-orange-700/40" },
+};
+
+function AuditLogViewer({ businessId }: { businessId: number }) {
+  const { data: logs = [], isLoading } = useGetAdminAuditLog(businessId, {
+    query: { queryKey: getGetAdminAuditLogQueryKey(businessId) },
+  });
+  if (isLoading) return <p className="text-xs text-muted-foreground animate-pulse py-2">Loading audit log…</p>;
+  if (logs.length === 0) return <p className="text-xs text-muted-foreground py-2">No audit events yet.</p>;
+  return (
+    <div className="space-y-1 max-h-48 overflow-y-auto border-t border-border pt-3 mt-1">
+      <p className="text-xs font-bold text-muted-foreground uppercase tracking-wider mb-2">Audit Log</p>
+      {logs.map((log) => (
+        <div key={log.id} className="flex items-start gap-2 text-xs">
+          <span className="text-muted-foreground shrink-0 whitespace-nowrap">
+            {new Date(log.timestamp).toLocaleDateString("en-US", { month: "short", day: "numeric" })}{" "}
+            {new Date(log.timestamp).toLocaleTimeString("en-US", { hour: "2-digit", minute: "2-digit" })}
+          </span>
+          <span className="font-bold text-[#99CC66] shrink-0">{log.action_type}</span>
+          {log.client_ip && <span className="text-muted-foreground font-mono truncate">{log.client_ip}</span>}
+        </div>
+      ))}
+    </div>
+  );
+}
+
 function ClaimsTab() {
   const { toast } = useToast();
   const queryClient = useQueryClient();
@@ -696,73 +734,243 @@ function ClaimsTab() {
     query: { queryKey: getGetAdminClaimsQueryKey() },
   });
   const resolve = useResolveAdminClaim();
+  const clearIp = useClearFlaggedIp();
+  const { data: flaggedIps = [], isLoading: ipsLoading } = useGetFlaggedIps({
+    query: { queryKey: getGetFlaggedIpsQueryKey() },
+  });
 
-  const handleResolve = (id: number, status: "approved" | "rejected") => {
+  const [rejectingId, setRejectingId] = useState<number | null>(null);
+  const [rejectReason, setRejectReason] = useState("");
+  const [viewingAuditBiz, setViewingAuditBiz] = useState<number | null>(null);
+
+  const handleApprove = (id: number) => {
     resolve.mutate(
-      { id, data: { status } },
+      { id, data: { status: "approved" } },
       {
         onSuccess: () => {
-          toast({ title: status === "approved" ? "Claim approved — business linked to owner" : "Claim rejected" });
+          toast({ title: "Claim approved — business linked to owner" });
           queryClient.invalidateQueries({ queryKey: getGetAdminClaimsQueryKey() });
           queryClient.invalidateQueries({ queryKey: getGetAllBusinessesQueryKey() });
         },
-        onError: () => toast({ title: "Failed to update claim", variant: "destructive" }),
+        onError: (err: unknown) => {
+          const msg = (err as { response?: { data?: { error?: string } } })?.response?.data?.error ?? "Failed to approve";
+          toast({ title: msg, variant: "destructive" });
+        },
+      },
+    );
+  };
+
+  const handleReject = (id: number) => {
+    if (!rejectReason.trim()) {
+      toast({ title: "A rejection reason is required.", variant: "destructive" });
+      return;
+    }
+    resolve.mutate(
+      { id, data: { status: "rejected", reason: rejectReason.trim() } },
+      {
+        onSuccess: () => {
+          toast({ title: "Claim rejected" });
+          setRejectingId(null);
+          setRejectReason("");
+          queryClient.invalidateQueries({ queryKey: getGetAdminClaimsQueryKey() });
+        },
+        onError: () => toast({ title: "Failed to reject claim", variant: "destructive" }),
+      },
+    );
+  };
+
+  const handleClearIp = (id: number) => {
+    clearIp.mutate(
+      { id },
+      {
+        onSuccess: () => {
+          toast({ title: "IP flag cleared" });
+          queryClient.invalidateQueries({ queryKey: getGetFlaggedIpsQueryKey() });
+        },
+        onError: () => toast({ title: "Failed to clear IP", variant: "destructive" }),
       },
     );
   };
 
   if (isLoading) return <div className="p-8 text-center font-bold animate-pulse">Loading...</div>;
 
-  if (claims.length === 0) return (
-    <div className="p-8 text-center text-muted-foreground font-bold">No pending claim requests.</div>
-  );
-
   return (
-    <div className="space-y-4">
-      <p className="text-sm font-bold text-muted-foreground">{claims.length} pending claim{claims.length !== 1 ? "s" : ""}</p>
-      {claims.map((claim) => (
-        <div
-          key={claim.id}
-          className="bg-card border-2 border-orange-800/40 rounded-2xl p-5 shadow-[0_4px_20px_rgba(0,0,0,0.25)]"
-          data-testid={`claim-card-${claim.id}`}
-        >
-          <div className="flex items-start justify-between gap-4 flex-wrap">
-            <div className="flex-1 min-w-0">
-              <div className="flex items-center gap-2 mb-1">
-                <Flag className="h-4 w-4 text-orange-400 shrink-0" />
-                <h3 className="font-heading text-lg text-[#99CC66]">{claim.business_name}</h3>
+    <div className="space-y-10">
+      {/* ── Active claims ─────────────────────────────────────── */}
+      <div className="space-y-4">
+        <p className="text-sm font-bold text-muted-foreground">
+          {claims.length} active claim{claims.length !== 1 ? "s" : ""} awaiting review
+        </p>
+
+        {claims.length === 0 ? (
+          <div className="p-8 text-center text-muted-foreground font-bold">No active claim requests.</div>
+        ) : (
+          claims.map((claim) => {
+            const badge = STATUS_BADGE[claim.status ?? "pending"] ?? { label: claim.status ?? "Unknown", cls: "bg-muted text-muted-foreground border-border" };
+            const isContested = !!claim.contest_deadline;
+            const documentUrl = claim.document_path ? `/api/uploads/${claim.document_path}` : null;
+            const isRejecting = rejectingId === claim.id;
+            const isShowingAudit = viewingAuditBiz === claim.business_id;
+
+            return (
+              <div
+                key={claim.id}
+                className="bg-card border-2 border-orange-800/40 rounded-2xl p-5 shadow-[0_4px_20px_rgba(0,0,0,0.25)] space-y-4"
+                data-testid={`claim-card-${claim.id}`}
+              >
+                <div className="flex items-start justify-between gap-4 flex-wrap">
+                  <div className="flex-1 min-w-0 space-y-1.5">
+                    <div className="flex items-center gap-2">
+                      <Flag className="h-4 w-4 text-orange-400 shrink-0" />
+                      <h3 className="font-heading text-lg text-[#99CC66]">{claim.business_name}</h3>
+                    </div>
+                    <div className="flex flex-wrap gap-1.5 items-center">
+                      <span className={`inline-flex items-center px-2 py-0.5 rounded-full text-xs font-bold border ${badge.cls}`}>
+                        {badge.label}
+                      </span>
+                      {claim.verification_method && (
+                        <span className="text-xs text-muted-foreground font-bold uppercase tracking-wider">
+                          via {claim.verification_method === "domain_otp" ? "Domain OTP" : "Document"}
+                        </span>
+                      )}
+                      {isContested && (
+                        <span className="text-xs font-bold text-purple-300 bg-purple-900/30 border border-purple-700/40 px-2 py-0.5 rounded-full">
+                          Owner Contest · deadline {new Date(claim.contest_deadline!).toLocaleDateString("en-US", { month: "short", day: "numeric" })}
+                        </span>
+                      )}
+                    </div>
+                    <p className="text-sm text-muted-foreground">
+                      Claimant: <span className="text-foreground font-bold">{claim.claimant_email ?? claim.user_email}</span>
+                    </p>
+                    {claim.otp_locked_until && new Date(claim.otp_locked_until) > new Date() && (
+                      <p className="text-xs text-orange-400 font-bold">
+                        OTP locked until {new Date(claim.otp_locked_until).toLocaleTimeString("en-US", { hour: "2-digit", minute: "2-digit" })}
+                        {claim.otp_attempts != null && ` (${claim.otp_attempts} failed attempt${claim.otp_attempts !== 1 ? "s" : ""})`}
+                      </p>
+                    )}
+                    {documentUrl && (
+                      <a href={documentUrl} target="_blank" rel="noopener noreferrer"
+                        className="inline-flex items-center gap-1 text-xs font-bold text-[#84C7D0] hover:underline">
+                        <ExternalLink className="h-3 w-3" /> View Document
+                      </a>
+                    )}
+                    <p className="text-xs text-muted-foreground">
+                      Submitted {new Date(claim.created_at).toLocaleDateString("en-US", { month: "short", day: "numeric", year: "numeric" })}
+                    </p>
+                  </div>
+
+                  <div className="flex flex-col gap-2 items-end shrink-0">
+                    <Button
+                      size="sm"
+                      className="bg-green-700 hover:bg-green-800 text-white font-bold"
+                      onClick={() => handleApprove(claim.id)}
+                      disabled={resolve.isPending}
+                      data-testid={`button-approve-claim-${claim.id}`}
+                    >
+                      <CheckCircle className="h-3.5 w-3.5 mr-1" /> Approve
+                    </Button>
+                    {!isRejecting && (
+                      <Button
+                        size="sm"
+                        variant="destructive"
+                        className="font-bold"
+                        onClick={() => { setRejectingId(claim.id); setRejectReason(""); }}
+                        disabled={resolve.isPending}
+                        data-testid={`button-reject-claim-${claim.id}`}
+                      >
+                        <XCircle className="h-3.5 w-3.5 mr-1" /> Reject
+                      </Button>
+                    )}
+                    <button
+                      className="text-xs text-muted-foreground hover:text-[#99CC66] font-bold transition-colors"
+                      onClick={() => setViewingAuditBiz(isShowingAudit ? null : claim.business_id)}
+                    >
+                      {isShowingAudit ? "Hide Log" : "Audit Log"}
+                    </button>
+                  </div>
+                </div>
+
+                {/* Reject reason inline form */}
+                {isRejecting && (
+                  <div className="space-y-2 border-t border-border pt-3">
+                    <p className="text-xs font-bold text-muted-foreground uppercase tracking-wider">Rejection Reason (required)</p>
+                    <Textarea
+                      value={rejectReason}
+                      onChange={(e) => setRejectReason(e.target.value)}
+                      placeholder="Explain why this claim is being rejected…"
+                      className="text-sm min-h-[80px]"
+                    />
+                    <div className="flex gap-2">
+                      <Button
+                        size="sm"
+                        variant="destructive"
+                        className="font-bold"
+                        onClick={() => handleReject(claim.id)}
+                        disabled={resolve.isPending || !rejectReason.trim()}
+                      >
+                        {resolve.isPending
+                          ? <><Loader2 className="h-3.5 w-3.5 mr-1 animate-spin" />Rejecting...</>
+                          : "Confirm Rejection"}
+                      </Button>
+                      <Button size="sm" variant="outline" onClick={() => { setRejectingId(null); setRejectReason(""); }}>
+                        Cancel
+                      </Button>
+                    </div>
+                  </div>
+                )}
+
+                {/* Inline audit log */}
+                {isShowingAudit && <AuditLogViewer businessId={claim.business_id} />}
               </div>
-              <p className="text-sm text-muted-foreground">
-                Claimed by: <span className="text-foreground font-bold">{claim.user_email}</span>
-              </p>
-              <p className="text-xs text-muted-foreground mt-0.5">
-                Submitted {new Date(claim.created_at).toLocaleDateString("en-US", { month: "short", day: "numeric", year: "numeric" })}
-              </p>
-            </div>
-            <div className="flex gap-2">
-              <Button
-                size="sm"
-                className="bg-green-700 hover:bg-green-800 text-white font-bold"
-                onClick={() => handleResolve(claim.id, "approved")}
-                disabled={resolve.isPending}
-                data-testid={`button-approve-claim-${claim.id}`}
+            );
+          })
+        )}
+      </div>
+
+      {/* ── Flagged IPs ────────────────────────────────────────── */}
+      <div className="space-y-4">
+        <h3 className="font-heading text-xl text-[#99CC66] flex items-center gap-2 border-t-2 border-border pt-6">
+          <Shield className="h-5 w-5" /> Flagged IPs
+        </h3>
+        {ipsLoading ? (
+          <p className="text-sm text-muted-foreground animate-pulse font-bold text-center p-4">Loading…</p>
+        ) : flaggedIps.length === 0 ? (
+          <p className="text-sm text-muted-foreground font-bold text-center p-4">No flagged IPs.</p>
+        ) : (
+          <div className="space-y-2">
+            {flaggedIps.map((ip) => (
+              <div
+                key={ip.id}
+                className={`flex items-center justify-between gap-4 bg-card border-2 rounded-xl px-4 py-3 ${ip.cleared_at ? "border-border opacity-60" : "border-red-800/40"}`}
               >
-                <CheckCircle className="h-3.5 w-3.5 mr-1" /> Approve
-              </Button>
-              <Button
-                size="sm"
-                variant="destructive"
-                className="font-bold"
-                onClick={() => handleResolve(claim.id, "rejected")}
-                disabled={resolve.isPending}
-                data-testid={`button-reject-claim-${claim.id}`}
-              >
-                <XCircle className="h-3.5 w-3.5 mr-1" /> Reject
-              </Button>
-            </div>
+                <div className="min-w-0 space-y-0.5">
+                  <p className="font-mono text-sm font-bold">{ip.ip}</p>
+                  <p className="text-xs text-muted-foreground">{ip.flagged_reason}</p>
+                  <p className="text-xs text-muted-foreground">
+                    Flagged {new Date(ip.flagged_at).toLocaleDateString("en-US", { month: "short", day: "numeric", year: "numeric" })}
+                  </p>
+                  {ip.cleared_at && (
+                    <p className="text-xs font-bold text-green-400">
+                      Cleared {new Date(ip.cleared_at).toLocaleDateString("en-US", { month: "short", day: "numeric", year: "numeric" })}
+                    </p>
+                  )}
+                </div>
+                {!ip.cleared_at && (
+                  <Button
+                    size="sm"
+                    variant="outline"
+                    className="font-bold shrink-0"
+                    onClick={() => handleClearIp(ip.id)}
+                    disabled={clearIp.isPending}
+                  >
+                    Clear
+                  </Button>
+                )}
+              </div>
+            ))}
           </div>
-        </div>
-      ))}
+        )}
+      </div>
     </div>
   );
 }

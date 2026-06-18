@@ -288,6 +288,76 @@ export interface RejectInput {
   reason?: string;
 }
 
+export interface ClaimInitiateInput {
+  email: string;
+  phone?: string;
+}
+
+export type ClaimInitiateResponseMethod = typeof ClaimInitiateResponseMethod[keyof typeof ClaimInitiateResponseMethod];
+
+
+export const ClaimInitiateResponseMethod = {
+  otp: 'otp',
+  document: 'document',
+} as const;
+
+export interface ClaimInitiateResponse {
+  success: boolean;
+  claimId: number;
+  method: ClaimInitiateResponseMethod;
+}
+
+export interface ClaimOtpInput {
+  code: string;
+}
+
+export interface ClaimOtpResponse {
+  success: boolean;
+  status: string;
+  message?: string;
+}
+
+export interface ClaimStatusResponse {
+  id: number;
+  status: string;
+  /** @nullable */
+  method?: string | null;
+  otp_locked?: boolean;
+  /** @nullable */
+  otp_locked_until?: string | null;
+  /** @nullable */
+  otp_expires_at?: string | null;
+  /** @nullable */
+  contest_deadline?: string | null;
+  /** @nullable */
+  claimant_email?: string | null;
+}
+
+export interface AuditLogEntry {
+  id: number;
+  /** @nullable */
+  claim_id?: number | null;
+  /** @nullable */
+  actor_user_id?: number | null;
+  /** @nullable */
+  client_ip?: string | null;
+  timestamp: string;
+  action_type: string;
+  /** @nullable */
+  metadata?: string | null;
+}
+
+export interface FlaggedIp {
+  id: number;
+  ip: string;
+  flagged_reason: string;
+  flagged_at: string;
+  /** @nullable */
+  cleared_at?: string | null;
+  /** @nullable */
+  cleared_by_user_id?: number | null;
+}
+
 export interface ClaimWithDetails {
   id: number;
   business_id: number;
@@ -296,10 +366,24 @@ export interface ClaimWithDetails {
   user_email: string;
   status: string;
   created_at: string;
+  /** @nullable */
+  claimant_email?: string | null;
+  /** @nullable */
+  verification_method?: string | null;
+  /** @nullable */
+  document_path?: string | null;
+  /** @nullable */
+  contest_deadline?: string | null;
+  otp_attempts?: number;
+  /** @nullable */
+  otp_locked_until?: string | null;
+  /** @nullable */
+  rejection_reason?: string | null;
 }
 
 export interface ClaimStatusUpdate {
   status: string;
+  reason?: string;
 }
 
 export interface BannerAd {

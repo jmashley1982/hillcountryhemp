@@ -1,7 +1,7 @@
 import { Router } from "express";
 import path from "path";
 import multer from "multer";
-import { eq, and, isNull, isNotNull } from "drizzle-orm";
+import { eq, and, isNull, isNotNull, inArray, desc } from "drizzle-orm";
 import { uploadBufferToGCS, makeUploadFilename, listStorageFiles, deleteFileFromStorage } from "../lib/gcs.js";
 import { ACCEPTED_IMAGE_MIMES, compressImage } from "../lib/compress.js";
 import {
@@ -14,12 +14,20 @@ import {
   couponsTable,
   brandsTable,
   claimsTable,
+  claimAuditLogsTable,
+  flaggedIpsTable,
   bannerAdTable,
   b2bBannerAdTable,
   popupAdTable,
 } from "@workspace/db";
 import { requireLogin, requireAdmin } from "../middlewares/auth.js";
-import { sendListingApprovedEmail, sendListingRejectedEmail } from "../lib/mailer.js";
+import {
+  sendListingApprovedEmail,
+  sendListingRejectedEmail,
+  sendClaimApprovedEmail,
+  sendClaimRejectedEmail,
+} from "../lib/mailer.js";
+import { appendAuditLog } from "../lib/claim-helpers.js";
 
 /** Accept only http/https URLs; return null for anything else (e.g. javascript:, data:, relative paths). */
 function sanitizeHttpUrl(value: string | undefined | null): string | null {
@@ -439,7 +447,16 @@ router.put(
 
 // ─── Claim management ──────────────────────────────────────────────────────
 
-// Get all pending claims
+const ACTIVE_CLAIM_STATUSES = [
+  "PENDING_EMAIL_CHECK",
+  "AWAITING_OTP",
+  "AWAITING_DOCUMENT",
+  "PENDING_MANUAL_REVIEW",
+  "PENDING_OWNER_REVIEW",
+  "pending",
+];
+
+// Get all in-progress claims (new multi-step statuses + legacy 'pending')
 router.get(
   "/admin/claims",
   requireLogin,
@@ -454,17 +471,29 @@ router.get(
         user_email: usersTable.email,
         status: claimsTable.status,
         created_at: claimsTable.createdAt,
+        claimant_email: claimsTable.claimantEmail,
+        verification_method: claimsTable.verificationMethod,
+        document_path: claimsTable.documentPath,
+        contest_deadline: claimsTable.contestDeadline,
+        otp_attempts: claimsTable.otpAttempts,
+        otp_locked_until: claimsTable.otpLockedUntil,
+        rejection_reason: claimsTable.claimRejectionReason,
       })
       .from(claimsTable)
       .innerJoin(businessesTable, eq(businessesTable.id, claimsTable.businessId))
       .innerJoin(usersTable, eq(usersTable.id, claimsTable.userId))
-      .where(eq(claimsTable.status, "pending"))
+      .where(inArray(claimsTable.status, ACTIVE_CLAIM_STATUSES))
       .orderBy(claimsTable.createdAt);
-    res.json(rows.map((r) => ({ ...r, created_at: r.created_at.toISOString() })));
+    res.json(rows.map((r) => ({
+      ...r,
+      created_at: r.created_at.toISOString(),
+      contest_deadline: r.contest_deadline?.toISOString() ?? null,
+      otp_locked_until: r.otp_locked_until?.toISOString() ?? null,
+    })));
   },
 );
 
-// Approve or reject a claim
+// Approve or reject a claim (rejection requires a reason)
 router.patch(
   "/admin/claims/:id",
   requireLogin,
@@ -472,33 +501,119 @@ router.patch(
   async (req, res): Promise<void> => {
     const raw = Array.isArray(req.params.id) ? req.params.id[0] : req.params.id;
     const claimId = parseInt(raw, 10);
-    const { status } = req.body as { status: string };
+    if (isNaN(claimId)) { res.status(400).json({ error: "Invalid id" }); return; }
 
-    const [claim] = await db.select().from(claimsTable).where(eq(claimsTable.id, claimId));
-    if (!claim) { res.status(404).json({ error: "Claim not found" }); return; }
+    const { status, reason } = req.body as { status: string; reason?: string };
 
-    if (status === "approved") {
-      await db
-        .update(businessesTable)
-        .set({ ownerId: claim.userId })
-        .where(eq(businessesTable.id, claim.businessId));
+    const [row] = await db
+      .select({
+        id: claimsTable.id,
+        businessId: claimsTable.businessId,
+        userId: claimsTable.userId,
+        status: claimsTable.status,
+        claimantEmail: claimsTable.claimantEmail,
+        userEmail: usersTable.email,
+        businessName: businessesTable.name,
+      })
+      .from(claimsTable)
+      .innerJoin(usersTable, eq(usersTable.id, claimsTable.userId))
+      .innerJoin(businessesTable, eq(businessesTable.id, claimsTable.businessId))
+      .where(eq(claimsTable.id, claimId));
 
+    if (!row) { res.status(404).json({ error: "Claim not found" }); return; }
+
+    const normalizedStatus = (status ?? "").toUpperCase();
+
+    if (normalizedStatus === "APPROVED") {
+      await db.update(businessesTable).set({ ownerId: row.userId }).where(eq(businessesTable.id, row.businessId));
       await db
         .update(claimsTable)
-        .set({ status: "rejected" })
-        .where(and(eq(claimsTable.businessId, claim.businessId), eq(claimsTable.status, "pending")));
+        .set({ status: "REJECTED", claimRejectionReason: "Another claim was approved" })
+        .where(and(eq(claimsTable.businessId, row.businessId), inArray(claimsTable.status, ACTIVE_CLAIM_STATUSES)));
+      await db.update(claimsTable).set({ status: "APPROVED" }).where(eq(claimsTable.id, claimId));
 
-      await db
-        .update(claimsTable)
-        .set({ status: "approved" })
-        .where(eq(claimsTable.id, claimId));
-    } else if (status === "rejected") {
-      await db.update(claimsTable).set({ status: "rejected" }).where(eq(claimsTable.id, claimId));
+      await appendAuditLog({ claimId, actorUserId: req.session.userId, actionType: "approved", metadata: { adminApproval: true } });
+
+      const emailTo = row.claimantEmail ?? row.userEmail;
+      sendClaimApprovedEmail(emailTo, row.businessName).catch(() => {});
+
+    } else if (normalizedStatus === "REJECTED") {
+      if (!reason?.trim()) {
+        res.status(400).json({ error: "A rejection reason is required." });
+        return;
+      }
+      await db.update(claimsTable).set({ status: "REJECTED", claimRejectionReason: reason.trim() }).where(eq(claimsTable.id, claimId));
+      await appendAuditLog({ claimId, actorUserId: req.session.userId, actionType: "rejected", metadata: { adminApproval: true, reason: reason.trim() } });
+
+      const emailTo = row.claimantEmail ?? row.userEmail;
+      sendClaimRejectedEmail(emailTo, row.businessName, reason.trim()).catch(() => {});
+
     } else {
-      res.status(400).json({ error: "Invalid status" });
+      res.status(400).json({ error: "Status must be 'approved' or 'rejected'." });
       return;
     }
 
+    res.json({ success: true });
+  },
+);
+
+// Audit log for all claims on a business
+router.get(
+  "/admin/audit-log/business/:businessId",
+  requireLogin,
+  requireAdmin,
+  async (req, res): Promise<void> => {
+    const raw = Array.isArray(req.params.businessId) ? req.params.businessId[0] : req.params.businessId;
+    const bizId = parseInt(raw, 10);
+    if (isNaN(bizId)) { res.status(400).json({ error: "Invalid businessId" }); return; }
+
+    const claimRows = await db
+      .select({ id: claimsTable.id })
+      .from(claimsTable)
+      .where(eq(claimsTable.businessId, bizId));
+
+    if (claimRows.length === 0) { res.json([]); return; }
+
+    const claimIds = claimRows.map((c) => c.id);
+    const logs = await db
+      .select()
+      .from(claimAuditLogsTable)
+      .where(inArray(claimAuditLogsTable.claimId, claimIds))
+      .orderBy(desc(claimAuditLogsTable.timestamp));
+
+    res.json(logs.map((l) => ({ ...l, timestamp: l.timestamp.toISOString() })));
+  },
+);
+
+// List all flagged IPs
+router.get(
+  "/admin/flagged-ips",
+  requireLogin,
+  requireAdmin,
+  async (_req, res): Promise<void> => {
+    const rows = await db.select().from(flaggedIpsTable).orderBy(desc(flaggedIpsTable.flaggedAt));
+    res.json(rows.map((r) => ({
+      ...r,
+      flagged_at: r.flaggedAt.toISOString(),
+      cleared_at: r.clearedAt?.toISOString() ?? null,
+    })));
+  },
+);
+
+// Clear a flagged IP (admin)
+router.patch(
+  "/admin/flagged-ips/:id/clear",
+  requireLogin,
+  requireAdmin,
+  async (req, res): Promise<void> => {
+    const raw = Array.isArray(req.params.id) ? req.params.id[0] : req.params.id;
+    const flaggedId = parseInt(raw, 10);
+    if (isNaN(flaggedId)) { res.status(400).json({ error: "Invalid id" }); return; }
+
+    const [existing] = await db.select({ id: flaggedIpsTable.id }).from(flaggedIpsTable).where(eq(flaggedIpsTable.id, flaggedId));
+    if (!existing) { res.status(404).json({ error: "Record not found" }); return; }
+
+    await db.update(flaggedIpsTable).set({ clearedAt: new Date(), clearedByUserId: req.session.userId ?? null }).where(eq(flaggedIpsTable.id, flaggedId));
     res.json({ success: true });
   },
 );
