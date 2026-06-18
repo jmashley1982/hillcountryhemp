@@ -65,7 +65,7 @@ export function PopupAd() {
 
   const handleBrandClick = () => {
     handleClose();
-    setLocation(`/?brand=${encodeURIComponent(brandFilter!)}`);
+    setLocation(`/?brand=${encodeURIComponent(brandFilter!)}&n=${Date.now()}`);
   };
 
   return (

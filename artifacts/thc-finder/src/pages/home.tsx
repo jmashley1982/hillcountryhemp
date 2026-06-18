@@ -223,19 +223,19 @@ export default function Home() {
   const [selectedBrand, setSelectedBrand] = useState("");
   const searchQuery = useSearch();
   const [, navigate] = useLocation();
-  const brandConsumedRef = useRef(false);
+  const consumedBrandNonceRef = useRef<string | null>(null);
   useEffect(() => {
     const params = new URLSearchParams(searchQuery);
     const brand = params.get("brand");
-    if (brand) {
-      if (!brandConsumedRef.current) {
-        brandConsumedRef.current = true;
-        setSelectedBrand(decodeURIComponent(brand));
-        navigate("/", { replace: true });
-      }
-    } else {
-      brandConsumedRef.current = false;
-    }
+    if (!brand) return;
+    // Each banner/popup click appends a unique nonce ("n"); consume a given
+    // nonce exactly once so a stray re-render can never re-apply the brand,
+    // even if the URL fails to strip on the static production build.
+    const nonce = params.get("n") ?? brand;
+    if (nonce === consumedBrandNonceRef.current) return;
+    consumedBrandNonceRef.current = nonce;
+    setSelectedBrand(decodeURIComponent(brand));
+    navigate("/", { replace: true });
   }, [searchQuery, navigate]);
   const [viewMode, setViewMode] = useState<"map" | "list">("map");
   const [highlightedId, setHighlightedId] = useState<number | null>(null);

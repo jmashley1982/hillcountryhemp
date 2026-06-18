@@ -25,8 +25,8 @@ function BannerSlot({ imagePath, mobileImagePath, linkUrl, mobileLinkUrl, linkOp
   const newTab = linkOpensNewTab !== 0;
   const imgClass = "w-full h-auto block opacity-90 hover:opacity-100 transition-opacity";
   const brandPath = brandFilter ? `/?brand=${encodeURIComponent(brandFilter)}` : null;
-  const onBrand = brandPath
-    ? (e: React.MouseEvent) => { e.preventDefault(); setLocation(brandPath); }
+  const onBrand = brandFilter
+    ? (e: React.MouseEvent) => { e.preventDefault(); setLocation(`/?brand=${encodeURIComponent(brandFilter)}&n=${Date.now()}`); }
     : undefined;
 
   if (hasDesktop && hasMobile) {
