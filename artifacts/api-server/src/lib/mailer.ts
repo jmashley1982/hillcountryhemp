@@ -91,6 +91,43 @@ export async function sendPasswordResetEmail(
   });
 }
 
+export async function sendAdminAlert(opts: {
+  subject: string;
+  headline: string;
+  details: Array<{ label: string; value: string }>;
+  adminPanelUrl: string;
+}): Promise<void> {
+  const adminEmail = process.env.ADMIN_EMAIL;
+  if (!adminEmail) {
+    logger.warn("ADMIN_EMAIL not set — skipping admin alert");
+    return;
+  }
+
+  const rows = opts.details
+    .map((d) => `${d.label}: ${d.value}`)
+    .join("\n");
+
+  const text = `${opts.headline}\n\n${rows}\n\nAdmin panel: ${opts.adminPanelUrl}`;
+
+  const htmlRows = opts.details
+    .map(
+      (d) =>
+        `<tr><td style="padding:4px 12px 4px 0;color:#9ca3af;white-space:nowrap">${d.label}</td><td style="padding:4px 0;color:#e5e7eb">${d.value}</td></tr>`,
+    )
+    .join("");
+
+  const html = `
+    <div style="font-family:sans-serif;max-width:480px;margin:auto;padding:32px 24px;background:#1a2226;color:#e5e7eb;border-radius:12px">
+      <h2 style="color:#99CC66;margin-bottom:16px">${opts.headline}</h2>
+      <table style="border-collapse:collapse;width:100%;margin-bottom:24px">${htmlRows}</table>
+      <a href="${opts.adminPanelUrl}" style="display:inline-block;padding:12px 24px;background:#99CC66;color:#000;font-weight:bold;border-radius:8px;text-decoration:none">Open Admin Panel</a>
+      <hr style="border-color:#2d3748;margin:24px 0"/>
+      <p style="font-size:11px;color:#6b7280">Hill Country Hemp Finder — automated alert</p>
+    </div>`;
+
+  await sendEmail({ to: adminEmail, subject: opts.subject, text, html });
+}
+
 export async function sendWelcomeEmail(toEmail: string): Promise<void> {
   const dashboardUrl = (() => {
     const domains = process.env.REPLIT_DOMAINS?.split(",")[0] ?? "localhost:80";

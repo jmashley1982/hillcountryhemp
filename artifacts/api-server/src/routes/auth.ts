@@ -3,7 +3,7 @@ import bcrypt from "bcryptjs";
 import crypto from "crypto";
 import { eq, and, gt, isNull, ne } from "drizzle-orm";
 import { db, usersTable, passwordResetTokensTable } from "@workspace/db";
-import { sendPasswordResetEmail, sendWelcomeEmail } from "../lib/mailer.js";
+import { sendPasswordResetEmail, sendWelcomeEmail, sendAdminAlert } from "../lib/mailer.js";
 import { requireLogin } from "../middlewares/auth.js";
 import { logger } from "../lib/logger.js";
 
@@ -34,9 +34,23 @@ router.post("/auth/register", async (req, res): Promise<void> => {
   req.session.userId = user.id;
   req.session.role = "business";
   res.json({ success: true, userId: user.id, role: "business" });
-  // Fire-and-forget welcome email — don't block the response
+  // Fire-and-forget emails — don't block the response
+  const adminPanelUrl = (() => {
+    const domain = process.env.REPLIT_DOMAINS?.split(",")[0] ?? "localhost:80";
+    const proto = domain.includes("localhost") ? "http" : "https";
+    const basePath = process.env.BASE_PATH ?? "";
+    return `${proto}://${domain}${basePath}/admin`;
+  })();
   sendWelcomeEmail(user.email).catch((err: unknown) => {
     logger.warn({ err, to: user.email }, "Failed to send welcome email");
+  });
+  sendAdminAlert({
+    subject: "New shop account registered",
+    headline: "A new shop owner has registered",
+    details: [{ label: "Email", value: user.email }],
+    adminPanelUrl,
+  }).catch((err: unknown) => {
+    logger.warn({ err }, "Failed to send admin alert for new registration");
   });
 });
 

@@ -13,6 +13,8 @@ import {
   claimsTable,
 } from "@workspace/db";
 import { requireLogin, requireBusiness } from "../middlewares/auth.js";
+import { sendAdminAlert } from "../lib/mailer.js";
+import { logger } from "../lib/logger.js";
 import { uploadBufferToGCS, makeUploadFilename, deleteFromGCS } from "../lib/gcs.js";
 import { ACCEPTED_IMAGE_MIMES, compressImage } from "../lib/compress.js";
 
@@ -218,6 +220,13 @@ function normalizeHandle(value: string | undefined, host: string): string | null
   );
   v = v.replace(/\/+$/, "");
   return v;
+}
+
+function getAdminPanelUrl(): string {
+  const domain = process.env.REPLIT_DOMAINS?.split(",")[0] ?? "localhost:80";
+  const proto = domain.includes("localhost") ? "http" : "https";
+  const basePath = process.env.BASE_PATH ?? "";
+  return `${proto}://${domain}${basePath}/admin`;
 }
 
 const router = Router();
@@ -491,7 +500,24 @@ router.post(
       );
     }
 
-    res.status(201).json(await enrichBusiness(business));
+    const enriched = await enrichBusiness(business);
+    res.status(201).json(enriched);
+
+    const [owner] = await db
+      .select({ email: usersTable.email })
+      .from(usersTable)
+      .where(eq(usersTable.id, req.session.userId!));
+    sendAdminAlert({
+      subject: "New listing submitted for review",
+      headline: "A shop has submitted a listing for review",
+      details: [
+        { label: "Shop name", value: business.name },
+        { label: "Owner email", value: owner?.email ?? "unknown" },
+      ],
+      adminPanelUrl: getAdminPanelUrl(),
+    }).catch((err: unknown) => {
+      logger.warn({ err }, "Failed to send admin alert for new listing");
+    });
   },
 );
 
@@ -914,6 +940,22 @@ router.post(
     });
 
     res.status(201).json({ success: true });
+
+    const [claimant] = await db
+      .select({ email: usersTable.email })
+      .from(usersTable)
+      .where(eq(usersTable.id, req.session.userId!));
+    sendAdminAlert({
+      subject: "New claim submitted for a listing",
+      headline: "A user has submitted a claim on an existing listing",
+      details: [
+        { label: "Shop name", value: biz.name },
+        { label: "Claimant email", value: claimant?.email ?? "unknown" },
+      ],
+      adminPanelUrl: getAdminPanelUrl(),
+    }).catch((err: unknown) => {
+      logger.warn({ err }, "Failed to send admin alert for claim submission");
+    });
   },
 );
 
