@@ -107,6 +107,32 @@ import {
 
 type Tab = "pending" | "all" | "brands" | "add-store" | "claims" | "categories" | "cities" | "map-banner-d" | "map-banner-m" | "map-popup-d" | "map-popup-m" | "dash-banner-d" | "dash-banner-m" | "images";
 
+/** Return the URL only when its scheme is http or https; undefined otherwise. */
+function safeHref(url: string | null | undefined): string | undefined {
+  if (!url) return undefined;
+  try {
+    const { protocol } = new URL(url);
+    if (protocol !== "http:" && protocol !== "https:") return undefined;
+  } catch {
+    return undefined;
+  }
+  return url;
+}
+
+/** Return the URL only when it points to a known Google-owned host. */
+function safeGoogleReviewsUrl(url: string | null | undefined): string | undefined {
+  if (!url) return undefined;
+  try {
+    const { protocol, hostname } = new URL(url);
+    if (protocol !== "http:" && protocol !== "https:") return undefined;
+    const h = hostname.toLowerCase();
+    if (h !== "google.com" && !h.endsWith(".google.com") && h !== "g.page" && h !== "goo.gl" && h !== "maps.app.goo.gl") return undefined;
+  } catch {
+    return undefined;
+  }
+  return url;
+}
+
 function formatPhone(raw: string | null | undefined): string {
   if (!raw) return "";
   const digits = raw.replace(/\D/g, "");
@@ -226,11 +252,11 @@ function FullDetails({ biz }: { biz: BizRow }) {
             <p>{formatPhone(biz.phone)}</p>
           </div>
         )}
-        {biz.website && (
+        {safeHref(biz.website) && (
           <div>
             <p className="text-[10px] uppercase font-bold text-muted-foreground tracking-wider mb-0.5">Website</p>
-            <a href={biz.website} target="_blank" rel="noopener noreferrer" className="text-[#99CC66] hover:underline flex items-center gap-1">
-              {biz.website.replace(/^https?:\/\//, "")} <ExternalLink className="h-3 w-3" />
+            <a href={safeHref(biz.website)} target="_blank" rel="noopener noreferrer" className="text-[#99CC66] hover:underline flex items-center gap-1">
+              {biz.website!.replace(/^https?:\/\//, "")} <ExternalLink className="h-3 w-3" />
             </a>
           </div>
         )}

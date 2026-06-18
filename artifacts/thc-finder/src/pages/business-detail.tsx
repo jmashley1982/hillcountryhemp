@@ -36,6 +36,32 @@ function formatPhone(raw: string): string {
   return raw;
 }
 
+/** Return the URL only when its scheme is http or https; undefined otherwise. */
+function safeHref(url: string | null | undefined): string | undefined {
+  if (!url) return undefined;
+  try {
+    const { protocol } = new URL(url);
+    if (protocol !== "http:" && protocol !== "https:") return undefined;
+  } catch {
+    return undefined;
+  }
+  return url;
+}
+
+/** Return the URL only when it points to a known Google-owned host. */
+function safeGoogleReviewsUrl(url: string | null | undefined): string | undefined {
+  if (!url) return undefined;
+  try {
+    const { protocol, hostname } = new URL(url);
+    if (protocol !== "http:" && protocol !== "https:") return undefined;
+    const h = hostname.toLowerCase();
+    if (h !== "google.com" && !h.endsWith(".google.com") && h !== "g.page" && h !== "goo.gl" && h !== "maps.app.goo.gl") return undefined;
+  } catch {
+    return undefined;
+  }
+  return url;
+}
+
 type BrandWithLogo = { id: number; name: string; logo_path?: string | null; is_featured?: number };
 
 export default function BusinessDetail() {
@@ -254,10 +280,10 @@ export default function BusinessDetail() {
                 </div>
               )}
 
-              {biz.website && (
+              {safeHref(biz.website) && (
                 <div className="flex items-center gap-3">
                   <Globe className="h-5 w-5 text-primary shrink-0" />
-                  <a href={biz.website} target="_blank" rel="noopener noreferrer" className="hover:text-[#99CC66] transition-colors line-clamp-1 text-sm">{biz.website.replace(/^https?:\/\//, "")}</a>
+                  <a href={safeHref(biz.website)} target="_blank" rel="noopener noreferrer" className="hover:text-[#99CC66] transition-colors line-clamp-1 text-sm">{biz.website!.replace(/^https?:\/\//, "")}</a>
                 </div>
               )}
 
@@ -306,9 +332,9 @@ export default function BusinessDetail() {
                       Facebook
                     </a>
                   )}
-                  {googleReviewsUrl && (
+                  {safeGoogleReviewsUrl(googleReviewsUrl) && (
                     <a
-                      href={googleReviewsUrl}
+                      href={safeGoogleReviewsUrl(googleReviewsUrl)}
                       target="_blank"
                       rel="noopener noreferrer"
                       className="flex items-center gap-2 px-3 py-2 rounded-xl bg-[#99CC66]/15 border border-[#99CC66]/40 text-sm font-bold text-[#99CC66] hover:bg-[#99CC66]/25 transition-colors"

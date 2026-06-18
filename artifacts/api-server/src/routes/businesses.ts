@@ -36,6 +36,42 @@ const uploadCoupon = multer({
   },
 });
 
+/** Accept only http/https URLs; return null for anything else (e.g. javascript:, data:, relative paths). */
+function sanitizeHttpUrl(value: string | undefined | null): string | null {
+  if (!value) return null;
+  try {
+    const { protocol } = new URL(value);
+    if (protocol !== "http:" && protocol !== "https:") return null;
+  } catch {
+    return null;
+  }
+  return value;
+}
+
+/**
+ * Accept a Google Reviews URL only when it resolves to a known Google-owned
+ * host (*.google.com, google.com, g.page, goo.gl, maps.app.goo.gl).
+ * Returns null for any other domain or non-http(s) scheme.
+ */
+function sanitizeGoogleReviewsUrl(value: string | undefined | null): string | null {
+  if (!value) return null;
+  let parsed: URL;
+  try {
+    parsed = new URL(value);
+  } catch {
+    return null;
+  }
+  if (parsed.protocol !== "http:" && parsed.protocol !== "https:") return null;
+  const host = parsed.hostname.toLowerCase();
+  const googleOwned =
+    host === "google.com" ||
+    host.endsWith(".google.com") ||
+    host === "g.page" ||
+    host === "goo.gl" ||
+    host === "maps.app.goo.gl";
+  return googleOwned ? value : null;
+}
+
 function haversineKm(
   lat1: number,
   lon1: number,
@@ -449,13 +485,13 @@ router.post(
         lng: coords?.lng ?? null,
         phone: phone ?? null,
         email: email ?? null,
-        website: website ?? null,
+        website: sanitizeHttpUrl(website),
         hours: composeHoursDisplay(hours_json),
         hoursJson: hours_json ?? null,
         description: description ?? null,
         instagram: normalizeHandle(instagram, "instagram.com"),
         facebook: normalizeHandle(facebook, "facebook.com"),
-        googleReviewsUrl: google_reviews_url ?? null,
+        googleReviewsUrl: sanitizeGoogleReviewsUrl(google_reviews_url),
         onSiteSmokingArea: on_site_smoking_area ? 1 : 0,
         status: "rejected",
         rejectionReason: "Owner authorization not confirmed.",
@@ -478,13 +514,13 @@ router.post(
         lng: coords?.lng ?? null,
         phone: phone ?? null,
         email: email ?? null,
-        website: website ?? null,
+        website: sanitizeHttpUrl(website),
         hours: composeHoursDisplay(hours_json),
         hoursJson: hours_json ?? null,
         description: description ?? null,
         instagram: normalizeHandle(instagram, "instagram.com"),
         facebook: normalizeHandle(facebook, "facebook.com"),
-        googleReviewsUrl: google_reviews_url ?? null,
+        googleReviewsUrl: sanitizeGoogleReviewsUrl(google_reviews_url),
         onSiteSmokingArea: on_site_smoking_area ? 1 : 0,
       })
       .returning();
@@ -607,13 +643,13 @@ router.put(
       lng: newLng,
       phone: phone !== undefined ? phone : b.phone,
       email: email !== undefined ? email : b.email,
-      website: website !== undefined ? website : b.website,
+      website: website !== undefined ? sanitizeHttpUrl(website) : b.website,
       hours: hours_json !== undefined ? composeHoursDisplay(hours_json) : b.hours,
       hoursJson: hours_json !== undefined ? hours_json : b.hoursJson,
       description: description !== undefined ? description : b.description,
       instagram: instagram !== undefined ? normalizeHandle(instagram, "instagram.com") : b.instagram,
       facebook: facebook !== undefined ? normalizeHandle(facebook, "facebook.com") : b.facebook,
-      googleReviewsUrl: google_reviews_url !== undefined ? google_reviews_url : b.googleReviewsUrl,
+      googleReviewsUrl: google_reviews_url !== undefined ? sanitizeGoogleReviewsUrl(google_reviews_url) : b.googleReviewsUrl,
       onSiteSmokingArea: on_site_smoking_area !== undefined ? (on_site_smoking_area ? 1 : 0) : b.onSiteSmokingArea,
       lastUpdated: new Date(),
     };

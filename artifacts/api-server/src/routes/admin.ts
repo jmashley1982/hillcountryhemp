@@ -21,6 +21,42 @@ import {
 import { requireLogin, requireAdmin } from "../middlewares/auth.js";
 import { sendListingApprovedEmail, sendListingRejectedEmail } from "../lib/mailer.js";
 
+/** Accept only http/https URLs; return null for anything else (e.g. javascript:, data:, relative paths). */
+function sanitizeHttpUrl(value: string | undefined | null): string | null {
+  if (!value) return null;
+  try {
+    const { protocol } = new URL(value);
+    if (protocol !== "http:" && protocol !== "https:") return null;
+  } catch {
+    return null;
+  }
+  return value;
+}
+
+/**
+ * Accept a Google Reviews URL only when it resolves to a known Google-owned
+ * host (*.google.com, google.com, g.page, goo.gl, maps.app.goo.gl).
+ * Returns null for any other domain or non-http(s) scheme.
+ */
+function sanitizeGoogleReviewsUrl(value: string | undefined | null): string | null {
+  if (!value) return null;
+  let parsed: URL;
+  try {
+    parsed = new URL(value);
+  } catch {
+    return null;
+  }
+  if (parsed.protocol !== "http:" && parsed.protocol !== "https:") return null;
+  const host = parsed.hostname.toLowerCase();
+  const googleOwned =
+    host === "google.com" ||
+    host.endsWith(".google.com") ||
+    host === "g.page" ||
+    host === "goo.gl" ||
+    host === "maps.app.goo.gl";
+  return googleOwned ? value : null;
+}
+
 const upload = multer({
   storage: multer.memoryStorage(),
   limits: { fileSize: 5 * 1024 * 1024 },
@@ -242,13 +278,13 @@ router.post(
         lng: coords?.lng ?? null,
         phone: phone ?? null,
         email: email ?? null,
-        website: website ?? null,
+        website: sanitizeHttpUrl(website),
         hours: composeHoursDisplay(hours_json),
         hoursJson: hours_json ?? null,
         description: description ?? null,
         instagram: normalizeHandle(instagram, "instagram.com"),
         facebook: normalizeHandle(facebook, "facebook.com"),
-        googleReviewsUrl: google_reviews_url ?? null,
+        googleReviewsUrl: sanitizeGoogleReviewsUrl(google_reviews_url),
         onSiteSmokingArea: on_site_smoking_area ? 1 : 0,
         status: "approved",
       })

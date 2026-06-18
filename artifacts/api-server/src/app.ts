@@ -70,7 +70,8 @@ app.use(
 const uploadsDir = path.join(__dirname, "..", "uploads");
 if (!fs.existsSync(uploadsDir)) fs.mkdirSync(uploadsDir, { recursive: true });
 app.use("/api/uploads", (req, res, next) => {
-  const filename = req.path.replace(/^\//, "");
+  // Strip any directory components to prevent path traversal (e.g. ../../etc/passwd)
+  const filename = path.basename(req.path.replace(/^\//, ""));
   if (!filename) { next(); return; }
   const localPath = path.join(uploadsDir, filename);
   if (fs.existsSync(localPath)) {
