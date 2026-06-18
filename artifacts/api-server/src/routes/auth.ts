@@ -3,8 +3,9 @@ import bcrypt from "bcryptjs";
 import crypto from "crypto";
 import { eq, and, gt, isNull, ne } from "drizzle-orm";
 import { db, usersTable, passwordResetTokensTable } from "@workspace/db";
-import { sendPasswordResetEmail } from "../lib/mailer.js";
+import { sendPasswordResetEmail, sendWelcomeEmail } from "../lib/mailer.js";
 import { requireLogin } from "../middlewares/auth.js";
+import { logger } from "../lib/logger.js";
 
 const router = Router();
 
@@ -33,6 +34,10 @@ router.post("/auth/register", async (req, res): Promise<void> => {
   req.session.userId = user.id;
   req.session.role = "business";
   res.json({ success: true, userId: user.id, role: "business" });
+  // Fire-and-forget welcome email — don't block the response
+  sendWelcomeEmail(user.email).catch((err: unknown) => {
+    logger.warn({ err, to: user.email }, "Failed to send welcome email");
+  });
 });
 
 router.post("/auth/login", async (req, res): Promise<void> => {

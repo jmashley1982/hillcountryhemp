@@ -1,4 +1,6 @@
 export default function Advertise() {
+  const CONTACT_EMAIL = "hempfindertx@gmail.com";
+
   return (
     <div className="container mx-auto px-4 py-16 max-w-4xl">
       <div className="text-center mb-16">
@@ -18,7 +20,7 @@ export default function Advertise() {
         </div>
 
         <div className="bg-card border-2 border-border p-8 rounded-xl shadow-sm hover:border-primary transition-colors">
-          <h2 className="text-2xl text-primary mb-4">Banner & Popup Ads</h2>
+          <h2 className="text-2xl text-primary mb-4">Banner &amp; Popup Ads</h2>
           <p className="font-medium text-muted-foreground mb-6">
             Dominate the screen. Get a site-wide banner ad below the navigation or an exclusive first-visit popup overlay to guarantee impressions for your brand or product launch.
           </p>
@@ -32,10 +34,10 @@ export default function Advertise() {
           Drop us a line to secure your placement. Inventory is limited to maintain maximum visibility for our partners.
         </p>
         <a
-          href="mailto:ads@hillcountryhempfinder.com"
+          href={`mailto:${CONTACT_EMAIL}`}
           className="inline-block bg-secondary text-secondary-foreground px-8 py-4 rounded-lg font-bold text-lg uppercase tracking-wider hover:bg-secondary/90 transition-colors shadow-lg border-b-4 border-black/20 max-w-full"
         >
-          <span className="break-all">Email ads@hillcountryhempfinder.com</span>
+          <span className="break-all">Email {CONTACT_EMAIL}</span>
         </a>
       </div>
     </div>
