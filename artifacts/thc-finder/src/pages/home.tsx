@@ -1,5 +1,5 @@
 import { useGetBusinesses, useGetBrands, useGetCategories, useGetCities } from "@workspace/api-client-react";
-import { useSearch } from "wouter";
+import { useSearch, useLocation } from "wouter";
 import { useState, useEffect, useRef, useMemo } from "react";
 import { Input } from "@/components/ui/input";
 import {
@@ -222,14 +222,21 @@ export default function Home() {
   const [selectedCity, setSelectedCity] = useState("");
   const [selectedBrand, setSelectedBrand] = useState("");
   const searchQuery = useSearch();
+  const [, navigate] = useLocation();
+  const brandConsumedRef = useRef(false);
   useEffect(() => {
     const params = new URLSearchParams(searchQuery);
     const brand = params.get("brand");
     if (brand) {
-      setSelectedBrand(decodeURIComponent(brand));
-      window.history.replaceState({}, "", window.location.pathname);
+      if (!brandConsumedRef.current) {
+        brandConsumedRef.current = true;
+        setSelectedBrand(decodeURIComponent(brand));
+        navigate("/", { replace: true });
+      }
+    } else {
+      brandConsumedRef.current = false;
     }
-  }, [searchQuery]);
+  }, [searchQuery, navigate]);
   const [viewMode, setViewMode] = useState<"map" | "list">("map");
   const [highlightedId, setHighlightedId] = useState<number | null>(null);
   const [selectedBizId, setSelectedBizId] = useState<number | null>(null);

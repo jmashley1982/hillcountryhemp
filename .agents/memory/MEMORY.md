@@ -3,3 +3,4 @@
 - [Leaflet mobile height](leaflet-mobile-height.md) — map vanishes on mobile when no definite-height ancestor; min-h-* is not definite, anchor html/body/#root to height:100%
 - [Business listing structured fields](business-listing-fields.md) — address/hours composed server-side, social stored as bare handles, coupons allow PDF; legacy-row merge rules.
 - [GCS file uploads](gcs-uploads.md) — all uploads go to GCS via memory storage + sidecar auth; local disk is fallback for dev only.
+- [wouter base + history desync](wouter-base-history-desync.md) — under base-path router never use raw window.history.replaceState; use wouter navigate + a ref-guard for URL→state sync.
