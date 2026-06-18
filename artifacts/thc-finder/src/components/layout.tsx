@@ -5,6 +5,7 @@ import { useQueryClient } from "@tanstack/react-query";
 import { LogOut, LayoutDashboard, Menu, X } from "lucide-react";
 import { Button } from "./ui/button";
 import logoUrl from "@assets/magnific_a-logo-for-an-app-called-_TeJK7kKVNR_1780364254574.png";
+import { useBrandFilter } from "@/contexts/brand-filter";
 
 const DASHBOARD_ROUTES = ["/dashboard", "/add-business", "/admin"];
 
@@ -17,6 +18,7 @@ function BannerSlot({ imagePath, mobileImagePath, linkUrl, mobileLinkUrl, linkOp
   brandFilter?: string | null;
 }) {
   const [, setLocation] = useLocation();
+  const { setBrand } = useBrandFilter();
 
   const hasDesktop = !!imagePath;
   const hasMobile = !!mobileImagePath;
@@ -24,19 +26,18 @@ function BannerSlot({ imagePath, mobileImagePath, linkUrl, mobileLinkUrl, linkOp
 
   const newTab = linkOpensNewTab !== 0;
   const imgClass = "w-full h-auto block opacity-90 hover:opacity-100 transition-opacity";
-  const brandPath = brandFilter ? `/?brand=${encodeURIComponent(brandFilter)}` : null;
   const onBrand = brandFilter
-    ? (e: React.MouseEvent) => { e.preventDefault(); setLocation(`/?brand=${encodeURIComponent(brandFilter)}&n=${Date.now()}`); }
+    ? (e: React.MouseEvent) => { e.preventDefault(); setBrand(brandFilter); setLocation("/"); }
     : undefined;
 
   if (hasDesktop && hasMobile) {
     return (
       <>
-        <a href={brandPath || linkUrl || "#"} onClick={onBrand} className="hidden md:block w-full bg-black"
+        <a href={linkUrl || "#"} onClick={onBrand} className="hidden md:block w-full bg-black"
           target={!brandFilter && linkUrl && newTab ? "_blank" : undefined} rel="noopener noreferrer" data-testid="banner-ad-desktop">
           <img src={`/api/uploads/${imagePath}`} alt="Advertisement" className={imgClass} />
         </a>
-        <a href={brandPath || mobileLinkUrl || linkUrl || "#"} onClick={onBrand} className="block md:hidden w-full bg-black"
+        <a href={mobileLinkUrl || linkUrl || "#"} onClick={onBrand} className="block md:hidden w-full bg-black"
           target={!brandFilter && (mobileLinkUrl || linkUrl) && newTab ? "_blank" : undefined} rel="noopener noreferrer" data-testid="banner-ad-mobile">
           <img src={`/api/uploads/${mobileImagePath}`} alt="Advertisement" className={imgClass} />
         </a>
@@ -45,7 +46,7 @@ function BannerSlot({ imagePath, mobileImagePath, linkUrl, mobileLinkUrl, linkOp
   }
 
   const src = imagePath ?? mobileImagePath!;
-  const href = brandPath || (imagePath ? linkUrl : mobileLinkUrl) || "#";
+  const href = (imagePath ? linkUrl : mobileLinkUrl) || "#";
   const hasLink = !!(brandFilter || (imagePath ? linkUrl : mobileLinkUrl));
   return (
     <a href={href} onClick={onBrand} className="block w-full bg-black"

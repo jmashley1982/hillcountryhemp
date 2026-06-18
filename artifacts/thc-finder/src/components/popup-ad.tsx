@@ -2,6 +2,7 @@ import { useEffect, useState } from "react";
 import { useGetPopup } from "@workspace/api-client-react";
 import { useLocation } from "wouter";
 import { X } from "lucide-react";
+import { useBrandFilter } from "@/contexts/brand-filter";
 
 type PopupWithBrand = { brand_filter?: string | null };
 
@@ -15,6 +16,7 @@ function isCustomerRoute(location: string): boolean {
 
 export function PopupAd() {
   const [location, setLocation] = useLocation();
+  const { setBrand } = useBrandFilter();
   const { data: popup } = useGetPopup();
   const [show, setShow] = useState(false);
   const [isMobile, setIsMobile] = useState(
@@ -65,7 +67,8 @@ export function PopupAd() {
 
   const handleBrandClick = () => {
     handleClose();
-    setLocation(`/?brand=${encodeURIComponent(brandFilter!)}&n=${Date.now()}`);
+    setBrand(brandFilter!);
+    setLocation("/");
   };
 
   return (

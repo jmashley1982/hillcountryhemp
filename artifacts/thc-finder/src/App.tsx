@@ -5,6 +5,7 @@ import { TooltipProvider } from "@/components/ui/tooltip";
 import { Layout } from "@/components/layout";
 import { AgeGate } from "@/components/age-gate";
 import { PopupAd } from "@/components/popup-ad";
+import { BrandFilterProvider } from "@/contexts/brand-filter";
 import NotFound from "@/pages/not-found";
 
 import Home from "@/pages/home";
@@ -58,11 +59,13 @@ function App() {
   return (
     <QueryClientProvider client={queryClient}>
       <TooltipProvider>
-        <WouterRouter base={import.meta.env.BASE_URL.replace(/\/$/, "")}>
-          <AgeGate />
-          <PopupAd />
-          <Router />
-        </WouterRouter>
+        <BrandFilterProvider>
+          <WouterRouter base={import.meta.env.BASE_URL.replace(/\/$/, "")}>
+            <AgeGate />
+            <PopupAd />
+            <Router />
+          </WouterRouter>
+        </BrandFilterProvider>
         <Toaster />
       </TooltipProvider>
     </QueryClientProvider>
