@@ -4,7 +4,7 @@ import { useGetMe, useLogout, useGetBanner, useGetB2bBanner, getGetMeQueryKey } 
 import { useQueryClient } from "@tanstack/react-query";
 import { LogOut, LayoutDashboard, Menu, X } from "lucide-react";
 import { Button } from "./ui/button";
-import logoUrl from "@assets/magnific_a-logo-for-an-app-called-_TeJK7kKVNR_1780364254574.png";
+import logoUrl from "@assets/thchf-logo-1-b_1781758728131.png";
 
 const DASHBOARD_ROUTES = ["/dashboard", "/add-business", "/admin"];
 
