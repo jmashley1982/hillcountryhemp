@@ -78,6 +78,12 @@ app.use("/api/uploads", (req, res, next) => {
   // Strip any directory components to prevent path traversal (e.g. ../../etc/passwd)
   const filename = path.basename(req.path.replace(/^\//, ""));
   if (!filename) { next(); return; }
+  // Claim verification documents are sensitive (may contain IDs, EINs, etc.)
+  // and must only be served via the admin-authenticated download endpoint.
+  if (filename.startsWith("claim-doc")) {
+    res.status(403).json({ error: "Access denied" });
+    return;
+  }
   const localPath = path.join(uploadsDir, filename);
   if (fs.existsSync(localPath)) {
     res.sendFile(localPath);

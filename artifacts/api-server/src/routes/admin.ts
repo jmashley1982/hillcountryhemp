@@ -1,8 +1,9 @@
 import { Router } from "express";
 import path from "path";
+import fs from "fs";
 import multer from "multer";
 import { eq, and, isNull, isNotNull, inArray, desc } from "drizzle-orm";
-import { uploadBufferToGCS, makeUploadFilename, listStorageFiles, deleteFileFromStorage } from "../lib/gcs.js";
+import { uploadBufferToGCS, makeUploadFilename, listStorageFiles, deleteFileFromStorage, streamFromGCS } from "../lib/gcs.js";
 import { ACCEPTED_IMAGE_MIMES, compressImage } from "../lib/compress.js";
 import {
   db,
@@ -490,6 +491,46 @@ router.get(
       contest_deadline: r.contest_deadline?.toISOString() ?? null,
       otp_locked_until: r.otp_locked_until?.toISOString() ?? null,
     })));
+  },
+);
+
+// Admin-only download of a claim's verification document (protected — these
+// files may contain IDs, EINs, utility bills, etc.).  The public /api/uploads
+// route actively blocks claim-doc-* filenames; this is the only authorised path.
+router.get(
+  "/admin/claims/:id/document",
+  requireLogin,
+  requireAdmin,
+  async (req, res): Promise<void> => {
+    const raw = Array.isArray(req.params.id) ? req.params.id[0] : req.params.id;
+    const claimId = parseInt(raw, 10);
+    if (isNaN(claimId)) { res.status(400).json({ error: "Invalid id" }); return; }
+
+    const [claim] = await db
+      .select({ documentPath: claimsTable.documentPath })
+      .from(claimsTable)
+      .where(eq(claimsTable.id, claimId));
+
+    if (!claim) { res.status(404).json({ error: "Claim not found" }); return; }
+    if (!claim.documentPath) { res.status(404).json({ error: "No document on file for this claim" }); return; }
+
+    const filename = path.basename(claim.documentPath);
+    const uploadsDir = path.join(path.dirname(new URL(import.meta.url).pathname), "..", "..", "uploads");
+    const localPath = path.join(uploadsDir, filename);
+
+    if (fs.existsSync(localPath)) {
+      // Inline for PDF/image preview in admin panel; attachment for everything else.
+      const mime = filename.endsWith(".pdf") ? "application/pdf" : "application/octet-stream";
+      res.setHeader("Content-Type", mime);
+      res.setHeader("Cache-Control", "no-store");
+      res.sendFile(localPath);
+      return;
+    }
+
+    const served = await streamFromGCS(filename, res).catch(() => false);
+    if (!served) {
+      res.status(404).json({ error: "Document file not found in storage" });
+    }
   },
 );
 

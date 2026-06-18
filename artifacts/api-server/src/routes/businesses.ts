@@ -1,6 +1,6 @@
 import { Router } from "express";
 import multer from "multer";
-import { eq, and, isNull, inArray } from "drizzle-orm";
+import { eq, and, isNull, isNotNull, inArray, desc, gt } from "drizzle-orm";
 import {
   db,
   usersTable,
@@ -415,7 +415,13 @@ router.get(
   },
 );
 
-// ── List PENDING_OWNER_REVIEW claims against the current owner's businesses ─
+// ── List claims against the current owner's businesses needing a decision ──
+// Covers both:
+//   • PENDING_OWNER_REVIEW — OTP-verified claim waiting for owner response
+//   • PENDING_MANUAL_REVIEW with a future contestDeadline — document-path
+//     claim where the owner was notified but hasn't responded yet.
+// After the owner acts (approve → APPROVED; contest → contestDeadline nulled),
+// the claim drops off this list automatically.
 // Must be registered BEFORE /businesses/:id so Express doesn't consume
 // "owner-contest-claims" as the :id parameter value.
 router.get(
@@ -423,6 +429,7 @@ router.get(
   requireLogin,
   requireBusiness,
   async (req, res): Promise<void> => {
+    const now = new Date();
     const rows = await db
       .select({
         id: claimsTable.id,
@@ -431,13 +438,19 @@ router.get(
         claimantEmail: claimsTable.claimantEmail,
         contestDeadline: claimsTable.contestDeadline,
         createdAt: claimsTable.createdAt,
+        status: claimsTable.status,
       })
       .from(claimsTable)
       .innerJoin(businessesTable, eq(businessesTable.id, claimsTable.businessId))
       .where(
         and(
           eq(businessesTable.ownerId, req.session.userId!),
-          eq(claimsTable.status, "PENDING_OWNER_REVIEW"),
+          inArray(claimsTable.status, ["PENDING_OWNER_REVIEW", "PENDING_MANUAL_REVIEW"]),
+          // Only claims with an active contest window — once the owner acts
+          // (approve → APPROVED) or contests (contestDeadline set to null),
+          // this claim no longer appears.
+          isNotNull(claimsTable.contestDeadline),
+          gt(claimsTable.contestDeadline, now),
         ),
       )
       .orderBy(claimsTable.createdAt);
@@ -1317,8 +1330,17 @@ router.get(
         claimantEmail: claimsTable.claimantEmail,
       })
       .from(claimsTable)
-      .where(and(eq(claimsTable.businessId, id), eq(claimsTable.userId, req.session.userId!)))
-      .orderBy(claimsTable.createdAt)
+      .where(
+        and(
+          eq(claimsTable.businessId, id),
+          eq(claimsTable.userId, req.session.userId!),
+          // Scope to active statuses so completed/rejected old claims are
+          // not returned when a new claim is in progress.
+          inArray(claimsTable.status, ACTIVE_CLAIM_STATUSES),
+        ),
+      )
+      // Return newest first so the client always sees the current claim.
+      .orderBy(desc(claimsTable.createdAt))
       .limit(1);
 
     if (!claim) { res.status(404).json({ error: "No claim found for this business." }); return; }
@@ -1366,10 +1388,14 @@ router.post(
       return;
     }
 
-    // Find the active PENDING_OWNER_REVIEW claim.
+    // Find an actionable claim: PENDING_OWNER_REVIEW (OTP path) OR
+    // PENDING_MANUAL_REVIEW with a future contestDeadline (document path where
+    // the owner was notified but hasn't responded yet).
+    const now = new Date();
     const [claim] = await db
       .select({
         id: claimsTable.id,
+        status: claimsTable.status,
         userId: claimsTable.userId,
         claimantEmail: claimsTable.claimantEmail,
         contestDeadline: claimsTable.contestDeadline,
@@ -1378,10 +1404,12 @@ router.post(
       .where(
         and(
           eq(claimsTable.businessId, id),
-          eq(claimsTable.status, "PENDING_OWNER_REVIEW"),
-          isNull(claimsTable.otpHash),
+          inArray(claimsTable.status, ["PENDING_OWNER_REVIEW", "PENDING_MANUAL_REVIEW"]),
+          isNotNull(claimsTable.contestDeadline),
+          gt(claimsTable.contestDeadline, now),
         ),
       )
+      .orderBy(desc(claimsTable.createdAt))
       .limit(1);
 
     if (!claim) {
@@ -1412,7 +1440,15 @@ router.post(
 
     } else {
       // Owner contests — escalate to admin manual review.
-      await db.update(claimsTable).set({ status: "PENDING_MANUAL_REVIEW" }).where(eq(claimsTable.id, claim.id));
+      // For OTP-path claims: move to PENDING_MANUAL_REVIEW.
+      // For document-path claims already in PENDING_MANUAL_REVIEW: keep status.
+      // In both cases: null-out contestDeadline so the claim drops off the
+      // "action required" list (owner has now explicitly contested).
+      const nextStatus = claim.status === "PENDING_OWNER_REVIEW" ? "PENDING_MANUAL_REVIEW" : claim.status;
+      await db
+        .update(claimsTable)
+        .set({ status: nextStatus, contestDeadline: null })
+        .where(eq(claimsTable.id, claim.id));
       await appendAuditLog({
         claimId: claim.id,
         actorUserId: req.session.userId,
@@ -1420,7 +1456,7 @@ router.post(
         actionType: "owner_contested",
         metadata: { businessId: id },
       });
-      res.json({ success: true, status: "PENDING_MANUAL_REVIEW" });
+      res.json({ success: true, status: nextStatus });
     }
   },
 );
