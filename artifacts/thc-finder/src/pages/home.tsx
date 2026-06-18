@@ -394,17 +394,17 @@ export default function Home() {
             {hasFilters && (
               <div className="flex flex-wrap gap-1 mt-1.5">
                 {selectedBrand && (
-                  <button onClick={() => setSelectedBrand("")} className="flex items-center gap-1 text-[10px] font-bold bg-[#84C7D0]/15 border border-[#84C7D0]/40 text-[#84C7D0] px-1.5 py-0.5 rounded-full hover:bg-[#84C7D0]/25 transition-colors">
+                  <button onClick={() => setSelectedBrand("")} className="cursor-pointer flex items-center gap-1 text-[10px] font-bold bg-[#84C7D0]/15 border border-[#84C7D0]/40 text-[#84C7D0] px-1.5 py-0.5 rounded-full hover:bg-[#84C7D0]/25 transition-colors">
                     {selectedBrand} <X className="h-2.5 w-2.5" />
                   </button>
                 )}
                 {selectedCat && (
-                  <button onClick={() => setSelectedCat("")} className="flex items-center gap-1 text-[10px] font-bold bg-[#99CC66]/15 border border-[#99CC66]/40 text-[#99CC66] px-1.5 py-0.5 rounded-full hover:bg-[#99CC66]/25 transition-colors">
+                  <button onClick={() => setSelectedCat("")} className="cursor-pointer flex items-center gap-1 text-[10px] font-bold bg-[#99CC66]/15 border border-[#99CC66]/40 text-[#99CC66] px-1.5 py-0.5 rounded-full hover:bg-[#99CC66]/25 transition-colors">
                     {selectedCat} <X className="h-2.5 w-2.5" />
                   </button>
                 )}
                 {selectedCity && (
-                  <button onClick={() => setSelectedCity("")} className="flex items-center gap-1 text-[10px] font-bold bg-amber-900/20 border border-amber-700/40 text-amber-400 px-1.5 py-0.5 rounded-full hover:bg-amber-900/30 transition-colors">
+                  <button onClick={() => setSelectedCity("")} className="cursor-pointer flex items-center gap-1 text-[10px] font-bold bg-amber-900/20 border border-amber-700/40 text-amber-400 px-1.5 py-0.5 rounded-full hover:bg-amber-900/30 transition-colors">
                     {selectedCity} <X className="h-2.5 w-2.5" />
                   </button>
                 )}
