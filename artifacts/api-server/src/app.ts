@@ -3,6 +3,7 @@ import cors from "cors";
 import pinoHttp from "pino-http";
 import session from "express-session";
 import ConnectPgSimple from "connect-pg-simple";
+import rateLimit from "express-rate-limit";
 import path from "path";
 import fs from "fs";
 import { fileURLToPath } from "url";
@@ -80,6 +81,35 @@ app.use("/api/uploads", (req, res, next) => {
     if (!served) res.status(404).json({ error: "Not found" });
   }).catch(() => res.status(404).json({ error: "Not found" }));
 });
+
+// Rate-limit credential endpoints to slow down brute-force and credential-
+// stuffing attacks. Limits are per IP and intentionally conservative.
+const loginLimiter = rateLimit({
+  windowMs: 15 * 60 * 1000, // 15 minutes
+  max: 20,
+  standardHeaders: true,
+  legacyHeaders: false,
+  message: { error: "Too many login attempts — please try again in 15 minutes." },
+  handler(req, res, _next, options) {
+    logger.warn({ ip: req.ip, path: req.path }, "Rate limit hit on auth endpoint");
+    res.status(options.statusCode).json(options.message);
+  },
+});
+
+const forgotPasswordLimiter = rateLimit({
+  windowMs: 60 * 60 * 1000, // 1 hour
+  max: 5,
+  standardHeaders: true,
+  legacyHeaders: false,
+  message: { error: "Too many password-reset requests — please try again in 1 hour." },
+  handler(req, res, _next, options) {
+    logger.warn({ ip: req.ip, path: req.path }, "Rate limit hit on forgot-password endpoint");
+    res.status(options.statusCode).json(options.message);
+  },
+});
+
+app.use("/api/auth/login", loginLimiter);
+app.use("/api/auth/forgot-password", forgotPasswordLimiter);
 
 app.use("/api", router);
 

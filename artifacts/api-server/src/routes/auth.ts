@@ -136,16 +136,14 @@ router.post("/auth/forgot-password", async (req, res): Promise<void> => {
     const basePath = process.env.BASE_PATH ?? "";
     const resetUrl = `${proto}://${domains}${basePath}/reset-password?token=${token}`;
 
-    try {
-      await sendPasswordResetEmail(user.email, resetUrl);
-    } catch (err: unknown) {
-      // Never leak delivery failures to the client (would crash the request
-      // and enable enumeration). The mailer already logs a clear warning.
+    // Fire-and-forget: do not await the email send so that valid and invalid
+    // addresses return at the same time (prevents timing-based enumeration).
+    sendPasswordResetEmail(user.email, resetUrl).catch((err: unknown) => {
       logger.warn(
         { err, to: user.email },
         "Failed to send password reset email",
       );
-    }
+    });
   }
 
   // Always respond with success to prevent user enumeration
@@ -188,10 +186,18 @@ router.post("/auth/reset-password", async (req, res): Promise<void> => {
     .set({ passwordHash: hash })
     .where(eq(usersTable.id, record.userId));
 
+  // Invalidate ALL unused tokens for this user, not just the one redeemed.
+  // This closes the window where an attacker holding an older reset link could
+  // overwrite the password again after the victim has already changed it.
   await db
     .update(passwordResetTokensTable)
     .set({ usedAt: now })
-    .where(eq(passwordResetTokensTable.id, record.id));
+    .where(
+      and(
+        eq(passwordResetTokensTable.userId, record.userId),
+        isNull(passwordResetTokensTable.usedAt),
+      ),
+    );
 
   res.json({ success: true });
 });
