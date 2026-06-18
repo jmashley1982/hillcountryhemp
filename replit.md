@@ -42,6 +42,7 @@ A map-based business locator for 21+ adults in Texas Hill Country. Businesses li
 - GET /api/admin/banner and GET /api/admin/popup are public (no auth needed) so the banner/popup can display to all visitors.
 - Geocoding via Nominatim (free, no API key) on business create/update.
 - File uploads capped at 5MB, photos at 6 per business, coupons at 3 per business.
+- Transactional email (password reset, welcome, admin alerts, listing approved/rejected) is sent via Resend, wired through the Replit Resend connector. The mailer fetches the API key from the connector proxy, falling back to a `RESEND_API_KEY` secret. Real delivery requires verifying the `hillcountryhempfinder.com` domain in Resend (DNS records) — until then Resend rejects sends with a 403; failures are logged and never break the request.
 
 ## Product
 

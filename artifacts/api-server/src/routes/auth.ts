@@ -136,7 +136,16 @@ router.post("/auth/forgot-password", async (req, res): Promise<void> => {
     const basePath = process.env.BASE_PATH ?? "";
     const resetUrl = `${proto}://${domains}${basePath}/reset-password?token=${token}`;
 
-    await sendPasswordResetEmail(user.email, resetUrl);
+    try {
+      await sendPasswordResetEmail(user.email, resetUrl);
+    } catch (err: unknown) {
+      // Never leak delivery failures to the client (would crash the request
+      // and enable enumeration). The mailer already logs a clear warning.
+      logger.warn(
+        { err, to: user.email },
+        "Failed to send password reset email",
+      );
+    }
   }
 
   // Always respond with success to prevent user enumeration

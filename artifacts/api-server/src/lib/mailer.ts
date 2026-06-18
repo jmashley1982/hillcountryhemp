@@ -2,12 +2,58 @@ import { Resend } from "resend";
 import nodemailer from "nodemailer";
 import { logger } from "./logger.js";
 
-const FROM = process.env.EMAIL_FROM ?? "noreply@hillcountryhempfinder.com";
+const DEFAULT_FROM = "noreply@hillcountryhempfinder.com";
 const CONTACT = "hempfindertx@gmail.com";
 
-function getResend(): Resend | null {
+// Sender address. Must be on a domain verified with Resend (SPF/DKIM) for real
+// delivery — EMAIL_FROM overrides, otherwise the verified-domain default.
+const FROM = process.env.EMAIL_FROM ?? DEFAULT_FROM;
+
+// Fetch the Resend API key from the Replit connector proxy. Credentials managed
+// by the Replit Resend integration are served here rather than as a plain env
+// var. (Note: the connector also exposes from_email, but we intentionally send
+// from the verified hillcountryhempfinder.com domain instead.)
+async function getResendKeyFromConnector(): Promise<string | null> {
+  const hostname = process.env.REPLIT_CONNECTORS_HOSTNAME;
+  if (!hostname) return null;
+
+  const xReplitToken = process.env.REPL_IDENTITY
+    ? `repl ${process.env.REPL_IDENTITY}`
+    : process.env.WEB_REPL_RENEWAL
+      ? `depl ${process.env.WEB_REPL_RENEWAL}`
+      : null;
+  if (!xReplitToken) return null;
+
+  try {
+    const response = await fetch(
+      `https://${hostname}/api/v2/connection?include_secrets=true&connector_names=resend`,
+      {
+        headers: {
+          Accept: "application/json",
+          X_REPLIT_TOKEN: xReplitToken,
+        },
+      },
+    );
+    if (!response.ok) return null;
+    const data = (await response.json()) as {
+      items?: Array<{ settings?: { api_key?: string } }>;
+    };
+    return data.items?.[0]?.settings?.api_key ?? null;
+  } catch (err) {
+    logger.warn({ err }, "Failed to fetch Resend key from connector");
+    return null;
+  }
+}
+
+// Resolve a Resend client, preferring the Replit connector integration and
+// falling back to a plain RESEND_API_KEY secret.
+async function getResend(): Promise<Resend | null> {
+  const connectorKey = await getResendKeyFromConnector();
+  if (connectorKey) return new Resend(connectorKey);
+
   const key = process.env.RESEND_API_KEY;
   if (key) return new Resend(key);
+
   return null;
 }
 
@@ -30,15 +76,25 @@ async function sendEmail(opts: {
   text: string;
   html: string;
 }): Promise<void> {
-  const resend = getResend();
+  const resend = await getResend();
   if (resend) {
-    await resend.emails.send({
+    const { error } = await resend.emails.send({
       from: FROM,
       to: opts.to,
       subject: opts.subject,
       text: opts.text,
       html: opts.html,
     });
+    if (error) {
+      // Resend's SDK returns errors in the response rather than throwing.
+      // Surface them (e.g. unverified sending domain) and rethrow so callers
+      // can log/handle the failure.
+      logger.warn(
+        { err: error, to: opts.to, subject: opts.subject, from: FROM },
+        "Resend rejected the email — check that the sending domain is verified",
+      );
+      throw new Error(`Resend error: ${error.message}`);
+    }
     logger.info({ to: opts.to, subject: opts.subject }, "Email sent via Resend");
     return;
   }
