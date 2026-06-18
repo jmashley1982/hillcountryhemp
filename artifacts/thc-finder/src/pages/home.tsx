@@ -337,7 +337,7 @@ export default function Home() {
           <SingleFilterSelect value={selectedCat} onChange={setSelectedCat} placeholder="Products" options={allCategories.map((c) => c.name)} testId="select-category" />
           <SingleFilterSelect value={selectedCity} onChange={setSelectedCity} placeholder="Cities" options={allCities.map((c) => c.name)} testId="select-city" />
           <button
-            onClick={() => { setSelectedBrand(""); setSelectedCat(""); setSelectedCity(""); }}
+            onClick={() => { setSelectedBrand(""); setSelectedCat(""); setSelectedCity(""); navigate("/", { replace: true }); }}
             disabled={!hasFilters}
             title="Reset filters"
             className={`shrink-0 h-8 w-8 flex items-center justify-center rounded-full border-2 transition-colors ${
@@ -401,7 +401,7 @@ export default function Home() {
             {hasFilters && (
               <div className="flex flex-wrap gap-1 mt-1.5">
                 {selectedBrand && (
-                  <button onClick={() => setSelectedBrand("")} className="cursor-pointer flex items-center gap-1 text-[10px] font-bold bg-[#84C7D0]/15 border border-[#84C7D0]/40 text-[#84C7D0] px-1.5 py-0.5 rounded-full hover:bg-[#84C7D0]/25 transition-colors">
+                  <button onClick={() => { setSelectedBrand(""); navigate("/", { replace: true }); }} className="cursor-pointer flex items-center gap-1 text-[10px] font-bold bg-[#84C7D0]/15 border border-[#84C7D0]/40 text-[#84C7D0] px-1.5 py-0.5 rounded-full hover:bg-[#84C7D0]/25 transition-colors">
                     {selectedBrand} <X className="h-2.5 w-2.5" />
                   </button>
                 )}
