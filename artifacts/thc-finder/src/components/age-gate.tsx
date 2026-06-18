@@ -1,6 +1,6 @@
 import { useEffect, useState } from "react";
 import { Button } from "./ui/button";
-import logoUrl from "@assets/thchf-logo-1-b_1781758728131.png";
+import logoUrl from "@assets/magnific_a-logo-for-an-app-called-_TeJK7kKVNR_1780364254574.png";
 
 export function AgeGate() {
   const [show, setShow] = useState(false);
