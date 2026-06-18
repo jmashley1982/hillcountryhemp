@@ -1,0 +1,108 @@
+System Update Specification: Claim Verification & Anti-Abuse Layer
+1. Core Objective
+
+Refactor the existing business listing claim flow to introduce an adaptive verification engine that automatically validates claimant authority using domain-based email matching, gracefully falls back to document-based manual review for generic email domains, and enforces strict anti-abuse controls (user-level quotas, IP-based threat detection, and an immutable forensic audit trail).
+2. Global System-Wide Requirements (Applied to All Claim Endpoints)
+
+A. Immutable Audit Trail (Forensic Logging)
+
+    Every claim-related action (initiation, OTP request, document upload, status change, approval/rejection) must append a read-only record to an audit_logs table.
+
+    Each log entry must capture: the acting user_id or session_id, the client_ip, the timestamp, the action_type, the claim_id, and a metadata field (JSON) containing the verification method used and any relevant context (e.g., email domain matched, file name uploaded).
+
+    These logs must never be editable or deletable via the application layer. They serve solely as a dispute resolution mechanism.
+
+B. Layered Rate Limiting (Cache-Based Counters)
+
+    All rate-limiting logic must execute before any business-logic database writes occur (fail-fast principle).
+
+    Utilize a distributed cache (e.g., Redis) with configurable TTLs to store rolling counters.
+
+3. User-Level Rate Limiting (Per-Actor Quota)
+
+    Scope: Applied per authenticated User ID. For unauthenticated guest claimants, apply the limit per Session ID.
+
+    Rule: An actor may initiate a maximum of 5 claim requests within any rolling 24-hour window.
+
+    Behavior: Upon reaching the 6th attempt within the window, the system must immediately reject the request with an HTTP 429 status, presenting a user-friendly message indicating the daily limit has been exhausted. The claim process halts at this gate.
+
+4. IP-Level Threat Protection (Network Abuse Detection)
+
+    Scope: Applied per unique Client IP Address (respecting X-Forwarded-For headers if behind a proxy).
+
+    Rule: An IP address may be associated with a maximum of 50 claim initiations within any rolling 10-minute window.
+
+    Behavior: If this threshold is exceeded, the system must treat this as a brute-force or scraping attempt. It should automatically:
+
+        Reject the request with HTTP 429.
+
+        Flag the IP address in the database with a suspicious status.
+
+        Optionally trigger an internal security alert (email/Slack) for manual admin investigation. Further requests from this IP should be temporarily blocked until an admin reviews and clears the flag.
+
+5. The Adaptive Verification State Machine (The Claim Flow)
+
+The verification process is a state-driven workflow. The system transitions a Claim record through the following statuses:
+
+    PENDING_EMAIL_CHECK (Initial state)
+
+    AWAITING_OTP (Fast-track path)
+
+    AWAITING_DOCUMENT (Fallback path)
+
+    PENDING_MANUAL_REVIEW (Document submitted)
+
+    APPROVED (Claim successful)
+
+    REJECTED (Claim denied)
+
+Step 5.1 - Initiation & Domain Classification
+When a claimant submits a request (providing their work email and phone number):
+
+    The system extracts the root domain from the claimant's provided email address (e.g., @gmail.com).
+
+    It simultaneously retrieves the official website domain stored on the target BusinessListing record.
+
+    It classifies the claimant's email domain against a pre-defined "Generic/Public Domain" blocklist (e.g., gmail, yahoo, outlook, protonmail, icloud, etc.).
+
+Step 5.2 - Branching Logic (The Adaptive Fork)
+
+    Path A (High-Trust / Instant): If the claimant's email domain exactly matches the business's official website domain, and it is not on the generic blocklist → the system transitions the claim to AWAITING_OTP. It generates a time-sensitive token and dispatches it to that email address for verification.
+
+    Path B (Low-Trust / Fallback): If the email domain is generic or does not match the business domain → the system bypasses the OTP step. It transitions the claim to AWAITING_DOCUMENT and prompts the claimant to upload official identification (Business License, EIN letter, or Utility Bill).
+
+Step 5.3 - OTP Verification (Path A Resolution)
+
+    The claimant submits the 6-digit code.
+
+    The system validates the token against the stored secret (respecting TTL and attempt limits).
+
+    On success: Status updates to APPROVED. The business listing is instantly linked to the claimant's user account.
+
+    On failure (3 consecutive wrong attempts): Lock the OTP mechanism for that claim for 60 minutes to prevent brute forcing.
+
+Step 5.4 - Document Submission & Manual Queue (Path B Resolution)
+
+    The claimant uploads their document. The system stores the file in secure cloud storage and saves the URL on the Claim record.
+
+    The system transitions the status to PENDING_MANUAL_REVIEW.
+
+    It must automatically enqueue a notification to the admin dashboard. The actual approval/rejection decision remains a manual administrative action.
+
+    Once an admin manually approves, the status updates to APPROVED; if rejected, it updates to REJECTED with a mandatory note explaining the reason.
+
+6. Administrative Override & Conflict Resolution
+
+    Current Owner Notification: If a listing is already claimed by an existing user, and a new claimant initiates a request (even via Path A), the system must not auto-approve. Instead, it must pause the claim and send a notification to the current listing owner, giving them 72 hours to contest or approve the new claimant.
+
+    Admin UI Updates: The admin dashboard must expose a queue of PENDING_MANUAL_REVIEW claims, display the uploaded documents, allow status toggling, and show the full audit log history for that specific listing.
+
+7. Success Criteria for the AI Implementation
+
+    A claim submitted with name@businesswebsite.com passes immediately after OTP; a claim with name@gmail.com triggers a file upload UI without sending an OTP.
+
+    A logged-in user cannot initiate a 6th claim within a 24-hour span.
+
+    A single IP that triggers 51 claim attempts in 8 minutes results in an automated lockout.
+
+    Every single step listed above leaves a distinct, traceable, and immutable entry in the audit_logs table, allowing an admin to reconstruct exactly how and when a specific listing was verified.
