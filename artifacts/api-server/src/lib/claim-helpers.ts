@@ -109,6 +109,9 @@ export async function checkUserRateLimit(userId: number): Promise<boolean> {
   return rows.length < USER_QUOTA;
 }
 
+// Block on the IP_QUOTA-th attempt: allow (IP_QUOTA - 1) prior attempts,
+// then block when rows.length reaches IP_QUOTA - 1 (i.e. the next would be
+// the IP_QUOTA-th) — satisfying "lockout at 50+ attempts."
 const IP_QUOTA = 50;
 const IP_WINDOW_MS = 10 * 60 * 1000;
 
@@ -124,7 +127,9 @@ export async function checkIpRateLimit(ip: string): Promise<boolean> {
         gte(claimAuditLogsTable.timestamp, windowStart),
       ),
     );
-  return rows.length < IP_QUOTA;
+  // rows.length is the count of PRIOR attempts; block when already at IP_QUOTA - 1
+  // so the IP_QUOTA-th attempt is the first rejected.
+  return rows.length < IP_QUOTA - 1;
 }
 
 export async function isIpCurrentlyFlagged(ip: string): Promise<boolean> {
@@ -166,13 +171,11 @@ export async function flagIp(ip: string, reason: string): Promise<void> {
   }
 }
 
-// ── Client IP extraction (respects X-Forwarded-For) ──────────────────────
+// ── Client IP extraction ──────────────────────────────────────────────────
+// Express populates req.ip correctly when "trust proxy" is set in app.ts.
+// Do NOT manually read x-forwarded-for here — that would bypass Express's
+// validated trust chain and allow clients to spoof the header.
 
-export function getClientIp(req: { ip?: string; headers: Record<string, string | string[] | undefined> }): string {
-  const fwd = req.headers["x-forwarded-for"];
-  if (fwd) {
-    const first = Array.isArray(fwd) ? fwd[0] : fwd.split(",")[0];
-    return first.trim();
-  }
+export function getClientIp(req: { ip?: string }): string {
   return req.ip ?? "unknown";
 }

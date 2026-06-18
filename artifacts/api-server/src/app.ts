@@ -19,6 +19,11 @@ const PgSession = ConnectPgSimple(session);
 
 const app: Express = express();
 
+// Trust exactly one reverse-proxy hop (Replit's ingress).
+// This lets Express compute req.ip from X-Forwarded-For correctly
+// without allowing clients to spoof arbitrary IPs in the chain.
+app.set("trust proxy", 1);
+
 app.use(
   pinoHttp({
     logger,

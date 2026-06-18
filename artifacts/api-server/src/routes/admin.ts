@@ -503,7 +503,7 @@ router.patch(
     const claimId = parseInt(raw, 10);
     if (isNaN(claimId)) { res.status(400).json({ error: "Invalid id" }); return; }
 
-    const { status, reason } = req.body as { status: string; reason?: string };
+    const { status, reason, override } = req.body as { status: string; reason?: string; override?: boolean };
 
     const [row] = await db
       .select({
@@ -512,6 +512,7 @@ router.patch(
         userId: claimsTable.userId,
         status: claimsTable.status,
         claimantEmail: claimsTable.claimantEmail,
+        contestDeadline: claimsTable.contestDeadline,
         userEmail: usersTable.email,
         businessName: businessesTable.name,
       })
@@ -524,6 +525,32 @@ router.patch(
 
     const normalizedStatus = (status ?? "").toUpperCase();
 
+    // ── 72-hour owner-contest gate ─────────────────────────────────────
+    // When a claim is in PENDING_OWNER_REVIEW the existing owner has 72 hours
+    // to approve or contest. Block admin resolution until the window expires
+    // unless the admin explicitly passes override:true (which gets audited).
+    if (
+      row.status === "PENDING_OWNER_REVIEW" &&
+      row.contestDeadline &&
+      row.contestDeadline > new Date() &&
+      !override
+    ) {
+      res.status(409).json({
+        error: `This claim is within the 72-hour owner-review window (deadline: ${row.contestDeadline.toISOString()}). Pass override:true to force resolution and bypass the window.`,
+        contestDeadline: row.contestDeadline.toISOString(),
+      });
+      return;
+    }
+
+    if (override) {
+      await appendAuditLog({
+        claimId,
+        actorUserId: req.session.userId,
+        actionType: "admin_contest_window_override",
+        metadata: { reason: reason?.trim() ?? "no reason given", contestDeadline: row.contestDeadline?.toISOString() },
+      });
+    }
+
     if (normalizedStatus === "APPROVED") {
       await db.update(businessesTable).set({ ownerId: row.userId }).where(eq(businessesTable.id, row.businessId));
       await db
@@ -532,7 +559,7 @@ router.patch(
         .where(and(eq(claimsTable.businessId, row.businessId), inArray(claimsTable.status, ACTIVE_CLAIM_STATUSES)));
       await db.update(claimsTable).set({ status: "APPROVED" }).where(eq(claimsTable.id, claimId));
 
-      await appendAuditLog({ claimId, actorUserId: req.session.userId, actionType: "approved", metadata: { adminApproval: true } });
+      await appendAuditLog({ claimId, actorUserId: req.session.userId, actionType: "approved", metadata: { adminApproval: true, override: !!override } });
 
       const emailTo = row.claimantEmail ?? row.userEmail;
       sendClaimApprovedEmail(emailTo, row.businessName).catch(() => {});

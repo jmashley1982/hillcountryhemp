@@ -17,6 +17,8 @@ import {
   sendAdminAlert,
   sendClaimOtpEmail,
   sendOwnerContestNotification,
+  sendClaimApprovedEmail,
+  sendClaimRejectedEmail,
 } from "../lib/mailer.js";
 import { logger } from "../lib/logger.js";
 import {
@@ -1283,6 +1285,94 @@ router.get(
       contest_deadline: claim.contestDeadline?.toISOString() ?? null,
       claimant_email: claim.claimantEmail,
     });
+  },
+);
+
+// ── Owner decision on an active contest claim ─────────────────────────────
+// The current owner of a business can approve (transfer ownership) or
+// contest (escalate to admin) a claim that is in PENDING_OWNER_REVIEW.
+router.post(
+  "/businesses/:id/claim/owner-decision",
+  requireLogin,
+  requireBusiness,
+  async (req, res): Promise<void> => {
+    const raw = Array.isArray(req.params.id) ? req.params.id[0] : req.params.id;
+    const id = parseInt(raw, 10);
+    if (isNaN(id)) { res.status(400).json({ error: "Invalid id" }); return; }
+
+    const { decision } = req.body as { decision?: string };
+    if (decision !== "approve" && decision !== "contest") {
+      res.status(400).json({ error: "decision must be 'approve' or 'contest'" });
+      return;
+    }
+
+    // The requester must be the current owner of this business.
+    const [biz] = await db
+      .select({ ownerId: businessesTable.ownerId, name: businessesTable.name })
+      .from(businessesTable)
+      .where(eq(businessesTable.id, id));
+    if (!biz) { res.status(404).json({ error: "Business not found" }); return; }
+    if (biz.ownerId !== req.session.userId) {
+      res.status(403).json({ error: "Only the current owner can respond to a claim." });
+      return;
+    }
+
+    // Find the active PENDING_OWNER_REVIEW claim.
+    const [claim] = await db
+      .select({
+        id: claimsTable.id,
+        userId: claimsTable.userId,
+        claimantEmail: claimsTable.claimantEmail,
+        contestDeadline: claimsTable.contestDeadline,
+      })
+      .from(claimsTable)
+      .where(
+        and(
+          eq(claimsTable.businessId, id),
+          eq(claimsTable.status, "PENDING_OWNER_REVIEW"),
+          isNull(claimsTable.otpHash),
+        ),
+      )
+      .limit(1);
+
+    if (!claim) {
+      res.status(404).json({ error: "No active owner-review claim found for this business." });
+      return;
+    }
+
+    const clientIp = getClientIp(req as Parameters<typeof getClientIp>[0]);
+
+    if (decision === "approve") {
+      // Owner consents — transfer ownership immediately.
+      await db.update(businessesTable).set({ ownerId: claim.userId }).where(eq(businessesTable.id, id));
+      await db.update(claimsTable).set({ status: "APPROVED" }).where(eq(claimsTable.id, claim.id));
+      await appendAuditLog({
+        claimId: claim.id,
+        actorUserId: req.session.userId,
+        clientIp,
+        actionType: "owner_approved_transfer",
+        metadata: { businessId: id },
+      });
+      const emailTo = claim.claimantEmail;
+      if (emailTo) {
+        sendClaimApprovedEmail(emailTo, biz.name).catch((err: unknown) => {
+          logger.warn({ err }, "Failed to send claimant approval email");
+        });
+      }
+      res.json({ success: true, status: "APPROVED" });
+
+    } else {
+      // Owner contests — escalate to admin manual review.
+      await db.update(claimsTable).set({ status: "PENDING_MANUAL_REVIEW" }).where(eq(claimsTable.id, claim.id));
+      await appendAuditLog({
+        claimId: claim.id,
+        actorUserId: req.session.userId,
+        clientIp,
+        actionType: "owner_contested",
+        metadata: { businessId: id },
+      });
+      res.json({ success: true, status: "PENDING_MANUAL_REVIEW" });
+    }
   },
 );
 
